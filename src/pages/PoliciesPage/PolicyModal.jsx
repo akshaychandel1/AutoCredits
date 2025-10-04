@@ -46,6 +46,39 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     return 'N/A';
   };
 
+  // Get insurance quotes - FIXED: Check for insurance_quotes (plural with underscore)
+  const getInsuranceQuotes = () => {
+    console.log("🔍 Checking insurance quotes in policy:", policy);
+    console.log(" - insurance_quotes:", policy.insurance_quotes);
+    console.log(" - insurance_quote:", policy.insurance_quote);
+    console.log(" - insuranceQuotes:", policy.insuranceQuotes);
+    
+    // Check for insurance_quotes array first (your actual backend format)
+    if (policy.insurance_quotes && Array.isArray(policy.insurance_quotes)) {
+      console.log("✅ Found insurance quotes under 'insurance_quotes':", policy.insurance_quotes);
+      return policy.insurance_quotes;
+    }
+    // Check for insurance_quote array (alternative format)
+    if (policy.insurance_quote && Array.isArray(policy.insurance_quote)) {
+      console.log("✅ Found insurance quotes under 'insurance_quote':", policy.insurance_quote);
+      return policy.insurance_quote;
+    }
+    // Fallback to insuranceQuotes (frontend format)
+    if (policy.insuranceQuotes && Array.isArray(policy.insuranceQuotes)) {
+      console.log("✅ Found insurance quotes under 'insuranceQuotes':", policy.insuranceQuotes);
+      return policy.insuranceQuotes;
+    }
+    
+    console.log("❌ No insurance quotes found in any field");
+    return [];
+  };
+
+  const insuranceQuotes = getInsuranceQuotes();
+  const hasMultipleQuotes = insuranceQuotes.length > 1;
+
+  console.log("📊 Final insurance quotes:", insuranceQuotes);
+  console.log("📊 Has multiple quotes:", hasMultipleQuotes);
+
   // Get dates conditionally
   const createdDate = formatDate(policy.createdAt);
   const startDate = formatDate(policy.policy_info?.startDate);
@@ -87,7 +120,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 h-full min-w-[800px]">
             
             {/* Left Sidebar - Premium Amount & Quick Overview */}
-            <div className="xl:col-span-4 space-y-6">
+            <div className="xl:col-span-3 space-y-6">
               {/* Premium Highlight Card */}
               <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white">
                 <div className="text-sm font-medium opacity-90">Premium Amount</div>
@@ -152,12 +185,13 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       <div className="text-sm text-gray-900 mt-1 break-all">{policy.customer_details?.email || 'N/A'}</div>
                     </div>
                   </div>
-                  {policy.customer_details?.address && (
+                  {policy.customer_details?.residenceAddress && (
                     <div>
                       <div className="text-xs text-gray-500 uppercase tracking-wide">Address</div>
                       <div className="text-sm text-gray-700 mt-1 leading-relaxed">
-                        {policy.customer_details.address}
+                        {policy.customer_details.residenceAddress}
                         {policy.customer_details?.pincode && ` - ${policy.customer_details.pincode}`}
+                        {policy.customer_details?.city && `, ${policy.customer_details.city}`}
                       </div>
                     </div>
                   )}
@@ -195,10 +229,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                           {key.replace(/([A-Z])/g, ' $1').trim()}:
                         </span>
                         <span className="text-sm font-medium text-gray-900 text-right flex-1 ml-4 break-words">
-                          {typeof value === 'string' && !isNaN(Date.parse(value)) ? 
-                            formatDate(value) || String(value) : 
-                            String(value)
-                          }
+                          {String(value)}
                         </span>
                       </div>
                     ))}
@@ -211,7 +242,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
             </div>
 
             {/* Right Column - Vehicle Info & Quote Details */}
-            <div className="xl:col-span-3 space-y-6">
+            <div className="xl:col-span-4 space-y-6">
               {/* Vehicle Information */}
               <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
                 <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
@@ -242,39 +273,154 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       </div>
                     )}
                   </div>
-                  {policy.vehicle_details?.registrationNumber && (
+                  {policy.vehicle_details?.engineNo && (
                     <div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">Registration No.</div>
-                      <div className="font-mono text-sm text-gray-900 mt-1">{policy.vehicle_details.registrationNumber}</div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Engine No.</div>
+                      <div className="font-mono text-sm text-gray-900 mt-1">{policy.vehicle_details.engineNo}</div>
+                    </div>
+                  )}
+                  {policy.vehicle_details?.chassisNo && (
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Chassis No.</div>
+                      <div className="font-mono text-sm text-gray-900 mt-1">{policy.vehicle_details.chassisNo}</div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Insurance Quote */}
+              {/* Insurance Quotes - UPDATED SECTION */}
               <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
-                  Quote Details
-                </h3>
-                <div className="space-y-3">
-                  {policy.insurance_quote && Object.entries(policy.insurance_quote).map(([key, value]) => (
-                    <div key={key} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                      <span className="text-sm text-gray-600 font-medium capitalize flex-1">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}:
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                    Insurance Quotes
+                    {hasMultipleQuotes && (
+                      <span className="bg-cyan-100 text-cyan-800 text-xs px-2 py-1 rounded-full">
+                        {insuranceQuotes.length} quotes
                       </span>
-                      <span className="text-sm font-medium text-gray-900 text-right flex-1 ml-4 break-words">
-                        {typeof value === 'string' && !isNaN(Date.parse(value)) ? 
-                          formatDate(value) || String(value) : 
-                          String(value)
-                        }
-                      </span>
-                    </div>
-                  ))}
-                  {(!policy.insurance_quote || Object.keys(policy.insurance_quote).length === 0) && (
-                    <p className="text-gray-400 text-sm text-center py-4">No quote details available</p>
-                  )}
+                    )}
+                  </h3>
                 </div>
+
+                {insuranceQuotes.length > 0 ? (
+                  <div className="space-y-4">
+                    {hasMultipleQuotes ? (
+                      // Table view for multiple quotes
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-200">
+                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Insurer</th>
+                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">IDV</th>
+                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Premium</th>
+                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Zone</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {insuranceQuotes.map((quote, index) => (
+                              <tr key={index} className="hover:bg-gray-50">
+                                <td className="py-2 px-2">
+                                  <div className="font-medium text-gray-900 text-xs">
+                                    {quote.quoteInsurer || quote.insurer || 'N/A'}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-2">
+                                  <div className="text-gray-700 text-xs">
+                                    ₹{(parseInt(quote.idv) || 0).toLocaleString('en-IN')}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-2">
+                                  <div className="text-gray-700 text-xs">
+                                    ₹{(parseInt(quote.premium) || 0).toLocaleString('en-IN')}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-2">
+                                  <div className="text-gray-700 text-xs">
+                                    {quote.zone || 'N/A'}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      // Detailed view for single quote
+                      <div className="space-y-3">
+                        {insuranceQuotes.map((quote, index) => (
+                          <div key={index} className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Insurer:</span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                {quote.quoteInsurer || quote.insurer || 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">IDV Amount:</span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                ₹{(parseInt(quote.idv) || 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Premium:</span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                ₹{(parseInt(quote.premium) || 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            {quote.zone && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600">Zone:</span>
+                                <span className="text-sm font-semibold text-gray-900">{quote.zone}</span>
+                              </div>
+                            )}
+                            {quote.odDiscount && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600">OD Discount:</span>
+                                <span className="text-sm font-semibold text-gray-900">{quote.odDiscount}%</span>
+                              </div>
+                            )}
+                            {quote.electricalAccessories && quote.electricalAccessories !== "0" && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600">Electrical Accessories:</span>
+                                <span className="text-sm font-semibold text-gray-900">
+                                  ₹{(parseInt(quote.electricalAccessories) || 0).toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            )}
+                            {quote.coverageType && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600">Coverage Type:</span>
+                                <span className="text-sm font-semibold text-gray-900 capitalize">{quote.coverageType}</span>
+                              </div>
+                            )}
+                            {quote.ncb && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600">NCB:</span>
+                                <span className="text-sm font-semibold text-gray-900">{quote.ncb}%</span>
+                              </div>
+                            )}
+                            {quote.duration && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-600">Duration:</span>
+                                <span className="text-sm font-semibold text-gray-900">{quote.duration} year(s)</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="text-gray-400 mb-2">
+                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-400 text-sm">No insurance quotes available</p>
+                    <p className="text-gray-400 text-xs mt-1">Quotes will appear here when added</p>
+                  </div>
+                )}
               </div>
 
               {/* Additional Notes */}
@@ -298,6 +444,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-500">
               Policy Type: {policy.insurance_quote?.coverageType || policy.insurance_category || 'Insurance'}
+              {hasMultipleQuotes && ` • ${insuranceQuotes.length} quotes available`}
             </div>
             <button
               onClick={onClose}
