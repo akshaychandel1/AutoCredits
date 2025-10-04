@@ -6,7 +6,7 @@ import axios from "axios";
 import PolicyTable from "./PolicyTable";
 import PolicyModal from "./PolicyModal";
 
-const API_BASE_URL = "https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1";
+const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1";
 
 const PoliciesPage = () => {
   const [search, setSearch] = useState("");

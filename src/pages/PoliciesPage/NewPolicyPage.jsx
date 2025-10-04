@@ -369,7 +369,7 @@ const steps = [
   "Payment",
 ];
 
-const API_BASE_URL = "https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1";
+const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1";
 
 // ================== STEP 1: Case Details ==================
 const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
@@ -1673,17 +1673,88 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     return successfulUploads;
   };
 
-  // Upload single file
+ 
+
+  const uploadSingleFile = async (fileObj)=>{
+     try {
+      // Update status to uploading
+      // setUploadedFiles(prev => 
+      //   prev.map(f => 
+      //     f.id === fileObj.id 
+      //       ? { ...f, status: 'uploading', uploadProgress: 0 }
+      //       : f
+      //   )
+      // );
+
+      const formData = new FormData();
+      formData.append('file', fileObj);
+
+      let config = {
+  method: 'post',
+  maxBodyLength: Infinity,
+  url: 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/files',
+  headers: { 
+    'Content-Type': 'multipart/form-data',
+  },
+  data : formData
+};
+
+const response = await axios.request(config);
+console.log(response.data); 
+      // Update with successful response
+      // setUploadedFiles(prev => 
+      //   prev.map(f => 
+      //     f.id === fileObj.id 
+      //       ? { 
+      //           ...f, 
+      //           status: 'uploaded', 
+      //           uploadProgress: 100,
+      //           url: response.data.path || response.data.path, // Adjust based on your API response
+      //           response: response.data
+      //         }
+      //       : f
+      //   )
+      // );
+      // const [form,setForm] = useState([]);
+      // form.documents=uploadedFiles.map((e)=>e.url);
+      // handleChange(form);
+  //     handleChange({
+  // target: {
+  //   name: 'documents',
+  //   value: uploadedFiles.map((e)=>e.url)
+  // }
+// });
+      return response.data.path;
+    } catch (error) {
+      console.error(`Error uploading file ${fileObj.name}:`, error);
+      
+      // setUploadedFiles(prev => 
+      //   prev.map(f => 
+      //     f.id === fileObj.id 
+      //       ? { 
+      //           ...f, 
+      //           status: 'error', 
+      //           error: error.message || 'Upload failed'
+      //         }
+      //       : f
+      //   )
+      // );
+      
+      throw error;
+    }
+  }
+
+   // Upload single file
   const uploadFile = async (file) => {
     console.log(`🚀 Starting upload for: ${file.name}`);
     
     try {
       // Simulate upload process
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Create mock URL (replace with your actual upload logic)
-      const mockUrl = `https://storage.googleapis.com/your-bucket/${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-      
+      // const mockUrl = `https://storage.googleapis.com/your-bucket/${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+  const mockUrl = await uploadSingleFile(file);    
       console.log(`✅ Upload completed: ${file.name} -> ${mockUrl}`);
       return { url: mockUrl, name: file.name };
       
