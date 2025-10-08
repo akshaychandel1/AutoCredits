@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"; 
+import React ,{ useState, useEffect } from "react"; 
+import {jsPDF} from 'jspdf'
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import {
@@ -19,7 +20,18 @@ import {
   FaUpload,
   FaTrash,
 } from "react-icons/fa";
+import { Plus, Download, ChevronUp, ChevronDown, Trash2, FileText, Save } from 'lucide-react';
 
+import icici from './logos/ICICI.jpeg'
+import hdfc from './logos/hdfc.jpeg'
+import bajaj from './logos/bajaj.jpeg'
+import indiau from './logos/indiaunited.jpeg'
+import uindia from './logos/unitedindia.jpeg'
+import nis from './logos/nis.jpeg'
+import orient from './logos/orient.jpeg'
+import tata from './logos/tata.jpeg'
+import reliance from './logos/reliance.png'
+import chola from './logos/chola.png'
 // ================== VALIDATION RULES ==================
 const validationRules = {
   // Step 1: Case Details validation
@@ -182,45 +194,39 @@ const validationRules = {
   },
 
   // Step 3: Insurance Quotes validation
-  validateStep3: (form) => {
-    const errors = {};
+ // Step 3: Insurance Quotes validation - RECOMMENDED
+validateStep3: (form) => {
+  const errors = {};
 
-    // Insurance Company validation
-    if (!form.insurer) {
-      errors.insurer = "Insurance company is required";
-    }
+  // Primary validation: Require at least one insurance quote
+  if (!form.insuranceQuotes || form.insuranceQuotes.length === 0) {
+    errors.insuranceQuotes = "At least one insurance quote is required";
+  }
 
-    // Coverage Type validation
-    if (!form.coverageType) {
-      errors.coverageType = "Coverage type is required";
-    }
-
-    // Premium Amount validation
+  // Optional: Validate individual quote fields if using old system
+  // This ensures backward compatibility
+  if ((!form.insuranceQuotes || form.insuranceQuotes.length === 0) && !form.insurer) {
+    if (!form.insurer) errors.insurer = "Insurance company is required";
+    if (!form.coverageType) errors.coverageType = "Coverage type is required";
     if (!form.premium) {
       errors.premium = "Premium amount is required";
     } else if (parseFloat(form.premium) <= 0) {
       errors.premium = "Premium amount must be greater than 0";
     }
-
-    // IDV Amount validation
     if (!form.idv) {
       errors.idv = "IDV amount is required";
     } else if (parseFloat(form.idv) <= 0) {
       errors.idv = "IDV amount must be greater than 0";
     }
+  }
 
-    // NCB Discount validation (if provided)
-    if (form.ncb && (parseFloat(form.ncb) < 0 || parseFloat(form.ncb) > 100)) {
-      errors.ncb = "NCB discount must be between 0% and 100%";
-    }
+  // NCB validation (applies to both systems)
+  if (form.ncb && (parseFloat(form.ncb) < 0 || parseFloat(form.ncb) > 100)) {
+    errors.ncb = "NCB discount must be between 0% and 100%";
+  }
 
-    // Policy Duration validation
-    if (!form.duration) {
-      errors.duration = "Policy duration is required";
-    }
-
-    return errors;
-  },
+  return errors;
+},
 
   // Step 4: New Policy Details validation
   validateStep4: (form) => {
@@ -364,9 +370,11 @@ const steps = [
   "Case Details",
   "Vehicle Details",
   "Insurance Quotes",
+  "Previous Policy",
   "New Policy Details",
   "Documents",
   "Payment",
+  "Payout" 
 ];
 
 const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1";
@@ -381,21 +389,21 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-800">
-            Customer Information
+            Step 1: Customer Information
           </h3>
           <p className="text-xs text-gray-500">
             Fill personal, contact and nominee details
           </p>
         </div>
       </div>
-      <button
+      {/* <button
         type="button"
         onClick={handleSave}
         disabled={isSaving}
         className="flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-700 hover:shadow transition disabled:opacity-50"
       >
         <FaSave /> {isSaving ? "Saving..." : "Save Progress"}
-      </button>
+      </button> */}
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -446,7 +454,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
             value={form.mobile || ""}
             onChange={handleChange}
             placeholder="Enter 10-digit mobile number"
-            className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
               errors.mobile ? "border-red-500" : "border-gray-300"
             }`}
           />
@@ -473,7 +481,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
                 ? "Enter company name"
                 : "Enter customer name"
             }
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
               errors.customerName ? "border-red-500" : "border-gray-300"
             }`}
           />
@@ -494,7 +502,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
             value={form.email || ""}
             onChange={handleChange}
             placeholder="Enter email address"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
               errors.email ? "border-red-500" : "border-gray-300"
             }`}
           />
@@ -511,7 +519,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           name="gender"
           value={form.gender || ""}
           onChange={handleChange}
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.gender ? "border-red-500" : "border-gray-300"
           }`}
         >
@@ -532,7 +540,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           name="maritalStatus"
           value={form.maritalStatus || ""}
           onChange={handleChange}
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.maritalStatus ? "border-red-500" : "border-gray-300"
           }`}
         >
@@ -553,7 +561,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           name="dob"
           value={form.dob || ""}
           onChange={handleChange}
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.dob ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -571,7 +579,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           value={form.occupation || ""}
           onChange={handleChange}
           placeholder="Enter occupation"
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
         />
       </div>
 
@@ -586,7 +594,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           value={form.panNumber || ""}
           onChange={handleChange}
           placeholder="ABCDE1234F"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.panNumber ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -604,7 +612,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           value={form.aadhaarNumber || ""}
           onChange={handleChange}
           placeholder="1234 5678 9012"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.aadhaarNumber ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -622,7 +630,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           value={form.residenceAddress || ""}
           onChange={handleChange}
           placeholder="Enter complete address"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.residenceAddress ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -639,7 +647,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           value={form.pincode || ""}
           onChange={handleChange}
           placeholder="123456"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.pincode ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -656,7 +664,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
           value={form.city || ""}
           onChange={handleChange}
           placeholder="Enter city"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.city ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -674,7 +682,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
               value={form.nomineeName || ""}
               onChange={handleChange}
               placeholder="Nominee Name"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.nomineeName ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -685,7 +693,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
               name="relation"
               value={form.relation || ""}
               onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.relation ? "border-red-500" : "border-gray-300"
               }`}
             >
@@ -703,7 +711,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
               value={form.nomineeAge || ""}
               onChange={handleChange}
               placeholder="Nominee Age"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.nomineeAge ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -723,7 +731,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
               value={form.referenceName || ""}
               onChange={handleChange}
               placeholder="Reference Name"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
             />
           </div>
           <div>
@@ -733,7 +741,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => (
               value={form.referencePhone || ""}
               onChange={handleChange}
               placeholder="Reference Phone Number"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
             />
           </div>
         </div>
@@ -752,21 +760,21 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-800">
-            Vehicle Details
+           Step 2: Vehicle Details
           </h3>
           <p className="text-xs text-gray-500">
             Provide accurate vehicle information
           </p>
         </div>
       </div>
-      <button
+      {/* <button
         type="button"
         onClick={handleSave}
         disabled={isSaving}
         className="flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-700 hover:shadow transition disabled:opacity-50"
       >
         <FaSave /> {isSaving ? "Saving..." : "Save Progress"}
-      </button>
+      </button> */}
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -781,7 +789,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           value={form.city || ""}
           onChange={handleChange}
           placeholder="Enter city"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.city ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -796,7 +804,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           name="make"
           value={form.make || ""}
           onChange={handleChange}
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.make ? "border-red-500" : "border-gray-300"
           }`}
         >
@@ -818,7 +826,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           value={form.model || ""}
           onChange={handleChange}
           placeholder="Select model"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.model ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -835,7 +843,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           value={form.variant || ""}
           onChange={handleChange}
           placeholder="Select variant"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.variant ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -852,7 +860,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           value={form.engineNo || ""}
           onChange={handleChange}
           placeholder="Enter engine number"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.engineNo ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -869,7 +877,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           value={form.chassisNo || ""}
           onChange={handleChange}
           placeholder="Enter chassis number"
-          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+          className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
             errors.chassisNo ? "border-red-500" : "border-gray-300"
           }`}
         />
@@ -886,7 +894,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
               name="makeMonth"
               value={form.makeMonth || ""}
               onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.makeMonth ? "border-red-500" : "border-gray-300"
               }`}
             >
@@ -919,7 +927,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
               value={form.makeYear || ""}
               onChange={handleChange}
               placeholder="Year"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.makeYear ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -937,430 +945,2481 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
     </div>
   </div>
 );
+
+// ================== STEP 3: Insurance Quotes ==================
+
+// const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onInsuranceQuotesUpdate }) => {
+//   // Load quotes from localStorage or use empty array
+//   const [quotes, setQuotes] = useState(() => {
+//     try {
+//       const savedQuotes = localStorage.getItem('insuranceQuotes');
+//       return savedQuotes ? JSON.parse(savedQuotes) : [];
+//     } catch (error) {
+//       console.error('Error loading quotes from localStorage:', error);
+//       return [];
+//     }
+//   });
+  
+//   const [isGenerating, setIsGenerating] = useState(false);
+//   const [selectedQuotes, setSelectedQuotes] = useState([]);
+//   const [expandedQuotes, setExpandedQuotes] = useState([]);
+//   const [manualQuote, setManualQuote] = useState({
+//     insuranceCompany: '',
+//     coverageType: 'comprehensive',
+//     idv: '',
+//     policyDuration: '1',
+//     ncbDiscount: '0',
+//     odAmount: '',
+//     thirdPartyAmount: '',
+//     premium: '',
+//     addOns: {
+//       zeroDep: { selected: false, amount: '', rate: '' },
+//       consumables: { selected: false, amount: '', rate: '' },
+//       roadSideAssist: { selected: false, amount: '', rate: '' },
+//       keyReplacement: { selected: false, amount: '', rate: '' },
+//       engineProtect: { selected: false, amount: '', rate: '' },
+//       returnToInvoice: { selected: false, amount: '', rate: '' },
+//       personalAccident: { selected: false, amount: '', rate: '' },
+//       tyreProtection: { selected: false, amount: '', rate: '' },
+//       emergencyMedical: { selected: false, amount: '', rate: '' }
+//     }
+//   });
+
+//   // Save quotes to localStorage whenever quotes change
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem('insuranceQuotes', JSON.stringify(quotes));
+//     } catch (error) {
+//       console.error('Error saving quotes to localStorage:', error);
+//     }
+//   }, [quotes]);
+
+//   // Insurance companies with real image paths and colors
+//   const insuranceCompanies = [
+//     { 
+//       name: "ICICI Lombard", 
+//       logo: icici,
+//       fallbackLogo: "🏦",
+//       color: "#FF6B35",
+//       bgColor: "#FFF0EB"
+//     },
+//     { 
+//       name: "HDFC Ergo", 
+//       logo: hdfc,
+//       fallbackLogo: "🏛️",
+//       color: "#2E8B57",
+//       bgColor: "#F0FFF0"
+//     },
+//     { 
+//       name: "Bajaj Allianz", 
+//       logo: bajaj,
+//       fallbackLogo: "🛡️",
+//       color: "#0056B3",
+//       bgColor: "#F0F8FF"
+//     },
+//     { 
+//       name: "New India Assurance", 
+//       logo: indiau,
+//       fallbackLogo: "🇮🇳",
+//       color: "#FF8C00",
+//       bgColor: "#FFF8F0"
+//     },
+//     { 
+//       name: "United India", 
+//       logo: uindia,
+//       fallbackLogo: "🤝",
+//       color: "#8B4513",
+//       bgColor: "#FFF8F0"
+//     },
+//     { 
+//       name: "National Insurance", 
+//       logo: nis,
+//       fallbackLogo: "🏢",
+//       color: "#228B22",
+//       bgColor: "#F0FFF0"
+//     },
+//     { 
+//       name: "Oriental Insurance", 
+//       logo: orient,
+//       fallbackLogo: "🌅",
+//       color: "#DC143C",
+//       bgColor: "#FFF0F5"
+//     },
+//     { 
+//       name: "Tata AIG", 
+//       logo: tata,
+//       fallbackLogo: "🚗",
+//       color: "#0066CC",
+//       bgColor: "#F0F8FF"
+//     },
+//     { 
+//       name: "Reliance General", 
+//       logo: reliance,
+//       fallbackLogo: "⚡",
+//       color: "#FF4500",
+//       bgColor: "#FFF0EB"
+//     },
+//     { 
+//       name: "Cholamandalam", 
+//       logo: chola,
+//       fallbackLogo: "💎",
+//       color: "#800080",
+//       bgColor: "#F8F0FF"
+//     }
+//   ];
+
+//   // Add-on descriptions only (no fixed rates)
+//   const addOnDescriptions = {
+//     zeroDep: "Zero Depreciation Cover",
+//     consumables: "Consumables Cover",
+//     roadSideAssist: "Road Side Assistance",
+//     keyReplacement: "Key & Lock Replacement",
+//     engineProtect: "Engine Protect",
+//     returnToInvoice: "Return to Invoice",
+//     personalAccident: "Personal Accident Cover",
+//     tyreProtection: "Tyre Protection",
+//     emergencyMedical: "Emergency Medical"
+//   };
+
+//   // NCB options
+//   const ncbOptions = [0, 20, 25, 35, 45, 50];
+
+//   // Handle manual quote input changes
+//   const handleManualQuoteChange = (e) => {
+//     const { name, value } = e.target;
+//     setManualQuote(prev => ({
+//       ...prev,
+//       [name]: value
+//     }));
+//   };
+
+//   // Handle add-on changes
+//   const handleAddOnChange = (addOnKey, field, value) => {
+//     setManualQuote(prev => {
+//       const updatedAddOns = { ...prev.addOns };
+      
+//       if (field === 'selected') {
+//         updatedAddOns[addOnKey] = {
+//           ...updatedAddOns[addOnKey],
+//           selected: value,
+//           amount: '',
+//           rate: ''
+//         };
+//       } else if (field === 'rate' && value && prev.idv) {
+//         // Calculate amount when rate changes and IDV is available
+//         const calculatedAmount = Math.round((parseFloat(prev.idv) || 0) * (parseFloat(value) / 100));
+//         updatedAddOns[addOnKey] = {
+//           ...updatedAddOns[addOnKey],
+//           [field]: value,
+//           amount: calculatedAmount.toString()
+//         };
+//       } else if (field === 'amount' && value && prev.idv) {
+//         // Calculate rate when amount changes and IDV is available
+//         const calculatedRate = ((parseFloat(value) || 0) / (parseFloat(prev.idv) || 1) * 100).toFixed(2);
+//         updatedAddOns[addOnKey] = {
+//           ...updatedAddOns[addOnKey],
+//           [field]: value,
+//           rate: calculatedRate
+//         };
+//       } else {
+//         updatedAddOns[addOnKey] = {
+//           ...updatedAddOns[addOnKey],
+//           [field]: value
+//         };
+//       }
+
+//       return {
+//         ...prev,
+//         addOns: updatedAddOns
+//       };
+//     });
+//   };
+
+//   // Auto-calculate add-ons when IDV changes
+//   React.useEffect(() => {
+//     if (manualQuote.idv) {
+//       const updatedAddOns = { ...manualQuote.addOns };
+//       let needsUpdate = false;
+
+//       Object.keys(updatedAddOns).forEach(key => {
+//         const addOn = updatedAddOns[key];
+//         if (addOn.selected && addOn.rate) {
+//           const calculatedAmount = Math.round((parseFloat(manualQuote.idv) || 0) * (parseFloat(addOn.rate) / 100));
+//           if (calculatedAmount !== parseFloat(addOn.amount || 0)) {
+//             updatedAddOns[key] = {
+//               ...addOn,
+//               amount: calculatedAmount.toString()
+//             };
+//             needsUpdate = true;
+//           }
+//         }
+//       });
+
+//       if (needsUpdate) {
+//         setManualQuote(prev => ({
+//           ...prev,
+//           addOns: updatedAddOns
+//         }));
+//       }
+//     }
+//   }, [manualQuote.idv]);
+
+//   // Calculate add-ons total
+//   const calculateAddOnsTotal = () => {
+//     return Object.entries(manualQuote.addOns).reduce((total, [key, addOn]) => {
+//       if (addOn.selected) {
+//         const amount = parseFloat(addOn.amount) || 0;
+//         return total + amount;
+//       }
+//       return total;
+//     }, 0);
+//   };
+
+//   // Calculate total premium including add-ons
+//   const calculateTotalPremium = () => {
+//     const basePremium = parseFloat(manualQuote.premium) || 0;
+//     const addOnsTotal = calculateAddOnsTotal();
+//     return basePremium + addOnsTotal;
+//   };
+
+//   // Add manual quote
+//   const addManualQuote = () => {
+//     if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || !manualQuote.premium) {
+//       alert("Please fill all required fields: Insurance Company, Coverage Type, IDV, and Premium");
+//       return;
+//     }
+
+//     const company = insuranceCompanies.find(c => c.name === manualQuote.insuranceCompany);
+//     const addOnsPremium = calculateAddOnsTotal();
+//     const totalPremium = calculateTotalPremium();
+
+//     const newQuote = {
+//       id: Date.now().toString(), // Add unique ID for better management
+//       insuranceCompany: manualQuote.insuranceCompany,
+//       companyLogo: company?.logo || '',
+//       companyFallbackLogo: company?.fallbackLogo || '🏢',
+//       companyColor: company?.color || '#000',
+//       companyBgColor: company?.bgColor || '#fff',
+//       coverageType: manualQuote.coverageType,
+//       idv: parseFloat(manualQuote.idv),
+//       policyDuration: parseInt(manualQuote.policyDuration),
+//       ncbDiscount: parseInt(manualQuote.ncbDiscount),
+//       odAmount: manualQuote.odAmount ? parseFloat(manualQuote.odAmount) : 0,
+//       thirdPartyAmount: manualQuote.thirdPartyAmount ? parseFloat(manualQuote.thirdPartyAmount) : 0,
+//       premium: parseFloat(manualQuote.premium),
+//       totalPremium: totalPremium,
+//       addOnsPremium: addOnsPremium,
+//       selectedAddOns: Object.entries(manualQuote.addOns)
+//         .filter(([_, addOn]) => addOn.selected)
+//         .reduce((acc, [key, addOn]) => {
+//           acc[key] = {
+//             description: addOnDescriptions[key],
+//             amount: parseFloat(addOn.amount) || 0,
+//             rate: parseFloat(addOn.rate) || 0
+//           };
+//           return acc;
+//         }, {}),
+//       createdAt: new Date().toISOString()
+//     };
+
+//     const updatedQuotes = [...quotes, newQuote];
+//     setQuotes(updatedQuotes);
+    
+//     if (onInsuranceQuotesUpdate) {
+//       onInsuranceQuotesUpdate(updatedQuotes);
+//     }
+
+//     // Reset manual quote form
+//     setManualQuote({
+//       insuranceCompany: '',
+//       coverageType: 'comprehensive',
+//       idv: '',
+//       policyDuration: '1',
+//       ncbDiscount: '0',
+//       odAmount: '',
+//       thirdPartyAmount: '',
+//       premium: '',
+//       addOns: {
+//         zeroDep: { selected: false, amount: '', rate: '' },
+//         consumables: { selected: false, amount: '', rate: '' },
+//         roadSideAssist: { selected: false, amount: '', rate: '' },
+//         keyReplacement: { selected: false, amount: '', rate: '' },
+//         engineProtect: { selected: false, amount: '', rate: '' },
+//         returnToInvoice: { selected: false, amount: '', rate: '' },
+//         personalAccident: { selected: false, amount: '', rate: '' },
+//         tyreProtection: { selected: false, amount: '', rate: '' },
+//         emergencyMedical: { selected: false, amount: '', rate: '' }
+//       }
+//     });
+//   };
+
+//   // Remove quote
+//   const removeQuote = (index) => {
+//     const updatedQuotes = quotes.filter((_, i) => i !== index);
+//     setQuotes(updatedQuotes);
+//     setSelectedQuotes(selectedQuotes.filter(selectedIndex => selectedIndex !== index));
+//     setExpandedQuotes(expandedQuotes.filter(expandedIndex => expandedIndex !== index));
+    
+//     if (onInsuranceQuotesUpdate) {
+//       onInsuranceQuotesUpdate(updatedQuotes);
+//     }
+//   };
+
+//   // Clear all quotes
+//   const clearAllQuotes = () => {
+//     if (window.confirm('Are you sure you want to clear all quotes? This action cannot be undone.')) {
+//       setQuotes([]);
+//       setSelectedQuotes([]);
+//       setExpandedQuotes([]);
+//       localStorage.removeItem('insuranceQuotes');
+      
+//       if (onInsuranceQuotesUpdate) {
+//         onInsuranceQuotesUpdate([]);
+//       }
+//     }
+//   };
+
+//   // Toggle quote selection
+//   const toggleQuoteSelection = (index) => {
+//     setSelectedQuotes(prev =>
+//       prev.includes(index)
+//         ? prev.filter(i => i !== index)
+//         : [...prev, index]
+//     );
+//   };
+
+//   // Toggle quote expansion
+//   const toggleQuoteExpansion = (index) => {
+//     setExpandedQuotes(prev =>
+//       prev.includes(index)
+//         ? prev.filter(i => i !== index)
+//         : [...prev, index]
+//     );
+//   };
+
+//   // Select all quotes
+//   const selectAllQuotes = () => {
+//     setSelectedQuotes(quotes.map((_, index) => index));
+//   };
+
+//   // Deselect all quotes
+//   const deselectAllQuotes = () => {
+//     setSelectedQuotes([]);
+//   };
+
+//   // Enhanced PDF generation with professional layout
+//   const downloadSelectedQuotesPDF = () => {
+//     if (selectedQuotes.length === 0) {
+//       alert("Please select at least one quote to download");
+//       return;
+//     }
+
+//     const selectedQuoteData = selectedQuotes.map(index => quotes[index]);
+//     downloadQuotesPDF(selectedQuoteData);
+//   };
+
+//   // Professional PDF generation function
+//   const downloadQuotesPDF = (quotesToDownload) => {
+//     try {
+//       setIsGenerating(true);
+      
+//       const pdf = new jsPDF();
+//       const pageWidth = pdf.internal.pageSize.width;
+//       const pageHeight = pdf.internal.pageSize.height;
+//       const margin = 20;
+//       const contentWidth = pageWidth - (2 * margin);
+
+//       // Set professional color scheme
+//       const primaryColor = [41, 128, 185];
+//       const secondaryColor = [52, 152, 219];
+//       const accentColor = [46, 204, 113];
+//       const textColor = [51, 51, 51];
+//       const lightGray = [245, 245, 245];
+
+//       // Header with gradient effect
+//       pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+//       pdf.rect(0, 0, pageWidth, 80, 'F');
+      
+//       // Company Logo and Title
+//       pdf.setFontSize(24);
+//       pdf.setFont('helvetica', 'bold');
+//       pdf.setTextColor(255, 255, 255);
+//       pdf.text('INSURANCE QUOTES COMPARISON', pageWidth / 2, 35, { align: 'center' });
+      
+//       pdf.setFontSize(12);
+//       pdf.text('AutoCredit Insurance - Professional Quote Analysis', pageWidth / 2, 45, { align: 'center' });
+      
+//       // Customer Information Box
+//       pdf.setFillColor(255, 255, 255);
+//       pdf.rect(margin, 60, contentWidth, 25, 'F');
+//       pdf.setDrawColor(200, 200, 200);
+//       pdf.rect(margin, 60, contentWidth, 25, 'S');
+      
+//       pdf.setFontSize(10);
+//       pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+//       pdf.setFont('helvetica', 'bold');
+//       pdf.text('CUSTOMER DETAILS:', margin + 5, 70);
+//       pdf.setFont('helvetica', 'normal');
+//       pdf.text(`Name: ${form.customerName || 'Not Provided'}`, margin + 5, 77);
+//       pdf.text(`Vehicle: ${form.make || ''} ${form.model || ''} ${form.variant || ''}`, margin + 80, 77);
+//       pdf.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - margin - 5, 77, { align: 'right' });
+
+//       let yPosition = 95;
+
+//       // Summary Statistics
+//       if (quotesToDownload.length > 1) {
+//         const lowestPremium = Math.min(...quotesToDownload.map(q => q.totalPremium));
+//         const highestPremium = Math.max(...quotesToDownload.map(q => q.totalPremium));
+//         const avgPremium = quotesToDownload.reduce((sum, q) => sum + q.totalPremium, 0) / quotesToDownload.length;
+
+//         pdf.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+//         pdf.rect(margin, yPosition, contentWidth, 20, 'F');
+//         pdf.setDrawColor(200, 200, 200);
+//         pdf.rect(margin, yPosition, contentWidth, 20, 'S');
+        
+//         pdf.setFontSize(9);
+//         pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+//         pdf.setFont('helvetica', 'bold');
+//         pdf.text('QUOTE SUMMARY:', margin + 5, yPosition + 8);
+//         pdf.setFont('helvetica', 'normal');
+        
+//         pdf.text(`Total Quotes: ${quotesToDownload.length}`, margin + 5, yPosition + 15);
+//         pdf.text(`Lowest Premium: ₹${lowestPremium.toLocaleString('en-IN')}`, margin + 60, yPosition + 15);
+//         pdf.text(`Highest Premium: ₹${highestPremium.toLocaleString('en-IN')}`, margin + 120, yPosition + 15);
+//         pdf.text(`Average Premium: ₹${avgPremium.toLocaleString('en-IN')}`, pageWidth - margin - 5, yPosition + 15, { align: 'right' });
+        
+//         yPosition += 30;
+//       }
+
+//       // Main Comparison Table
+//       createProfessionalComparisonTable(pdf, quotesToDownload, margin, yPosition, pageWidth, pageHeight);
+
+//       // Footer
+//       const footerY = pageHeight - 15;
+//       pdf.setFontSize(8);
+//       pdf.setTextColor(100, 100, 100);
+//       pdf.text('Generated by AutoCredit Insurance | Contact: support@autocredit.com | Phone: +91-XXXXX-XXXXX', 
+//                pageWidth / 2, footerY, { align: 'center' });
+
+//       const fileName = `insurance-quotes-${form.customerName || 'customer'}-${new Date().getTime()}.pdf`;
+//       pdf.save(fileName);
+//     } catch (error) {
+//       console.error('Error generating PDF:', error);
+//       alert('Error generating PDF. Please try again.');
+//     } finally {
+//       setIsGenerating(false);
+//     }
+//   };
+
+//   // Professional table creation function
+//   const createProfessionalComparisonTable = (pdf, quotes, startX, startY, pageWidth, pageHeight) => {
+//     const margin = 20;
+//     const tableWidth = pageWidth - (2 * margin);
+    
+//     // Enhanced column structure for better comparison
+//     const colWidths = [
+//       tableWidth * 0.16, // Company
+//       tableWidth * 0.10, // Coverage
+//       tableWidth * 0.12, // IDV
+//       tableWidth * 0.10, // Base Premium
+//       tableWidth * 0.08, // Add-ons
+//       tableWidth * 0.08, // NCB
+//       tableWidth * 0.12, // Total Premium
+//       tableWidth * 0.08, // Duration
+//       tableWidth * 0.16  // Key Features
+//     ];
+    
+//     let yPosition = startY;
+    
+//     // Table headers
+//     const headers = ['Insurance Company', 'Coverage', 'IDV (₹)', 'Base Premium', 'Add-ons', 'NCB %', 'Total Premium', 'Term', 'Key Features'];
+    
+//     // Draw professional table header
+//     pdf.setFillColor(52, 152, 219);
+//     pdf.rect(margin, yPosition, tableWidth, 12, 'F');
+    
+//     pdf.setFontSize(9);
+//     pdf.setTextColor(255, 255, 255);
+//     pdf.setFont('helvetica', 'bold');
+    
+//     let xPosition = margin;
+//     headers.forEach((header, index) => {
+//       pdf.text(header, xPosition + 2, yPosition + 8);
+//       xPosition += colWidths[index];
+//     });
+    
+//     yPosition += 12;
+    
+//     // Sort quotes by total premium (lowest first)
+//     const sortedQuotes = [...quotes].sort((a, b) => a.totalPremium - b.totalPremium);
+    
+//     // Table rows
+//     pdf.setTextColor(0, 0, 0);
+//     pdf.setFont('helvetica', 'normal');
+//     pdf.setFontSize(8);
+    
+//     sortedQuotes.forEach((quote, rowIndex) => {
+//       // Check for page break
+//       if (yPosition > pageHeight - 40) {
+//         pdf.addPage();
+//         yPosition = 20;
+//         // Redraw header on new page
+//         pdf.setFillColor(52, 152, 219);
+//         pdf.rect(margin, yPosition, tableWidth, 12, 'F');
+//         pdf.setFontSize(9);
+//         pdf.setTextColor(255, 255, 255);
+//         pdf.setFont('helvetica', 'bold');
+        
+//         let headerX = margin;
+//         headers.forEach((header, index) => {
+//           pdf.text(header, headerX + 2, yPosition + 8);
+//           headerX += colWidths[index];
+//         });
+        
+//         yPosition += 12;
+//         pdf.setTextColor(0, 0, 0);
+//         pdf.setFont('helvetica', 'normal');
+//         pdf.setFontSize(8);
+//       }
+      
+//       // Alternate row colors for better readability
+//       if (rowIndex % 2 === 0) {
+//         pdf.setFillColor(250, 250, 250);
+//       } else {
+//         pdf.setFillColor(255, 255, 255);
+//       }
+//       pdf.rect(margin, yPosition, tableWidth, 25, 'F');
+//       pdf.setDrawColor(220, 220, 220);
+//       pdf.rect(margin, yPosition, tableWidth, 25, 'S');
+      
+//       xPosition = margin;
+      
+//       // Company name (truncated if too long)
+//       const companyName = quote.insuranceCompany.length > 12 ? 
+//         quote.insuranceCompany.substring(0, 12) + '...' : quote.insuranceCompany;
+//       pdf.setFont('helvetica', 'bold');
+//       pdf.text(companyName, xPosition + 2, yPosition + 8);
+//       xPosition += colWidths[0];
+      
+//       // Coverage type
+//       pdf.setFont('helvetica', 'normal');
+//       const coverageType = quote.coverageType === 'comprehensive' ? 'Comp' : '3rd Party';
+//       pdf.text(coverageType, xPosition + 2, yPosition + 8);
+//       xPosition += colWidths[1];
+      
+//       // IDV
+//       pdf.text(`₹${(quote.idv || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
+//       xPosition += colWidths[2];
+      
+//       // Base Premium
+//       pdf.text(`₹${(quote.premium || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
+//       xPosition += colWidths[3];
+      
+//       // Add-ons count with amount
+//       const addOnsCount = Object.keys(quote.selectedAddOns || {}).length;
+//       const addOnsText = addOnsCount > 0 ? 
+//         `${addOnsCount} (₹${quote.addOnsPremium.toLocaleString('en-IN')})` : '0';
+//       pdf.text(addOnsText, xPosition + 2, yPosition + 8);
+//       xPosition += colWidths[4];
+      
+//       // NCB with discount amount
+//       const ncbDiscountAmount = Math.round((quote.premium || 0) * (quote.ncbDiscount / 100));
+//       pdf.text(`${quote.ncbDiscount}%`, xPosition + 2, yPosition + 8);
+//       pdf.setFontSize(7);
+//       pdf.setTextColor(0, 128, 0);
+//       pdf.text(`(₹${ncbDiscountAmount.toLocaleString('en-IN')})`, xPosition + 2, yPosition + 13);
+//       pdf.setFontSize(8);
+//       pdf.setTextColor(0, 0, 0);
+//       xPosition += colWidths[5];
+      
+//       // Total Premium (highlighted) - Mark best price
+//       pdf.setFont('helvetica', 'bold');
+//       if (rowIndex === 0 && sortedQuotes.length > 1) {
+//         pdf.setTextColor(46, 204, 113); // Green for best price
+//         pdf.text(`₹${(quote.totalPremium || 0).toLocaleString('en-IN')} ✓`, xPosition + 2, yPosition + 8);
+//       } else {
+//         pdf.setTextColor(0, 0, 0);
+//         pdf.text(`₹${(quote.totalPremium || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
+//       }
+//       pdf.setFont('helvetica', 'normal');
+//       xPosition += colWidths[6];
+      
+//       // Duration
+//       pdf.text(`${quote.policyDuration}Y`, xPosition + 2, yPosition + 8);
+//       xPosition += colWidths[7];
+      
+//       // Key Features (first 2-3 add-ons or main features)
+//       const addOnsList = Object.values(quote.selectedAddOns || {});
+//       let keyFeatures = 'Basic';
+//       if (addOnsList.length > 0) {
+//         keyFeatures = addOnsList.slice(0, 2).map(addOn => 
+//           addOn.description.split(' ')[0]
+//         ).join(', ');
+//         if (addOnsList.length > 2) {
+//           keyFeatures += '...';
+//         }
+//       }
+//       pdf.text(keyFeatures, xPosition + 2, yPosition + 8);
+      
+//       // Additional info in second line
+//       pdf.setFontSize(7);
+//       pdf.setTextColor(100, 100, 100);
+//       const savedAmount = ncbDiscountAmount > 0 ? `Save: ₹${ncbDiscountAmount.toLocaleString('en-IN')}` : '';
+//       pdf.text(savedAmount, margin + 2, yPosition + 18);
+      
+//       // Reset for next row
+//       pdf.setFontSize(8);
+//       pdf.setTextColor(0, 0, 0);
+      
+//       yPosition += 25;
+//     });
+
+//     // Add recommendation note if multiple quotes
+//     if (sortedQuotes.length > 1) {
+//       yPosition += 5;
+//       pdf.setFontSize(9);
+//       pdf.setTextColor(46, 204, 113);
+//       pdf.setFont('helvetica', 'bold');
+//       pdf.text('✓ Best Value: ' + sortedQuotes[0].insuranceCompany + ' (₹' + 
+//                sortedQuotes[0].totalPremium.toLocaleString('en-IN') + ')', margin, yPosition);
+//     }
+
+//     return yPosition;
+//   };
+
+//   // Calculate current total premium for display
+//   const currentTotalPremium = calculateTotalPremium();
+//   const currentAddOnsTotal = calculateAddOnsTotal();
+
+//   // Component for company logo with fallback
+//   const CompanyLogo = ({ company, className = "w-8 h-8" }) => {
+//     const [imgError, setImgError] = useState(false);
+
+//     if (imgError || !company?.logo) {
+//       return (
+//         <div 
+//           className={`${className} rounded-full flex items-center justify-center text-lg`}
+//           style={{ backgroundColor: company?.bgColor }}
+//         >
+//           {company?.fallbackLogo}
+//         </div>
+//       );
+//     }
+
+//     return (
+//       <img
+//         src={company.logo}
+//         alt={`${company.name} logo`}
+//         className={`${className} rounded-full object-cover`}
+//         onError={() => setImgError(true)}
+//       />
+//     );
+//   };
+
+//   return (
+//     <div className="bg-white rounded-lg shadow-md p-6">
+//       <div className="flex justify-between items-center mb-6">
+//         <h3 className="text-lg font-semibold text-gray-800">Step 3: Insurance Quotes</h3>
+//         {quotes.length > 0 && (
+//           <button
+//             onClick={clearAllQuotes}
+//             className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+//           >
+//             Clear All Quotes
+//           </button>
+//         )}
+//       </div>
+      
+//       {/* Add Quote Form */}
+//       <div className="bg-gray-50 rounded-lg p-6 mb-6">
+//         <h3 className="text-lg font-semibold text-gray-800 mb-4">Add New Quote</h3>
+        
+//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+//           {/* Insurance Company */}
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               Insurance Company *
+//             </label>
+//             <select
+//               name="insuranceCompany"
+//               value={manualQuote.insuranceCompany}
+//               onChange={handleManualQuoteChange}
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+//             >
+//               <option value="">Select Company</option>
+//               {insuranceCompanies.map((company, index) => (
+//                 <option key={index} value={company.name}>
+//                   {company.name}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+
+//           {/* Coverage Type */}
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               Coverage Type *
+//             </label>
+//             <select
+//               name="coverageType"
+//               value={manualQuote.coverageType}
+//               onChange={handleManualQuoteChange}
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+//             >
+//               <option value="comprehensive">Comprehensive</option>
+//               <option value="thirdParty">Third Party</option>
+//             </select>
+//           </div>
+
+//           {/* IDV */}
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               IDV (₹) *
+//             </label>
+//             <input
+//               type="number"
+//               name="idv"
+//               value={manualQuote.idv}
+//               onChange={handleManualQuoteChange}
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+//               placeholder="Enter IDV amount"
+//             />
+//           </div>
+
+//           {/* Policy Duration */}
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               Policy Duration (Years)
+//             </label>
+//             <select
+//               name="policyDuration"
+//               value={manualQuote.policyDuration}
+//               onChange={handleManualQuoteChange}
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+//             >
+//               <option value="1">1 Year</option>
+//               <option value="2">2 Years</option>
+//               <option value="3">3 Years</option>
+//             </select>
+//           </div>
+
+//           {/* NCB Discount */}
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               NCB Discount (%)
+//             </label>
+//             <select
+//               name="ncbDiscount"
+//               value={manualQuote.ncbDiscount}
+//               onChange={handleManualQuoteChange}
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+//             >
+//               {ncbOptions.map(ncb => (
+//                 <option key={ncb} value={ncb}>{ncb}%</option>
+//               ))}
+//             </select>
+//           </div>
+
+//           {/* OD Amount */}
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               OD Amount (₹)
+//             </label>
+//             <input
+//               type="number"
+//               name="odAmount"
+//               value={manualQuote.odAmount}
+//               onChange={handleManualQuoteChange}
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+//               placeholder="Enter OD amount"
+//             />
+//           </div>
+
+//           {/* Third Party Amount */}
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               3rd Party Amount (₹)
+//             </label>
+//             <input
+//               type="number"
+//               name="thirdPartyAmount"
+//               value={manualQuote.thirdPartyAmount}
+//               onChange={handleManualQuoteChange}
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+//               placeholder="Enter 3rd party amount"
+//             />
+//           </div>
+
+//           {/* Premium Amount */}
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               Premium Amount (₹) *
+//             </label>
+//             <input
+//               type="number"
+//               name="premium"
+//               value={manualQuote.premium}
+//               onChange={handleManualQuoteChange}
+//               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+//               placeholder="Enter premium amount"
+//             />
+//           </div>
+
+//           {/* Premium Summary */}
+//           <div className="col-span-full bg-purple-50 p-4 rounded-lg border border-purple-200">
+//             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+//               <div>
+//                 <span className="text-gray-600">Base Premium:</span>
+//                 <div className="font-semibold text-lg">₹{(parseFloat(manualQuote.premium) || 0).toLocaleString('en-IN')}</div>
+//               </div>
+//               <div>
+//                 <span className="text-gray-600">Add-ons Total:</span>
+//                 <div className="font-semibold text-lg text-purple-600">₹{currentAddOnsTotal.toLocaleString('en-IN')}</div>
+//               </div>
+//               <div>
+//                 <span className="text-gray-600">Total Premium:</span>
+//                 <div className="font-semibold text-lg text-green-600">₹{currentTotalPremium.toLocaleString('en-IN')}</div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Add-ons Section */}
+//         <div className="mb-6">
+//           <h4 className="text-md font-semibold text-gray-800 mb-3">Add-ons (Optional)</h4>
+//           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+//             {Object.entries(addOnDescriptions).map(([key, description]) => (
+//               <div key={key} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg bg-white hover:border-purple-300 transition-colors">
+//                 <input
+//                   type="checkbox"
+//                   checked={manualQuote.addOns[key].selected}
+//                   onChange={(e) => handleAddOnChange(key, 'selected', e.target.checked)}
+//                   className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+//                 />
+//                 <div className="flex-1">
+//                   <label className="text-sm font-medium text-gray-700 block mb-2">
+//                     {description}
+//                   </label>
+//                   <div className="grid grid-cols-2 gap-2">
+//                     <div>
+//                       <label className="text-xs text-gray-500 block mb-1">Rate (%)</label>
+//                       <input
+//                         type="number"
+//                         step="0.01"
+//                         value={manualQuote.addOns[key].rate}
+//                         onChange={(e) => handleAddOnChange(key, 'rate', e.target.value)}
+//                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+//                         placeholder="0.00%"
+//                         disabled={!manualQuote.addOns[key].selected}
+//                       />
+//                     </div>
+//                     <div>
+//                       <label className="text-xs text-gray-500 block mb-1">Amount (₹)</label>
+//                       <input
+//                         type="number"
+//                         value={manualQuote.addOns[key].amount}
+//                         onChange={(e) => handleAddOnChange(key, 'amount', e.target.value)}
+//                         className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+//                         placeholder="0"
+//                         disabled={!manualQuote.addOns[key].selected}
+//                       />
+//                     </div>
+//                   </div>
+//                   {manualQuote.addOns[key].selected && manualQuote.idv && (
+//                     <div className="text-xs text-gray-500 mt-1">
+//                       Based on IDV: ₹{manualQuote.idv}
+//                     </div>
+//                   )}
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+
+//         {/* Add Quote Button */}
+//         <button
+//           onClick={addManualQuote}
+//           disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || !manualQuote.premium}
+//           className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
+//         >
+//           <Plus className="w-5 h-5 mr-2" />
+//           Add Quote
+//         </button>
+//       </div>
+
+//       {/* Quotes List */}
+//       {quotes.length > 0 && (
+//         <div className="space-y-6">
+//           <div className="flex justify-between items-center">
+//             <h3 className="text-lg font-semibold text-gray-800">
+//               Generated Quotes ({quotes.length})
+//             </h3>
+            
+//             <div className="flex gap-2">
+//               <button
+//                 onClick={selectAllQuotes}
+//                 className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+//               >
+//                 Select All
+//               </button>
+//               <button
+//                 onClick={deselectAllQuotes}
+//                 className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+//               >
+//                 Deselect All
+//               </button>
+//               <button
+//                 onClick={downloadSelectedQuotesPDF}
+//                 disabled={selectedQuotes.length === 0 || isGenerating}
+//                 className="flex items-center px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+//               >
+//                 <Download className="w-4 h-4 mr-1" />
+//                 {isGenerating ? 'Generating...' : `Download Selected (${selectedQuotes.length})`}
+//               </button>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-1 gap-6">
+//             {quotes.map((quote, index) => {
+//               const company = insuranceCompanies.find(c => c.name === quote.insuranceCompany);
+//               const isExpanded = expandedQuotes.includes(index);
+              
+//               return (
+//                 <div key={index} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white">
+//                   {/* Quote Header */}
+//                   <div 
+//                     className="p-4 text-white relative"
+//                     style={{ backgroundColor: company?.color || '#0055AA' }}
+//                   >
+//                     <div className="flex justify-between items-center">
+//                       <div className="flex items-center space-x-3">
+//                         <input
+//                           type="checkbox"
+//                           checked={selectedQuotes.includes(index)}
+//                           onChange={() => toggleQuoteSelection(index)}
+//                           className="w-5 h-5 text-white bg-white rounded border-white"
+//                         />
+//                         <CompanyLogo company={company} className="w-10 h-10" />
+//                         <div>
+//                           <h4 className="font-bold text-lg">{quote.insuranceCompany}</h4>
+//                           <div className="flex items-center space-x-2 text-sm opacity-90">
+//                             <span>IDV: ₹{quote.idv?.toLocaleString('en-IN')}</span>
+//                             <span>•</span>
+//                             <span>{quote.policyDuration} Year{quote.policyDuration > 1 ? 's' : ''}</span>
+//                             <span>•</span>
+//                             <span>NCB: {quote.ncbDiscount}%</span>
+//                           </div>
+//                         </div>
+//                       </div>
+//                       <div className="flex items-center space-x-3">
+//                         <span className="bg-white text-gray-800 px-3 py-1 rounded-full text-sm font-semibold">
+//                           {quote.coverageType === 'comprehensive' ? 'COMPREHENSIVE' : 'THIRD PARTY'}
+//                         </span>
+//                         <button
+//                           onClick={() => toggleQuoteExpansion(index)}
+//                           className="text-white hover:bg-black hover:bg-opacity-20 p-1 rounded"
+//                         >
+//                           {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+//                         </button>
+//                         <button
+//                           onClick={() => removeQuote(index)}
+//                           className="text-white hover:bg-black hover:bg-opacity-20 p-1 rounded"
+//                         >
+//                           <Trash2 className="w-5 h-5" />
+//                         </button>
+//                       </div>
+//                     </div>
+//                   </div>
+
+//                   {/* Quote Body - Only show if expanded */}
+//                   {isExpanded && (
+//                     <div className="p-6">
+//                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//                         {/* Left Column - Premium Breakdown */}
+//                         <div className="space-y-4">
+//                           <h5 className="font-semibold text-gray-800 text-lg border-b pb-2">Premium Breakup</h5>
+                          
+//                           <div className="space-y-3">
+//                             <div className="flex justify-between items-center">
+//                               <span className="text-gray-600">Own Damage</span>
+//                               <span className="font-semibold">₹{quote.odAmount?.toLocaleString('en-IN')}</span>
+//                             </div>
+                            
+//                             <div className="flex justify-between items-center">
+//                               <span className="text-gray-600">Basic Premium</span>
+//                               <span className="font-semibold">₹{quote.premium?.toLocaleString('en-IN')}</span>
+//                             </div>
+                            
+//                             <div className="flex justify-between items-center text-green-600">
+//                               <span>NCB Discount {quote.ncbDiscount}%</span>
+//                               <span>-₹{Math.round((quote.premium || 0) * (quote.ncbDiscount / 100)).toLocaleString('en-IN')}</span>
+//                             </div>
+
+//                             {Object.keys(quote.selectedAddOns || {}).length > 0 && (
+//                               <div className="pt-2 border-t">
+//                                 <div className="text-gray-600 mb-2">Add Ons</div>
+//                                 <div className="space-y-2">
+//                                   {Object.entries(quote.selectedAddOns).map(([key, addOn]) => (
+//                                     <div key={key} className="flex justify-between items-center text-sm">
+//                                       <span className="text-gray-500">{addOn.description}</span>
+//                                       <span className="text-green-600 font-semibold">+₹{addOn.amount?.toLocaleString('en-IN')}</span>
+//                                     </div>
+//                                   ))}
+//                                 </div>
+//                               </div>
+//                             )}
+                            
+//                             <div className="pt-3 border-t">
+//                               <div className="flex justify-between items-center">
+//                                 <span className="font-bold text-gray-800 text-lg">Total Premium</span>
+//                                 <span className="font-bold text-green-600 text-xl">₹{quote.totalPremium?.toLocaleString('en-IN')}</span>
+//                               </div>
+//                             </div>
+//                           </div>
+//                         </div>
+
+//                         {/* Right Column - Additional Details */}
+//                         <div className="space-y-4">
+//                           <h5 className="font-semibold text-gray-800 text-lg border-b pb-2">Coverage Details</h5>
+                          
+//                           <div className="space-y-3">
+//                             <div className="flex justify-between">
+//                               <span className="text-gray-600">Policy Term</span>
+//                               <span className="font-semibold">{quote.policyDuration} Year{quote.policyDuration > 1 ? 's' : ''}</span>
+//                             </div>
+                            
+//                             <div className="flex justify-between">
+//                               <span className="text-gray-600">Coverage Type</span>
+//                               <span className="font-semibold">{quote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party'}</span>
+//                             </div>
+                            
+//                             {quote.coverageType === 'thirdParty' && quote.thirdPartyAmount > 0 && (
+//                               <div className="flex justify-between">
+//                                 <span className="text-gray-600">3rd Party Cover</span>
+//                                 <span className="font-semibold">₹{quote.thirdPartyAmount?.toLocaleString('en-IN')}</span>
+//                               </div>
+//                             )}
+
+//                             <div className="pt-2">
+//                               <div className="text-gray-600 mb-2">Included Add-ons</div>
+//                               <div className="flex flex-wrap gap-2">
+//                                 {Object.keys(quote.selectedAddOns || {}).length > 0 ? (
+//                                   Object.entries(quote.selectedAddOns).map(([key, addOn]) => (
+//                                     <span 
+//                                       key={key} 
+//                                       className="px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium"
+//                                       style={{ backgroundColor: company?.bgColor, color: company?.color }}
+//                                     >
+//                                       {addOn.description}
+//                                     </span>
+//                                   ))
+//                                 ) : (
+//                                   <span className="text-gray-400 text-sm">No add-ons selected</span>
+//                                 )}
+//                               </div>
+//                             </div>
+//                           </div>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   )}
+//                 </div>
+//               );
+//             })}
+//           </div>
+//         </div>
+//       )}
+
+//       {quotes.length === 0 && (
+//         <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+//           <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+//           <h3 className="text-lg font-semibold mb-2">No Quotes Added Yet</h3>
+//           <p>Use the form above to add insurance quotes from different companies</p>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
 // ================== STEP 3: Insurance Quotes ==================
 const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onInsuranceQuotesUpdate }) => {
-  const [showAddQuote, setShowAddQuote] = useState(false);
-  const [newQuote, setNewQuote] = useState({
-    zone: "Zone B",
-    quoteInsurer: "",
-    odDiscount: "50",
-    idv: "",
-    electricalAccessories: "0",
+  // Use quotes from form props with localStorage fallback
+  const [quotes, setQuotes] = useState(() => {
+    try {
+      // Priority 1: Quotes from form (for edit mode)
+      if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
+        console.log("🔄 Loading quotes from form:", form.insuranceQuotes.length);
+        return form.insuranceQuotes;
+      }
+      // Priority 2: Quotes from localStorage (for new cases)
+      const savedQuotes = localStorage.getItem('insuranceQuotes');
+      return savedQuotes ? JSON.parse(savedQuotes) : [];
+    } catch (error) {
+      console.error('Error loading quotes:', error);
+      return [];
+    }
   });
-  const [quoteError, setQuoteError] = useState("");
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedQuotes, setSelectedQuotes] = useState([]);
+  const [expandedQuotes, setExpandedQuotes] = useState([]);
+  const [manualQuote, setManualQuote] = useState({
+    insuranceCompany: '',
+    coverageType: 'comprehensive',
+    idv: '',
+    policyDuration: '1',
+    ncbDiscount: '0',
+    odAmount: '',
+    thirdPartyAmount: '',
+    premium: '',
+    addOns: {
+      zeroDep: { selected: false, amount: '', rate: '' },
+      consumables: { selected: false, amount: '', rate: '' },
+      roadSideAssist: { selected: false, amount: '', rate: '' },
+      keyReplacement: { selected: false, amount: '', rate: '' },
+      engineProtect: { selected: false, amount: '', rate: '' },
+      returnToInvoice: { selected: false, amount: '', rate: '' },
+      personalAccident: { selected: false, amount: '', rate: '' },
+      tyreProtection: { selected: false, amount: '', rate: '' },
+      emergencyMedical: { selected: false, amount: '', rate: '' }
+    }
+  });
 
-  // Use quotes from form data - this is crucial
-  const quotes = form.insuranceQuotes || [];
+  // Save quotes to localStorage AND sync with parent form
+  useEffect(() => {
+    try {
+      localStorage.setItem('insuranceQuotes', JSON.stringify(quotes));
+      console.log("💾 Saved quotes to localStorage:", quotes.length);
+    } catch (error) {
+      console.error('Error saving quotes to localStorage:', error);
+    }
+  }, [quotes]);
 
-  console.log("🔍 InsuranceQuotes Component - Current quotes:", quotes);
-  console.log("🔍 InsuranceQuotes Component - Form insuranceQuotes:", form.insuranceQuotes);
+  // Sync quotes with parent form whenever quotes change
+  useEffect(() => {
+    if (onInsuranceQuotesUpdate) {
+      console.log("🔄 Syncing quotes to parent:", quotes.length);
+      onInsuranceQuotesUpdate(quotes);
+    }
+  }, [quotes, onInsuranceQuotesUpdate]);
 
-  const handleNewQuoteChange = (e) => {
-    const { name, value } = e.target;
-    setNewQuote((q) => ({ ...q, [name]: value }));
-    if (quoteError) setQuoteError("");
+  // Sync with form.insuranceQuotes when they change externally (edit mode)
+  useEffect(() => {
+    if (form.insuranceQuotes && JSON.stringify(form.insuranceQuotes) !== JSON.stringify(quotes)) {
+      console.log("🔄 External quotes update detected:", form.insuranceQuotes.length);
+      setQuotes(form.insuranceQuotes);
+    }
+  }, [form.insuranceQuotes]);
+
+  // Debug effect
+  useEffect(() => {
+    console.log("💰 InsuranceQuotes Debug:");
+    console.log("Local quotes:", quotes.length);
+    console.log("Form insuranceQuotes:", form.insuranceQuotes?.length);
+    console.log("Quotes match:", JSON.stringify(quotes) === JSON.stringify(form.insuranceQuotes));
+  }, [quotes, form.insuranceQuotes]);
+
+  // Insurance companies with real image paths and colors
+  const insuranceCompanies = [
+    { 
+      name: "ICICI Lombard", 
+      logo: icici,
+      fallbackLogo: "🏦",
+      color: "#FF6B35",
+      bgColor: "#FFF0EB"
+    },
+    { 
+      name: "HDFC Ergo", 
+      logo: hdfc,
+      fallbackLogo: "🏛️",
+      color: "#2E8B57",
+      bgColor: "#F0FFF0"
+    },
+    { 
+      name: "Bajaj Allianz", 
+      logo: bajaj,
+      fallbackLogo: "🛡️",
+      color: "#0056B3",
+      bgColor: "#F0F8FF"
+    },
+    { 
+      name: "New India Assurance", 
+      logo: indiau,
+      fallbackLogo: "🇮🇳",
+      color: "#FF8C00",
+      bgColor: "#FFF8F0"
+    },
+    { 
+      name: "United India", 
+      logo: uindia,
+      fallbackLogo: "🤝",
+      color: "#8B4513",
+      bgColor: "#FFF8F0"
+    },
+    { 
+      name: "National Insurance", 
+      logo: nis,
+      fallbackLogo: "🏢",
+      color: "#228B22",
+      bgColor: "#F0FFF0"
+    },
+    { 
+      name: "Oriental Insurance", 
+      logo: orient,
+      fallbackLogo: "🌅",
+      color: "#DC143C",
+      bgColor: "#FFF0F5"
+    },
+    { 
+      name: "Tata AIG", 
+      logo: tata,
+      fallbackLogo: "🚗",
+      color: "#0066CC",
+      bgColor: "#F0F8FF"
+    },
+    { 
+      name: "Reliance General", 
+      logo: reliance,
+      fallbackLogo: "⚡",
+      color: "#FF4500",
+      bgColor: "#FFF0EB"
+    },
+    { 
+      name: "Cholamandalam", 
+      logo: chola,
+      fallbackLogo: "💎",
+      color: "#800080",
+      bgColor: "#F8F0FF"
+    }
+  ];
+
+  // Add-on descriptions only (no fixed rates)
+  const addOnDescriptions = {
+    zeroDep: "Zero Depreciation Cover",
+    consumables: "Consumables Cover",
+    roadSideAssist: "Road Side Assistance",
+    keyReplacement: "Key & Lock Replacement",
+    engineProtect: "Engine Protect",
+    returnToInvoice: "Return to Invoice",
+    personalAccident: "Personal Accident Cover",
+    tyreProtection: "Tyre Protection",
+    emergencyMedical: "Emergency Medical"
   };
 
-  const addQuote = () => {
-    if (!newQuote.quoteInsurer || !newQuote.idv) {
-      setQuoteError("Please fill insurance company and IDV amount");
+  // NCB options
+  const ncbOptions = [0, 20, 25, 35, 45, 50];
+
+  // Handle manual quote input changes
+  const handleManualQuoteChange = (e) => {
+    const { name, value } = e.target;
+    setManualQuote(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle add-on changes
+  const handleAddOnChange = (addOnKey, field, value) => {
+    setManualQuote(prev => {
+      const updatedAddOns = { ...prev.addOns };
+      
+      if (field === 'selected') {
+        updatedAddOns[addOnKey] = {
+          ...updatedAddOns[addOnKey],
+          selected: value,
+          amount: '',
+          rate: ''
+        };
+      } else if (field === 'rate' && value && prev.idv) {
+        // Calculate amount when rate changes and IDV is available
+        const calculatedAmount = Math.round((parseFloat(prev.idv) || 0) * (parseFloat(value) / 100));
+        updatedAddOns[addOnKey] = {
+          ...updatedAddOns[addOnKey],
+          [field]: value,
+          amount: calculatedAmount.toString()
+        };
+      } else if (field === 'amount' && value && prev.idv) {
+        // Calculate rate when amount changes and IDV is available
+        const calculatedRate = ((parseFloat(value) || 0) / (parseFloat(prev.idv) || 1) * 100).toFixed(2);
+        updatedAddOns[addOnKey] = {
+          ...updatedAddOns[addOnKey],
+          [field]: value,
+          rate: calculatedRate
+        };
+      } else {
+        updatedAddOns[addOnKey] = {
+          ...updatedAddOns[addOnKey],
+          [field]: value
+        };
+      }
+
+      return {
+        ...prev,
+        addOns: updatedAddOns
+      };
+    });
+  };
+
+  // Auto-calculate add-ons when IDV changes
+  React.useEffect(() => {
+    if (manualQuote.idv) {
+      const updatedAddOns = { ...manualQuote.addOns };
+      let needsUpdate = false;
+
+      Object.keys(updatedAddOns).forEach(key => {
+        const addOn = updatedAddOns[key];
+        if (addOn.selected && addOn.rate) {
+          const calculatedAmount = Math.round((parseFloat(manualQuote.idv) || 0) * (parseFloat(addOn.rate) / 100));
+          if (calculatedAmount !== parseFloat(addOn.amount || 0)) {
+            updatedAddOns[key] = {
+              ...addOn,
+              amount: calculatedAmount.toString()
+            };
+            needsUpdate = true;
+          }
+        }
+      });
+
+      if (needsUpdate) {
+        setManualQuote(prev => ({
+          ...prev,
+          addOns: updatedAddOns
+        }));
+      }
+    }
+  }, [manualQuote.idv]);
+
+  // Calculate add-ons total
+  const calculateAddOnsTotal = () => {
+    return Object.entries(manualQuote.addOns).reduce((total, [key, addOn]) => {
+      if (addOn.selected) {
+        const amount = parseFloat(addOn.amount) || 0;
+        return total + amount;
+      }
+      return total;
+    }, 0);
+  };
+
+  // Calculate total premium including add-ons
+  const calculateTotalPremium = () => {
+    const basePremium = parseFloat(manualQuote.premium) || 0;
+    const addOnsTotal = calculateAddOnsTotal();
+    return basePremium + addOnsTotal;
+  };
+
+  // Add manual quote
+  const addManualQuote = () => {
+    if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || !manualQuote.premium) {
+      alert("Please fill all required fields: Insurance Company, Coverage Type, IDV, and Premium");
       return;
     }
 
-    const updatedQuotes = [...quotes, { 
-      ...newQuote,
-      id: Date.now() // Add unique ID for better tracking
-    }];
-    
-    console.log("🔄 Adding quote - Updated quotes:", updatedQuotes);
-    
-    // Update the form using the handler from parent
-    if (onInsuranceQuotesUpdate) {
-      console.log("📤 Calling onInsuranceQuotesUpdate with:", updatedQuotes);
-      onInsuranceQuotesUpdate(updatedQuotes);
-    } else {
-      // Fallback: use handleChange
-      console.log("📤 Using handleChange fallback");
-      handleChange({
-        target: {
-          name: 'insuranceQuotes',
-          value: updatedQuotes
-        }
-      });
-    }
+    const company = insuranceCompanies.find(c => c.name === manualQuote.insuranceCompany);
+    const addOnsPremium = calculateAddOnsTotal();
+    const totalPremium = calculateTotalPremium();
 
-    setNewQuote({
-      zone: "Zone B",
-      quoteInsurer: "",
-      odDiscount: "50",
-      idv: "",
-      electricalAccessories: "0",
+    const newQuote = {
+      id: Date.now().toString(),
+      insuranceCompany: manualQuote.insuranceCompany,
+      companyLogo: company?.logo || '',
+      companyFallbackLogo: company?.fallbackLogo || '🏢',
+      companyColor: company?.color || '#000',
+      companyBgColor: company?.bgColor || '#fff',
+      coverageType: manualQuote.coverageType,
+      idv: parseFloat(manualQuote.idv),
+      policyDuration: parseInt(manualQuote.policyDuration),
+      ncbDiscount: parseInt(manualQuote.ncbDiscount),
+      odAmount: manualQuote.odAmount ? parseFloat(manualQuote.odAmount) : 0,
+      thirdPartyAmount: manualQuote.thirdPartyAmount ? parseFloat(manualQuote.thirdPartyAmount) : 0,
+      premium: parseFloat(manualQuote.premium),
+      totalPremium: totalPremium,
+      addOnsPremium: addOnsPremium,
+      selectedAddOns: Object.entries(manualQuote.addOns)
+        .filter(([_, addOn]) => addOn.selected)
+        .reduce((acc, [key, addOn]) => {
+          acc[key] = {
+            description: addOnDescriptions[key],
+            amount: parseFloat(addOn.amount) || 0,
+            rate: parseFloat(addOn.rate) || 0
+          };
+          return acc;
+        }, {}),
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedQuotes = [...quotes, newQuote];
+    console.log("➕ Adding new quote. Previous:", quotes.length, "New:", updatedQuotes.length);
+    setQuotes(updatedQuotes);
+
+    // Reset manual quote form
+    setManualQuote({
+      insuranceCompany: '',
+      coverageType: 'comprehensive',
+      idv: '',
+      policyDuration: '1',
+      ncbDiscount: '0',
+      odAmount: '',
+      thirdPartyAmount: '',
+      premium: '',
+      addOns: {
+        zeroDep: { selected: false, amount: '', rate: '' },
+        consumables: { selected: false, amount: '', rate: '' },
+        roadSideAssist: { selected: false, amount: '', rate: '' },
+        keyReplacement: { selected: false, amount: '', rate: '' },
+        engineProtect: { selected: false, amount: '', rate: '' },
+        returnToInvoice: { selected: false, amount: '', rate: '' },
+        personalAccident: { selected: false, amount: '', rate: '' },
+        tyreProtection: { selected: false, amount: '', rate: '' },
+        emergencyMedical: { selected: false, amount: '', rate: '' }
+      }
     });
-    setShowAddQuote(false);
-    setQuoteError("");
   };
 
+  // Remove quote
   const removeQuote = (index) => {
-    const updatedQuotes = quotes.filter((_, idx) => idx !== index);
-    
-    console.log("🗑️ Removing quote - Updated quotes:", updatedQuotes);
-    
-    // Update the form using the handler from parent
-    if (onInsuranceQuotesUpdate) {
-      console.log("📤 Calling onInsuranceQuotesUpdate with:", updatedQuotes);
-      onInsuranceQuotesUpdate(updatedQuotes);
-    } else {
-      // Fallback: use handleChange
-      console.log("📤 Using handleChange fallback");
-      handleChange({
-        target: {
-          name: 'insuranceQuotes',
-          value: updatedQuotes
-        }
-      });
+    console.log("🗑️ Removing quote at index:", index);
+    const updatedQuotes = quotes.filter((_, i) => i !== index);
+    setQuotes(updatedQuotes);
+    setSelectedQuotes(selectedQuotes.filter(selectedIndex => selectedIndex !== index));
+    setExpandedQuotes(expandedQuotes.filter(expandedIndex => expandedIndex !== index));
+  };
+
+  // Clear all quotes
+  const clearAllQuotes = () => {
+    if (window.confirm('Are you sure you want to clear all quotes? This action cannot be undone.')) {
+      console.log("🧹 Clearing all quotes");
+      const updatedQuotes = [];
+      setQuotes(updatedQuotes);
+      setSelectedQuotes([]);
+      setExpandedQuotes([]);
+      
+      // Clear localStorage too
+      localStorage.removeItem('insuranceQuotes');
     }
   };
 
-  const cancelAdd = () => {
-    setShowAddQuote(false);
-    setNewQuote({
-      zone: "Zone B",
-      quoteInsurer: "",
-      odDiscount: "50",
-      idv: "",
-      electricalAccessories: "0",
+  // Toggle quote selection
+  const toggleQuoteSelection = (index) => {
+    setSelectedQuotes(prev =>
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  // Toggle quote expansion
+  const toggleQuoteExpansion = (index) => {
+    setExpandedQuotes(prev =>
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  // Select all quotes
+  const selectAllQuotes = () => {
+    setSelectedQuotes(quotes.map((_, index) => index));
+  };
+
+  // Deselect all quotes
+  const deselectAllQuotes = () => {
+    setSelectedQuotes([]);
+  };
+
+  // Enhanced PDF generation with professional layout
+  const downloadSelectedQuotesPDF = () => {
+    if (selectedQuotes.length === 0) {
+      alert("Please select at least one quote to download");
+      return;
+    }
+
+    const selectedQuoteData = selectedQuotes.map(index => quotes[index]);
+    downloadQuotesPDF(selectedQuoteData);
+  };
+
+  // Professional PDF generation function
+  const downloadQuotesPDF = (quotesToDownload) => {
+    try {
+      setIsGenerating(true);
+      
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.width;
+      const pageHeight = pdf.internal.pageSize.height;
+      const margin = 20;
+      const contentWidth = pageWidth - (2 * margin);
+
+      // Set professional color scheme
+      const primaryColor = [41, 128, 185];
+      const secondaryColor = [52, 152, 219];
+      const accentColor = [46, 204, 113];
+      const textColor = [51, 51, 51];
+      const lightGray = [245, 245, 245];
+
+      // Header with gradient effect
+      pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      pdf.rect(0, 0, pageWidth, 80, 'F');
+      
+      // Company Logo and Title
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('INSURANCE QUOTES COMPARISON', pageWidth / 2, 35, { align: 'center' });
+      
+      pdf.setFontSize(12);
+      pdf.text('AutoCredit Insurance - Professional Quote Analysis', pageWidth / 2, 45, { align: 'center' });
+      
+      // Customer Information Box
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(margin, 60, contentWidth, 25, 'F');
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(margin, 60, contentWidth, 25, 'S');
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('CUSTOMER DETAILS:', margin + 5, 70);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Name: ${form.customerName || 'Not Provided'}`, margin + 5, 77);
+      pdf.text(`Vehicle: ${form.make || ''} ${form.model || ''} ${form.variant || ''}`, margin + 80, 77);
+      pdf.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - margin - 5, 77, { align: 'right' });
+
+      let yPosition = 95;
+
+      // Summary Statistics
+      if (quotesToDownload.length > 1) {
+        const lowestPremium = Math.min(...quotesToDownload.map(q => q.totalPremium));
+        const highestPremium = Math.max(...quotesToDownload.map(q => q.totalPremium));
+        const avgPremium = quotesToDownload.reduce((sum, q) => sum + q.totalPremium, 0) / quotesToDownload.length;
+
+        pdf.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+        pdf.rect(margin, yPosition, contentWidth, 20, 'F');
+        pdf.setDrawColor(200, 200, 200);
+        pdf.rect(margin, yPosition, contentWidth, 20, 'S');
+        
+        pdf.setFontSize(9);
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('QUOTE SUMMARY:', margin + 5, yPosition + 8);
+        pdf.setFont('helvetica', 'normal');
+        
+        pdf.text(`Total Quotes: ${quotesToDownload.length}`, margin + 5, yPosition + 15);
+        pdf.text(`Lowest Premium: ₹${lowestPremium.toLocaleString('en-IN')}`, margin + 60, yPosition + 15);
+        pdf.text(`Highest Premium: ₹${highestPremium.toLocaleString('en-IN')}`, margin + 120, yPosition + 15);
+        pdf.text(`Average Premium: ₹${avgPremium.toLocaleString('en-IN')}`, pageWidth - margin - 5, yPosition + 15, { align: 'right' });
+        
+        yPosition += 30;
+      }
+
+      // Main Comparison Table
+      createProfessionalComparisonTable(pdf, quotesToDownload, margin, yPosition, pageWidth, pageHeight);
+
+      // Footer
+      const footerY = pageHeight - 15;
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Generated by AutoCredit Insurance | Contact: support@autocredit.com | Phone: +91-XXXXX-XXXXX', 
+               pageWidth / 2, footerY, { align: 'center' });
+
+      const fileName = `insurance-quotes-${form.customerName || 'customer'}-${new Date().getTime()}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Professional table creation function
+  const createProfessionalComparisonTable = (pdf, quotes, startX, startY, pageWidth, pageHeight) => {
+    const margin = 20;
+    const tableWidth = pageWidth - (2 * margin);
+    
+    // Enhanced column structure for better comparison
+    const colWidths = [
+      tableWidth * 0.16, // Company
+      tableWidth * 0.10, // Coverage
+      tableWidth * 0.12, // IDV
+      tableWidth * 0.10, // Base Premium
+      tableWidth * 0.08, // Add-ons
+      tableWidth * 0.08, // NCB
+      tableWidth * 0.12, // Total Premium
+      tableWidth * 0.08, // Duration
+      tableWidth * 0.16  // Key Features
+    ];
+    
+    let yPosition = startY;
+    
+    // Table headers
+    const headers = ['Insurance Company', 'Coverage', 'IDV (₹)', 'Base Premium', 'Add-ons', 'NCB %', 'Total Premium', 'Term', 'Key Features'];
+    
+    // Draw professional table header
+    pdf.setFillColor(52, 152, 219);
+    pdf.rect(margin, yPosition, tableWidth, 12, 'F');
+    
+    pdf.setFontSize(9);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    
+    let xPosition = margin;
+    headers.forEach((header, index) => {
+      pdf.text(header, xPosition + 2, yPosition + 8);
+      xPosition += colWidths[index];
     });
-    setQuoteError("");
+    
+    yPosition += 12;
+    
+    // Sort quotes by total premium (lowest first)
+    const sortedQuotes = [...quotes].sort((a, b) => a.totalPremium - b.totalPremium);
+    
+    // Table rows
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    
+    sortedQuotes.forEach((quote, rowIndex) => {
+      // Check for page break
+      if (yPosition > pageHeight - 40) {
+        pdf.addPage();
+        yPosition = 20;
+        // Redraw header on new page
+        pdf.setFillColor(52, 152, 219);
+        pdf.rect(margin, yPosition, tableWidth, 12, 'F');
+        pdf.setFontSize(9);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        
+        let headerX = margin;
+        headers.forEach((header, index) => {
+          pdf.text(header, headerX + 2, yPosition + 8);
+          headerX += colWidths[index];
+        });
+        
+        yPosition += 12;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+      }
+      
+      // Alternate row colors for better readability
+      if (rowIndex % 2 === 0) {
+        pdf.setFillColor(250, 250, 250);
+      } else {
+        pdf.setFillColor(255, 255, 255);
+      }
+      pdf.rect(margin, yPosition, tableWidth, 25, 'F');
+      pdf.setDrawColor(220, 220, 220);
+      pdf.rect(margin, yPosition, tableWidth, 25, 'S');
+      
+      xPosition = margin;
+      
+      // Company name (truncated if too long)
+      const companyName = quote.insuranceCompany.length > 12 ? 
+        quote.insuranceCompany.substring(0, 12) + '...' : quote.insuranceCompany;
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(companyName, xPosition + 2, yPosition + 8);
+      xPosition += colWidths[0];
+      
+      // Coverage type
+      pdf.setFont('helvetica', 'normal');
+      const coverageType = quote.coverageType === 'comprehensive' ? 'Comp' : '3rd Party';
+      pdf.text(coverageType, xPosition + 2, yPosition + 8);
+      xPosition += colWidths[1];
+      
+      // IDV
+      pdf.text(`₹${(quote.idv || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
+      xPosition += colWidths[2];
+      
+      // Base Premium
+      pdf.text(`₹${(quote.premium || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
+      xPosition += colWidths[3];
+      
+      // Add-ons count with amount
+      const addOnsCount = Object.keys(quote.selectedAddOns || {}).length;
+      const addOnsText = addOnsCount > 0 ? 
+        `${addOnsCount} (₹${quote.addOnsPremium.toLocaleString('en-IN')})` : '0';
+      pdf.text(addOnsText, xPosition + 2, yPosition + 8);
+      xPosition += colWidths[4];
+      
+      // NCB with discount amount
+      const ncbDiscountAmount = Math.round((quote.premium || 0) * (quote.ncbDiscount / 100));
+      pdf.text(`${quote.ncbDiscount}%`, xPosition + 2, yPosition + 8);
+      pdf.setFontSize(7);
+      pdf.setTextColor(0, 128, 0);
+      pdf.text(`(₹${ncbDiscountAmount.toLocaleString('en-IN')})`, xPosition + 2, yPosition + 13);
+      pdf.setFontSize(8);
+      pdf.setTextColor(0, 0, 0);
+      xPosition += colWidths[5];
+      
+      // Total Premium (highlighted) - Mark best price
+      pdf.setFont('helvetica', 'bold');
+      if (rowIndex === 0 && sortedQuotes.length > 1) {
+        pdf.setTextColor(46, 204, 113); // Green for best price
+        pdf.text(`₹${(quote.totalPremium || 0).toLocaleString('en-IN')} ✓`, xPosition + 2, yPosition + 8);
+      } else {
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`₹${(quote.totalPremium || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
+      }
+      pdf.setFont('helvetica', 'normal');
+      xPosition += colWidths[6];
+      
+      // Duration
+      pdf.text(`${quote.policyDuration}Y`, xPosition + 2, yPosition + 8);
+      xPosition += colWidths[7];
+      
+      // Key Features (first 2-3 add-ons or main features)
+      const addOnsList = Object.values(quote.selectedAddOns || {});
+      let keyFeatures = 'Basic';
+      if (addOnsList.length > 0) {
+        keyFeatures = addOnsList.slice(0, 2).map(addOn => 
+          addOn.description.split(' ')[0]
+        ).join(', ');
+        if (addOnsList.length > 2) {
+          keyFeatures += '...';
+        }
+      }
+      pdf.text(keyFeatures, xPosition + 2, yPosition + 8);
+      
+      // Additional info in second line
+      pdf.setFontSize(7);
+      pdf.setTextColor(100, 100, 100);
+      const savedAmount = ncbDiscountAmount > 0 ? `Save: ₹${ncbDiscountAmount.toLocaleString('en-IN')}` : '';
+      pdf.text(savedAmount, margin + 2, yPosition + 18);
+      
+      // Reset for next row
+      pdf.setFontSize(8);
+      pdf.setTextColor(0, 0, 0);
+      
+      yPosition += 25;
+    });
+
+    // Add recommendation note if multiple quotes
+    if (sortedQuotes.length > 1) {
+      yPosition += 5;
+      pdf.setFontSize(9);
+      pdf.setTextColor(46, 204, 113);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('✓ Best Value: ' + sortedQuotes[0].insuranceCompany + ' (₹' + 
+               sortedQuotes[0].totalPremium.toLocaleString('en-IN') + ')', margin, yPosition);
+    }
+
+    return yPosition;
+  };
+
+  // Calculate current total premium for display
+  const currentTotalPremium = calculateTotalPremium();
+  const currentAddOnsTotal = calculateAddOnsTotal();
+
+  // Component for company logo with fallback
+  const CompanyLogo = ({ company, className = "w-8 h-8" }) => {
+    const [imgError, setImgError] = useState(false);
+
+    if (imgError || !company?.logo) {
+      return (
+        <div 
+          className={`${className} rounded-full flex items-center justify-center text-lg`}
+          style={{ backgroundColor: company?.bgColor }}
+        >
+          {company?.fallbackLogo}
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={company.logo}
+        alt={`${company.name} logo`}
+        className={`${className} rounded-full object-cover`}
+        onError={() => setImgError(true)}
+      />
+    );
   };
 
   return (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800">Step 3: Insurance Quotes</h3>
+          <p className="text-sm text-gray-500">
+            Quotes: {quotes.length} | Required: At least 1
+          </p>
+        </div>
+        {quotes.length > 0 && (
+          <button
+            onClick={clearAllQuotes}
+            className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Clear All Quotes
+          </button>
+        )}
+      </div>
+      
+      {/* Validation Error Display */}
+      {errors.insuranceQuotes && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm">{errors.insuranceQuotes}</p>
+        </div>
+      )}
+
+      {/* Debug Info */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm text-blue-700">
+              <strong>Quotes Status:</strong> {quotes.length} quote(s) added
+            </p>
+            <p className="text-xs text-blue-600">
+              {quotes.length === 0 ? "Add at least one quote to proceed" : "You can now proceed to next step"}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              console.log("=== QUOTES DEBUG ===");
+              console.log("Local quotes:", quotes);
+              console.log("Form insuranceQuotes:", form.insuranceQuotes);
+              console.log("Can proceed:", quotes.length > 0);
+            }}
+            className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+          >
+            Debug Quotes
+          </button>
+        </div>
+      </div>
+      
+      {/* Add Quote Form */}
+      <div className="bg-gray-50 rounded-lg p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Add New Quote</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {/* Insurance Company */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Insurance Company *
+            </label>
+            <select
+              name="insuranceCompany"
+              value={manualQuote.insuranceCompany}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">Select Company</option>
+              {insuranceCompanies.map((company, index) => (
+                <option key={index} value={company.name}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Coverage Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Coverage Type *
+            </label>
+            <select
+              name="coverageType"
+              value={manualQuote.coverageType}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="comprehensive">Comprehensive</option>
+              <option value="thirdParty">Third Party</option>
+            </select>
+          </div>
+
+          {/* IDV */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              IDV (₹) *
+            </label>
+            <input
+              type="number"
+              name="idv"
+              value={manualQuote.idv}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter IDV amount"
+            />
+          </div>
+
+          {/* Policy Duration */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Policy Duration (Years)
+            </label>
+            <select
+              name="policyDuration"
+              value={manualQuote.policyDuration}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="1">1 Year</option>
+              <option value="2">2 Years</option>
+              <option value="3">3 Years</option>
+            </select>
+          </div>
+
+          {/* NCB Discount */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              NCB Discount (%)
+            </label>
+            <select
+              name="ncbDiscount"
+              value={manualQuote.ncbDiscount}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              {ncbOptions.map(ncb => (
+                <option key={ncb} value={ncb}>{ncb}%</option>
+              ))}
+            </select>
+          </div>
+
+          {/* OD Amount */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              OD Amount (₹)
+            </label>
+            <input
+              type="number"
+              name="odAmount"
+              value={manualQuote.odAmount}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter OD amount"
+            />
+          </div>
+
+          {/* Third Party Amount */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              3rd Party Amount (₹)
+            </label>
+            <input
+              type="number"
+              name="thirdPartyAmount"
+              value={manualQuote.thirdPartyAmount}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter 3rd party amount"
+            />
+          </div>
+
+          {/* Premium Amount */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Premium Amount (₹) *
+            </label>
+            <input
+              type="number"
+              name="premium"
+              value={manualQuote.premium}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter premium amount"
+            />
+          </div>
+
+          {/* Premium Summary */}
+          <div className="col-span-full bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Base Premium:</span>
+                <div className="font-semibold text-lg">₹{(parseFloat(manualQuote.premium) || 0).toLocaleString('en-IN')}</div>
+              </div>
+              <div>
+                <span className="text-gray-600">Add-ons Total:</span>
+                <div className="font-semibold text-lg text-purple-600">₹{currentAddOnsTotal.toLocaleString('en-IN')}</div>
+              </div>
+              <div>
+                <span className="text-gray-600">Total Premium:</span>
+                <div className="font-semibold text-lg text-green-600">₹{currentTotalPremium.toLocaleString('en-IN')}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Add-ons Section */}
+        <div className="mb-6">
+          <h4 className="text-md font-semibold text-gray-800 mb-3">Add-ons (Optional)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Object.entries(addOnDescriptions).map(([key, description]) => (
+              <div key={key} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg bg-white hover:border-purple-300 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={manualQuote.addOns[key].selected}
+                  onChange={(e) => handleAddOnChange(key, 'selected', e.target.checked)}
+                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                />
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-gray-700 block mb-2">
+                    {description}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Rate (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={manualQuote.addOns[key].rate}
+                        onChange={(e) => handleAddOnChange(key, 'rate', e.target.value)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        placeholder="0.00%"
+                        disabled={!manualQuote.addOns[key].selected}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Amount (₹)</label>
+                      <input
+                        type="number"
+                        value={manualQuote.addOns[key].amount}
+                        onChange={(e) => handleAddOnChange(key, 'amount', e.target.value)}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        placeholder="0"
+                        disabled={!manualQuote.addOns[key].selected}
+                      />
+                    </div>
+                  </div>
+                  {manualQuote.addOns[key].selected && manualQuote.idv && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Based on IDV: ₹{manualQuote.idv}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Add Quote Button */}
+        <button
+          onClick={addManualQuote}
+          disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || !manualQuote.premium}
+          className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Add Quote
+        </button>
+      </div>
+
+      {/* Quotes List */}
+      {quotes.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Generated Quotes ({quotes.length})
+            </h3>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={selectAllQuotes}
+                className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Select All
+              </button>
+              <button
+                onClick={deselectAllQuotes}
+                className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Deselect All
+              </button>
+              <button
+                onClick={downloadSelectedQuotesPDF}
+                disabled={selectedQuotes.length === 0 || isGenerating}
+                className="flex items-center px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                {isGenerating ? 'Generating...' : `Download Selected (${selectedQuotes.length})`}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            {quotes.map((quote, index) => {
+              const company = insuranceCompanies.find(c => c.name === quote.insuranceCompany);
+              const isExpanded = expandedQuotes.includes(index);
+              
+              return (
+                <div key={index} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white">
+                  {/* Quote Header */}
+                  <div 
+                    className="p-4 text-white relative"
+                    style={{ backgroundColor: company?.color || '#0055AA' }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedQuotes.includes(index)}
+                          onChange={() => toggleQuoteSelection(index)}
+                          className="w-5 h-5 text-white bg-white rounded border-white"
+                        />
+                        <CompanyLogo company={company} className="w-10 h-10" />
+                        <div>
+                          <h4 className="font-bold text-lg">{quote.insuranceCompany}</h4>
+                          <div className="flex items-center space-x-2 text-sm opacity-90">
+                            <span>IDV: ₹{quote.idv?.toLocaleString('en-IN')}</span>
+                            <span>•</span>
+                            <span>{quote.policyDuration} Year{quote.policyDuration > 1 ? 's' : ''}</span>
+                            <span>•</span>
+                            <span>NCB: {quote.ncbDiscount}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="bg-white text-gray-800 px-3 py-1 rounded-full text-sm font-semibold">
+                          {quote.coverageType === 'comprehensive' ? 'COMPREHENSIVE' : 'THIRD PARTY'}
+                        </span>
+                        <button
+                          onClick={() => toggleQuoteExpansion(index)}
+                          className="text-white hover:bg-black hover:bg-opacity-20 p-1 rounded"
+                        >
+                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
+                        <button
+                          onClick={() => removeQuote(index)}
+                          className="text-white hover:bg-black hover:bg-opacity-20 p-1 rounded"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quote Body - Only show if expanded */}
+                  {isExpanded && (
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left Column - Premium Breakdown */}
+                        <div className="space-y-4">
+                          <h5 className="font-semibold text-gray-800 text-lg border-b pb-2">Premium Breakup</h5>
+                          
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Own Damage</span>
+                              <span className="font-semibold">₹{quote.odAmount?.toLocaleString('en-IN')}</span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Basic Premium</span>
+                              <span className="font-semibold">₹{quote.premium?.toLocaleString('en-IN')}</span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center text-green-600">
+                              <span>NCB Discount {quote.ncbDiscount}%</span>
+                              <span>-₹{Math.round((quote.premium || 0) * (quote.ncbDiscount / 100)).toLocaleString('en-IN')}</span>
+                            </div>
+
+                            {Object.keys(quote.selectedAddOns || {}).length > 0 && (
+                              <div className="pt-2 border-t">
+                                <div className="text-gray-600 mb-2">Add Ons</div>
+                                <div className="space-y-2">
+                                  {Object.entries(quote.selectedAddOns).map(([key, addOn]) => (
+                                    <div key={key} className="flex justify-between items-center text-sm">
+                                      <span className="text-gray-500">{addOn.description}</span>
+                                      <span className="text-green-600 font-semibold">+₹{addOn.amount?.toLocaleString('en-IN')}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="pt-3 border-t">
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold text-gray-800 text-lg">Total Premium</span>
+                                <span className="font-bold text-green-600 text-xl">₹{quote.totalPremium?.toLocaleString('en-IN')}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column - Additional Details */}
+                        <div className="space-y-4">
+                          <h5 className="font-semibold text-gray-800 text-lg border-b pb-2">Coverage Details</h5>
+                          
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Policy Term</span>
+                              <span className="font-semibold">{quote.policyDuration} Year{quote.policyDuration > 1 ? 's' : ''}</span>
+                            </div>
+                            
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Coverage Type</span>
+                              <span className="font-semibold">{quote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party'}</span>
+                            </div>
+                            
+                            {quote.coverageType === 'thirdParty' && quote.thirdPartyAmount > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">3rd Party Cover</span>
+                                <span className="font-semibold">₹{quote.thirdPartyAmount?.toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+
+                            <div className="pt-2">
+                              <div className="text-gray-600 mb-2">Included Add-ons</div>
+                              <div className="flex flex-wrap gap-2">
+                                {Object.keys(quote.selectedAddOns || {}).length > 0 ? (
+                                  Object.entries(quote.selectedAddOns).map(([key, addOn]) => (
+                                    <span 
+                                      key={key} 
+                                      className="px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium"
+                                      style={{ backgroundColor: company?.bgColor, color: company?.color }}
+                                    >
+                                      {addOn.description}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-gray-400 text-sm">No add-ons selected</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {quotes.length === 0 && (
+        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+          <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No Quotes Added Yet</h3>
+          <p>Add at least one insurance quote to proceed to the next step</p>
+          {errors.insuranceQuotes && (
+            <p className="text-red-500 text-sm mt-2">
+              ❌ {errors.insuranceQuotes}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ================== STEP 3.5: Previous Policy Details ==================
+const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
+  return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-full bg-gray-100 text-gray-700">
             <FaFileInvoiceDollar />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
-              Insurance Quotes
+              Step 4: Previous Policy Details
             </h3>
             <p className="text-xs text-gray-500">
-              Compare quotes and select the best option
+              For renewal cases & policy already expired cases
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-700 hover:shadow transition disabled:opacity-50"
-        >
-          <FaSave /> {isSaving ? "Saving..." : "Save Progress"}
-        </button>
       </div>
 
-      <div className="mt-6 border rounded-md">
-        <div className="flex items-center justify-between px-4 py-3 bg-white">
-          <div className="text-sm font-medium">
-            Insurance Quotes ({quotes.length})
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowAddQuote(true)}
-            className="inline-flex items-center gap-2 border px-3 py-1 rounded-md text-sm bg-white hover:shadow"
-          >
-            + Add Quote
-          </button>
-        </div>
-
-        <div className="p-4 bg-gray-50">
-          {showAddQuote && (
-            <div className="mb-4 border rounded-md bg-white p-4">
-              <h4 className="font-semibold mb-3">Add New Quote</h4>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-600">
-                    Zone *
-                  </label>
-                  <select
-                    name="zone"
-                    value={newQuote.zone}
-                    onChange={handleNewQuoteChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  >
-                    <option value="Zone A">Zone A (8 prominent cities)</option>
-                    <option value="Zone B">Zone B (Rest of cities)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-600">
-                    Insurance Company *
-                  </label>
-                  <select
-                    name="quoteInsurer"
-                    value={newQuote.quoteInsurer}
-                    onChange={handleNewQuoteChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  >
-                    <option value="">Select company</option>
-                    <option value="ICICI">ICICI Lombard</option>
-                    <option value="HDFC">HDFC Ergo</option>
-                    <option value="Bajaj">Bajaj Allianz</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-600">
-                    OD Discount (%)
-                  </label>
-                  <input
-                    type="number"
-                    name="odDiscount"
-                    value={newQuote.odDiscount}
-                    onChange={handleNewQuoteChange}
-                    placeholder="OD Discount (%)"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-600">
-                    IDV Amount (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    name="idv"
-                    value={newQuote.idv}
-                    onChange={handleNewQuoteChange}
-                    placeholder="500000"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-600">
-                    Electrical Accessories (₹)
-                  </label>
-                  <input
-                    type="number"
-                    name="electricalAccessories"
-                    value={newQuote.electricalAccessories}
-                    onChange={handleNewQuoteChange}
-                    placeholder="0"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {quoteError && (
-                <p className="text-sm text-red-600 mt-3">{quoteError}</p>
-              )}
-
-              <div className="mt-4 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={addQuote}
-                  className="bg-black text-white px-4 py-2 rounded-md text-sm hover:opacity-95"
-                >
-                  Add Quote
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelAdd}
-                  className="border px-4 py-2 rounded-md text-sm hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {quotes.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              No quotes added yet. Click "Add Quote" to get started.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {quotes.map((q, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between bg-white border rounded-md p-3"
-                >
-                  <div>
-                    <div className="font-medium">
-                      {q.quoteInsurer || "—"} &middot; {q.zone}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      IDV: ₹{q.idv} • OD Discount: {q.odDiscount}% • Electrical:
-                      ₹{q.electricalAccessories}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => removeQuote(i)}
-                      className="text-sm text-red-600 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Insurance Company *
-          </label>
-          <select
-            name="insurer"
-            value={form.insurer || ""}
-            onChange={handleChange}
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-              errors.insurer ? "border-red-500" : "border-gray-300"
-            }`}
-          >
-            <option value="">Select insurer</option>
-            <option value="ICICI">ICICI Lombard</option>
-            <option value="HDFC">HDFC Ergo</option>
-            <option value="Bajaj">Bajaj Allianz</option>
-          </select>
-          {errors.insurer && <p className="text-red-500 text-xs mt-1">{errors.insurer}</p>}
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Coverage Type *
-          </label>
-          <select
-            name="coverageType"
-            value={form.coverageType || ""}
-            onChange={handleChange}
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-              errors.coverageType ? "border-red-500" : "border-gray-300"
-            }`}
-          >
-            <option value="">Select coverage</option>
-            <option value="comprehensive">Comprehensive</option>
-            <option value="thirdparty">Third Party</option>
-          </select>
-          {errors.coverageType && <p className="text-red-500 text-xs mt-1">{errors.coverageType}</p>}
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Premium Amount *
-          </label>
-          <input
-            type="number"
-            name="premium"
-            value={form.premium || ""}
-            onChange={handleChange}
-            placeholder="Enter premium amount"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-              errors.premium ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors.premium && <p className="text-red-500 text-xs mt-1">{errors.premium}</p>}
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            IDV Amount *
-          </label>
-          <input
-            type="number"
-            name="idv"
-            value={form.idv || ""}
-            onChange={handleChange}
-            placeholder="Enter IDV amount"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-              errors.idv ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors.idv && <p className="text-red-500 text-xs mt-1">{errors.idv}</p>}
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            NCB Discount (%)
-          </label>
-          <input
-            type="number"
-            name="ncb"
-            value={form.ncb || ""}
-            onChange={handleChange}
-            placeholder="Enter NCB %"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-              errors.ncb ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors.ncb && <p className="text-red-500 text-xs mt-1">{errors.ncb}</p>}
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Policy Duration *
-          </label>
-          <select
-            name="duration"
-            value={form.duration || ""}
-            onChange={handleChange}
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-              errors.duration ? "border-red-500" : "border-gray-300"
-            }`}
-          >
-            <option value="">Select duration</option>
-            <option value="1">1 Year</option>
-            <option value="2">2 Years</option>
-            <option value="3">3 Years</option>
-          </select>
-          {errors.duration && <p className="text-red-500 text-xs mt-1">{errors.duration}</p>}
-        </div>
-      </div>
-
-      {/* Add debug section */}
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-        <div className="flex justify-between items-center">
+      <div className="border rounded-xl p-5 mb-6">
+        <h4 className="text-md font-semibold text-gray-700 mb-4">
+          Previous Policy Information (All Fields Mandatory)
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Insurance Company */}
           <div>
-            <h4 className="text-sm font-medium text-blue-800">Quotes Debug Info</h4>
-            <p className="text-xs text-blue-600">
-              Quotes in state: {quotes.length} | 
-              Last updated: {new Date().toLocaleTimeString()}
-            </p>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Insurance Company *
+            </label>
+            <input
+              type="text"
+              name="previousInsuranceCompany"
+              value={form.previousInsuranceCompany || ""}
+              onChange={handleChange}
+              placeholder="Enter previous insurance company"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousInsuranceCompany ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousInsuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.previousInsuranceCompany}</p>}
           </div>
-          <button
-            onClick={() => {
-              console.log("=== INSURANCE QUOTES DEBUG ===");
-              console.log("Form insuranceQuotes:", form.insuranceQuotes);
-              console.log("Local quotes variable:", quotes);
-              console.log("Full form:", form);
-              console.log("onInsuranceQuotesUpdate function:", onInsuranceQuotesUpdate ? "Exists" : "Missing");
-            }}
-            className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-          >
-            Debug Quotes
-          </button>
+
+          {/* Policy Number */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Policy Number *
+            </label>
+            <input
+              type="text"
+              name="previousPolicyNumber"
+              value={form.previousPolicyNumber || ""}
+              onChange={handleChange}
+              placeholder="Enter previous policy number"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousPolicyNumber ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousPolicyNumber && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyNumber}</p>}
+          </div>
+
+          {/* Policy Type */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Policy Type *
+            </label>
+            <select
+              name="previousPolicyType"
+              value={form.previousPolicyType || ""}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousPolicyType ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              <option value="">Select policy type</option>
+              <option value="comprehensive">Comprehensive</option>
+              <option value="thirdParty">Third Party</option>
+            </select>
+            {errors.previousPolicyType && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyType}</p>}
+          </div>
+
+          {/* Issue Date */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Issue Date *
+            </label>
+            <input
+              type="date"
+              name="previousIssueDate"
+              value={form.previousIssueDate || ""}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousIssueDate ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousIssueDate && <p className="text-red-500 text-xs mt-1">{errors.previousIssueDate}</p>}
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Due Date *
+            </label>
+            <input
+              type="date"
+              name="previousDueDate"
+              value={form.previousDueDate || ""}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousDueDate ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousDueDate && <p className="text-red-500 text-xs mt-1">{errors.previousDueDate}</p>}
+          </div>
+
+          {/* Claim Taken Last Year */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Claim Taken Last Year *
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="previousClaimTaken"
+                  value="yes"
+                  checked={form.previousClaimTaken === "yes"}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                Yes
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="previousClaimTaken"
+                  value="no"
+                  checked={form.previousClaimTaken === "no"}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                No
+              </label>
+            </div>
+            {errors.previousClaimTaken && <p className="text-red-500 text-xs mt-1">{errors.previousClaimTaken}</p>}
+          </div>
+
+          {/* NCB Discount */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              NCB Discount (%) *
+            </label>
+            <input
+              type="number"
+              name="previousNcbDiscount"
+              value={form.previousNcbDiscount || ""}
+              onChange={handleChange}
+              placeholder="Enter NCB discount percentage"
+              min="0"
+              max="100"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousNcbDiscount ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousNcbDiscount && <p className="text-red-500 text-xs mt-1">{errors.previousNcbDiscount}</p>}
+          </div>
         </div>
-        {quotes.length > 0 && (
-          <div className="mt-2 text-xs text-blue-700">
-            <p>Current quotes:</p>
-            {quotes.map((q, i) => (
-              <div key={i} className="ml-2">
-                {i + 1}. {q.quoteInsurer} - ₹{q.idv}
-              </div>
-            ))}
-          </div>
-        )}
+      </div>
+
+      <div className="border rounded-xl p-5">
+        <h4 className="text-md font-semibold text-gray-700 mb-3">
+          Case Type Information
+        </h4>
+        <div className="text-sm text-gray-600 space-y-2">
+          <p><strong>Renewal Case:</strong> Policy is about to expire or recently expired (within 30 days)</p>
+          <p><strong>Policy Already Expired Case:</strong> Policy has been expired for more than 30 days</p>
+          <p className="text-purple-600 font-medium">All fields in this section are mandatory for both case types</p>
+        </div>
       </div>
     </div>
   );
+};
+
+// Add validation for Previous Policy Details
+const previousPolicyValidation = (form) => {
+  const errors = {};
+
+  if (!form.previousInsuranceCompany) {
+    errors.previousInsuranceCompany = "Previous insurance company is required";
+  }
+
+  if (!form.previousPolicyNumber) {
+    errors.previousPolicyNumber = "Previous policy number is required";
+  }
+
+  if (!form.previousPolicyType) {
+    errors.previousPolicyType = "Previous policy type is required";
+  }
+
+  if (!form.previousIssueDate) {
+    errors.previousIssueDate = "Previous issue date is required";
+  }
+
+  if (!form.previousDueDate) {
+    errors.previousDueDate = "Previous due date is required";
+  }
+
+  if (!form.previousClaimTaken) {
+    errors.previousClaimTaken = "Claim history is required";
+  }
+
+  if (!form.previousNcbDiscount) {
+    errors.previousNcbDiscount = "Previous NCB discount is required";
+  } else if (parseFloat(form.previousNcbDiscount) < 0 || parseFloat(form.previousNcbDiscount) > 100) {
+    errors.previousNcbDiscount = "NCB discount must be between 0% and 100%";
+  }
+
+  return errors;
 };
 
 // ================== STEP 4: New Policy Details ==================
@@ -1374,18 +3433,18 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
-              Step 4: New Policy Details
+              Step 5: New Policy Details
             </h3>
           </div>
         </div>
-        <button
+        {/* <button
           type="button"
           onClick={handleSave}
           disabled={isSaving}
           className="flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-700 hover:shadow transition disabled:opacity-50"
         >
           <FaSave /> {isSaving ? "Saving..." : "Save Progress"}
-        </button>
+        </button> */}
       </div>
 
       <div className="border rounded-xl p-5 mb-6">
@@ -1464,7 +3523,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               value={form.insuranceCompany || ""}
               onChange={handleChange}
               placeholder="Enter insurance company name"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.insuranceCompany ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -1480,7 +3539,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               value={form.policyNumber || ""}
               onChange={handleChange}
               placeholder="Policy Number"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.policyNumber ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -1490,7 +3549,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               value={form.covernoteNumber || ""}
               onChange={handleChange}
               placeholder="Covernote Number (Alternative)"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm mt-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm mt-2 focus:ring-2 focus:ring-purple-500 focus:outline-none"
             />
             {errors.policyNumber && <p className="text-red-500 text-xs mt-1">{errors.policyNumber}</p>}
           </div>
@@ -1503,7 +3562,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               name="issueDate"
               value={form.issueDate || ""}
               onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.issueDate ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -1518,7 +3577,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               name="dueDate"
               value={form.dueDate || ""}
               onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.dueDate ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -1537,7 +3596,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               value={form.ncbDiscount || ""}
               onChange={handleChange}
               placeholder="0"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.ncbDiscount ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -1556,7 +3615,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               value={form.insuranceDuration || ""}
               onChange={handleChange}
               placeholder="From customer requirements"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
             />
           </div>
           <div>
@@ -1569,7 +3628,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               value={form.idvAmount || ""}
               onChange={handleChange}
               placeholder="From accepted quote"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.idvAmount ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -1585,7 +3644,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
               value={form.totalPremium || ""}
               onChange={handleChange}
               placeholder="From accepted quote"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.totalPremium ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -1622,10 +3681,426 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) 
 };
 
 // ================== STEP 5: Documents ==================
+// const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
+//   const [uploading, setUploading] = useState(false);
+
+//   // Handle file selection
+//   const handleFiles = async (e) => {
+//     const files = Array.from(e.target.files);
+    
+//     if (files.length === 0) return;
+
+//     console.log("🔄 Selected files:", files.length, "files:", files.map(f => f.name));
+
+//     setUploading(true);
+
+//     try {
+//       // Upload files and get URLs
+//       const uploadedUrls = await uploadFiles(files);
+      
+//       // Combine existing documents with new ones
+//       const existingDocuments = form.documents || [];
+//       const allDocuments = [...existingDocuments, ...uploadedUrls];
+      
+//       console.log("📄 Updated documents array:", allDocuments);
+      
+//       // Update form directly
+//       handleChange({
+//         target: {
+//           name: 'documents',
+//           value: allDocuments
+//         }
+//       });
+      
+//     } catch (error) {
+//       console.error("❌ Error uploading files:", error);
+//     } finally {
+//       setUploading(false);
+//     }
+//   };
+
+//   // Upload multiple files and return URLs
+//   const uploadFiles = async (files) => {
+//     const uploadPromises = files.map(file => uploadFile(file));
+//     const results = await Promise.allSettled(uploadPromises);
+    
+//     const successfulUploads = results
+//       .filter(result => result.status === 'fulfilled' && result.value.url)
+//       .map(result => result.value.url);
+    
+//     console.log("✅ Successfully uploaded files:", successfulUploads);
+//     return successfulUploads;
+//   };
+
+ 
+
+//   const uploadSingleFile = async (fileObj)=>{
+//      try {
+//       // Update status to uploading
+//       // setUploadedFiles(prev => 
+//       //   prev.map(f => 
+//       //     f.id === fileObj.id 
+//       //       ? { ...f, status: 'uploading', uploadProgress: 0 }
+//       //       : f
+//       //   )
+//       // );
+
+//       const formData = new FormData();
+//       formData.append('file', fileObj);
+
+//       let config = {
+//   method: 'post',
+//   maxBodyLength: Infinity,
+//   url: 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/files',
+//   headers: { 
+//     'Content-Type': 'multipart/form-data',
+//   },
+//   data : formData
+// };
+
+// const response = await axios.request(config);
+// console.log(response.data); 
+//       // Update with successful response
+//       // setUploadedFiles(prev => 
+//       //   prev.map(f => 
+//       //     f.id === fileObj.id 
+//       //       ? { 
+//       //           ...f, 
+//       //           status: 'uploaded', 
+//       //           uploadProgress: 100,
+//       //           url: response.data.path || response.data.path, // Adjust based on your API response
+//       //           response: response.data
+//       //         }
+//       //       : f
+//       //   )
+//       // );
+//       // const [form,setForm] = useState([]);
+//       // form.documents=uploadedFiles.map((e)=>e.url);
+//       // handleChange(form);
+//   //     handleChange({
+//   // target: {
+//   //   name: 'documents',
+//   //   value: uploadedFiles.map((e)=>e.url)
+//   // }
+// // });
+//       return response.data.path;
+//     } catch (error) {
+//       console.error(`Error uploading file ${fileObj.name}:`, error);
+      
+//       // setUploadedFiles(prev => 
+//       //   prev.map(f => 
+//       //     f.id === fileObj.id 
+//       //       ? { 
+//       //           ...f, 
+//       //           status: 'error', 
+//       //           error: error.message || 'Upload failed'
+//       //         }
+//       //       : f
+//       //   )
+//       // );
+      
+//       throw error;
+//     }
+//   }
+
+//    // Upload single file
+//   const uploadFile = async (file) => {
+//     console.log(`🚀 Starting upload for: ${file.name}`);
+    
+//     try {
+//       // Simulate upload process
+//       // await new Promise(resolve => setTimeout(resolve, 1000));
+      
+//       // Create mock URL (replace with your actual upload logic)
+//       // const mockUrl = `https://storage.googleapis.com/your-bucket/${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+//   const mockUrl = await uploadSingleFile(file);    
+//       console.log(`✅ Upload completed: ${file.name} -> ${mockUrl}`);
+//       return { url: mockUrl, name: file.name };
+      
+//     } catch (error) {
+//       console.error(`❌ Error uploading file ${file.name}:`, error);
+//       throw error;
+//     }
+//   };
+
+//   // Remove document from form.documents
+//   const removeDocument = (index) => {
+//     const currentDocuments = form.documents || [];
+//     const updatedDocuments = currentDocuments.filter((_, i) => i !== index);
+    
+//     handleChange({
+//       target: {
+//         name: 'documents',
+//         value: updatedDocuments
+//       }
+//     });
+//   };
+
+//   // Clear all documents
+//   const clearAllDocuments = () => {
+//     handleChange({
+//       target: {
+//         name: 'documents',
+//         value: []
+//       }
+//     });
+//   };
+
+//   // Format file name from URL
+//   const getFileNameFromUrl = (url) => {
+//     return url.split('/').pop() || 'Document';
+//   };
+
+//   // Get file icon based on file extension
+//   const getFileIcon = (url) => {
+//     const fileName = url.toLowerCase();
+//     if (fileName.includes('.pdf')) return '📄';
+//     if (fileName.match(/\.(jpg|jpeg|png|gif|webp)$/)) return '🖼️';
+//     if (fileName.match(/\.(doc|docx)$/)) return '📝';
+//     if (fileName.match(/\.(xls|xlsx)$/)) return '📊';
+//     return '📎';
+//   };
+
+//   const currentDocuments = form.documents || [];
+
+//   return (
+//     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
+//       <div className="flex items-start justify-between mb-6">
+//         <div className="flex items-center gap-3">
+//           <div className="p-2 rounded-full bg-gray-100 text-gray-700">
+//             <FaFileAlt />
+//           </div>
+//           <div>
+//             <h3 className="text-lg font-semibold text-gray-800">
+//               Step 5: Documents
+//             </h3>
+//             <p className="text-xs text-gray-500">
+//               Upload and manage policy documents
+//             </p>
+//           </div>
+//         </div>
+//         <div className="flex items-center gap-2">
+//           {currentDocuments.length > 0 && (
+//             <button
+//               type="button"
+//               onClick={clearAllDocuments}
+//               disabled={uploading}
+//               className="flex items-center gap-2 bg-red-100 text-red-700 px-3 py-2 rounded-md text-sm hover:bg-red-200 disabled:opacity-50"
+//             >
+//               <FaTrash /> Clear All
+//             </button>
+//           )}
+//           {/* <button
+//             type="button"
+//             onClick={handleSave}
+//             disabled={isSaving}
+//             className="flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-700 hover:shadow transition disabled:opacity-50"
+//           >
+//             <FaSave /> {isSaving ? "Saving..." : "Save Progress"}
+//           </button> */}
+//         </div>
+//       </div>
+
+//       {errors.documents && (
+//         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+//           <p className="text-red-600 text-sm">{errors.documents}</p>
+//         </div>
+//       )}
+
+//       {/* Documents Count */}
+//       <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+//         <div className="flex justify-between items-center">
+//           <div>
+//             <h4 className="font-semibold text-purple-800">Documents Status</h4>
+//             <p className="text-xs text-purple-700">
+//               Total Documents: {currentDocuments.length}
+//             </p>
+//           </div>
+//           <button
+//             onClick={() => {
+//               console.log("=== CURRENT DOCUMENTS ===");
+//               console.log("Form documents:", form.documents);
+//               console.log("Current documents array:", currentDocuments);
+//             }}
+//             className="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600"
+//           >
+//             Debug
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Upload Area */}
+//       <div className="border rounded-xl p-5">
+//         <div className="flex items-center justify-between mb-6">
+//           <div>
+//             <h4 className="text-md font-semibold text-gray-700">
+//               Upload Documents
+//             </h4>
+//             <p className="text-sm text-gray-500 mt-1">
+//               {currentDocuments.length} document(s) uploaded
+//             </p>
+//           </div>
+//         </div>
+
+//         {/* Upload Area */}
+//         <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center mb-6 hover:border-gray-400 transition-colors">
+//           <div className="flex justify-center mb-4 text-gray-500">
+//             <FaUpload size={40} />
+//           </div>
+//           <p className="text-gray-600 font-medium mb-2">
+//             Drag and drop files here
+//           </p>
+//           <p className="text-gray-400 text-sm mb-4">
+//             or click to browse your files
+//           </p>
+          
+//           <input
+//             type="file"
+//             multiple
+//             onChange={handleFiles}
+//             className="hidden"
+//             id="file-upload"
+//             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt"
+//             disabled={uploading}
+//           />
+//           <label
+//             htmlFor="file-upload"
+//             className={`inline-flex items-center gap-2 px-6 py-3 rounded-md text-sm font-medium cursor-pointer transition-colors ${
+//               uploading 
+//                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+//                 : 'bg-black text-white hover:bg-gray-800'
+//             }`}
+//           >
+//             <FaFileUpload /> 
+//             {uploading ? 'Uploading...' : 'Choose Multiple Files'}
+//           </label>
+          
+//           <p className="text-gray-400 text-xs mt-4">
+//             Supported: PDF, JPG, PNG, DOC, DOCX, XLS, XLSX, TXT
+//           </p>
+//         </div>
+
+//         {/* Documents List */}
+//         {currentDocuments.length > 0 && (
+//           <div className="mt-6">
+//             <h5 className="text-md font-semibold text-gray-700 mb-4">
+//               Uploaded Documents ({currentDocuments.length})
+//             </h5>
+            
+//             <div className="space-y-3 max-h-96 overflow-y-auto">
+//               {currentDocuments.map((documentUrl, index) => (
+//                 <div
+//                   key={index}
+//                   className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 hover:bg-white transition-colors"
+//                 >
+//                   <div className="flex items-center gap-3 flex-1 min-w-0">
+//                     <span className="text-xl">
+//                       {getFileIcon(documentUrl)}
+//                     </span>
+                    
+//                     <div className="flex-1 min-w-0">
+//                       <div className="flex items-center gap-2">
+//                         <p className="font-medium text-sm truncate">
+//                           {getFileNameFromUrl(documentUrl)}
+//                         </p>
+//                         <span className="text-xs text-green-600 font-medium">
+//                           ✓ Uploaded
+//                         </span>
+//                       </div>
+                      
+//                       <p className="text-xs text-gray-500 truncate mt-1">
+//                         {documentUrl}
+//                       </p>
+//                     </div>
+//                   </div>
+
+//                   <div className="flex items-center gap-2">
+//                     <a
+//                       href={documentUrl}
+//                       target="_blank"
+//                       rel="noopener noreferrer"
+//                       className="p-2 text-green-600 hover:text-green-800"
+//                       title="View document"
+//                     >
+//                       <FaFileAlt />
+//                     </a>
+                    
+//                     <button
+//                       onClick={() => removeDocument(index)}
+//                       disabled={uploading}
+//                       className="p-2 text-red-600 hover:text-red-800 disabled:opacity-50"
+//                       title="Remove document"
+//                     >
+//                       <FaTrash />
+//                     </button>
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Empty State */}
+//         {currentDocuments.length === 0 && !uploading && (
+//           <div className="text-center py-8">
+//             <div className="text-gray-400 mb-2">
+//               <FaFileAlt size={48} className="mx-auto" />
+//             </div>
+//             <p className="text-gray-500 text-sm">
+//               No documents uploaded yet. Upload documents to continue.
+//             </p>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// ================== STEP 5: Documents (Updated with Requirements & Tagging) ==================
 const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
   const [uploading, setUploading] = useState(false);
 
-  // Handle file selection
+  // Document requirements based on case type
+  const getDocumentRequirements = () => {
+    const requirements = {
+      newCar: {
+        mandatory: ["Invoice"],
+        optional: ["New Policy", "New policy covernote"]
+      },
+      usedCar: {
+        mandatory: ["RC", "Form 29", "Form 30 page 1", "Form 30 page 2"],
+        optional: ["New Policy", "New policy covernote", "Inspection report"]
+      },
+      usedCarRenewal: {
+        mandatory: ["RC", "Previous Year Policy"],
+        optional: []
+      },
+      policyExpired: {
+        mandatory: ["RC", "Previous Year Policy"],
+        optional: []
+      }
+    };
+
+    return requirements.usedCar; // Default to used car, you can make this dynamic
+  };
+
+  const documentRequirements = getDocumentRequirements();
+
+  // Handle document tagging
+  const handleDocumentTag = (index, tag) => {
+    const currentTags = form.documentTags || [];
+    const updatedTags = [...currentTags];
+    updatedTags[index] = tag;
+    
+    handleChange({
+      target: {
+        name: 'documentTags',
+        value: updatedTags
+      }
+    });
+  };
+
+  // Handle file selection - KEEP YOUR EXISTING WORKING CODE
   const handleFiles = async (e) => {
     const files = Array.from(e.target.files);
     
@@ -1660,7 +4135,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     }
   };
 
-  // Upload multiple files and return URLs
+  // Upload multiple files and return URLs - KEEP YOUR EXISTING WORKING CODE
   const uploadFiles = async (files) => {
     const uploadPromises = files.map(file => uploadFile(file));
     const results = await Promise.allSettled(uploadPromises);
@@ -1673,88 +4148,36 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     return successfulUploads;
   };
 
- 
-
-  const uploadSingleFile = async (fileObj)=>{
-     try {
-      // Update status to uploading
-      // setUploadedFiles(prev => 
-      //   prev.map(f => 
-      //     f.id === fileObj.id 
-      //       ? { ...f, status: 'uploading', uploadProgress: 0 }
-      //       : f
-      //   )
-      // );
-
+  const uploadSingleFile = async (fileObj) => {
+    try {
       const formData = new FormData();
       formData.append('file', fileObj);
 
       let config = {
-  method: 'post',
-  maxBodyLength: Infinity,
-  url: 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/files',
-  headers: { 
-    'Content-Type': 'multipart/form-data',
-  },
-  data : formData
-};
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/files',
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+        },
+        data: formData
+      };
 
-const response = await axios.request(config);
-console.log(response.data); 
-      // Update with successful response
-      // setUploadedFiles(prev => 
-      //   prev.map(f => 
-      //     f.id === fileObj.id 
-      //       ? { 
-      //           ...f, 
-      //           status: 'uploaded', 
-      //           uploadProgress: 100,
-      //           url: response.data.path || response.data.path, // Adjust based on your API response
-      //           response: response.data
-      //         }
-      //       : f
-      //   )
-      // );
-      // const [form,setForm] = useState([]);
-      // form.documents=uploadedFiles.map((e)=>e.url);
-      // handleChange(form);
-  //     handleChange({
-  // target: {
-  //   name: 'documents',
-  //   value: uploadedFiles.map((e)=>e.url)
-  // }
-// });
+      const response = await axios.request(config);
+      console.log(response.data); 
       return response.data.path;
     } catch (error) {
       console.error(`Error uploading file ${fileObj.name}:`, error);
-      
-      // setUploadedFiles(prev => 
-      //   prev.map(f => 
-      //     f.id === fileObj.id 
-      //       ? { 
-      //           ...f, 
-      //           status: 'error', 
-      //           error: error.message || 'Upload failed'
-      //         }
-      //       : f
-      //   )
-      // );
-      
       throw error;
     }
   }
 
-   // Upload single file
+  // Upload single file - KEEP YOUR EXISTING WORKING CODE
   const uploadFile = async (file) => {
     console.log(`🚀 Starting upload for: ${file.name}`);
     
     try {
-      // Simulate upload process
-      // await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create mock URL (replace with your actual upload logic)
-      // const mockUrl = `https://storage.googleapis.com/your-bucket/${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-  const mockUrl = await uploadSingleFile(file);    
+      const mockUrl = await uploadSingleFile(file);    
       console.log(`✅ Upload completed: ${file.name} -> ${mockUrl}`);
       return { url: mockUrl, name: file.name };
       
@@ -1764,7 +4187,7 @@ console.log(response.data);
     }
   };
 
-  // Remove document from form.documents
+  // Remove document from form.documents - KEEP YOUR EXISTING WORKING CODE
   const removeDocument = (index) => {
     const currentDocuments = form.documents || [];
     const updatedDocuments = currentDocuments.filter((_, i) => i !== index);
@@ -1777,7 +4200,7 @@ console.log(response.data);
     });
   };
 
-  // Clear all documents
+  // Clear all documents - KEEP YOUR EXISTING WORKING CODE
   const clearAllDocuments = () => {
     handleChange({
       target: {
@@ -1787,12 +4210,12 @@ console.log(response.data);
     });
   };
 
-  // Format file name from URL
+  // Format file name from URL - KEEP YOUR EXISTING WORKING CODE
   const getFileNameFromUrl = (url) => {
     return url.split('/').pop() || 'Document';
   };
 
-  // Get file icon based on file extension
+  // Get file icon based on file extension - KEEP YOUR EXISTING WORKING CODE
   const getFileIcon = (url) => {
     const fileName = url.toLowerCase();
     if (fileName.includes('.pdf')) return '📄';
@@ -1813,10 +4236,10 @@ console.log(response.data);
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
-              Step 5: Documents
+              Step 6: Documents
             </h3>
             <p className="text-xs text-gray-500">
-              Upload and manage policy documents
+              Upload and manage policy documents with tagging
             </p>
           </div>
         </div>
@@ -1831,14 +4254,6 @@ console.log(response.data);
               <FaTrash /> Clear All
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-700 hover:shadow transition disabled:opacity-50"
-          >
-            <FaSave /> {isSaving ? "Saving..." : "Save Progress"}
-          </button>
         </div>
       </div>
 
@@ -1848,12 +4263,47 @@ console.log(response.data);
         </div>
       )}
 
-      {/* Documents Count */}
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+      {/* Document Requirements - NEW SECTION */}
+      <div className="border rounded-xl p-5 mb-6">
+        <h4 className="text-md font-semibold text-gray-700 mb-4">
+          Document Requirements
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h5 className="font-medium text-green-700 mb-2">Mandatory Documents</h5>
+            <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+              {documentRequirements.mandatory.map((doc, index) => (
+                <li key={index}>{doc}</li>
+              ))}
+            </ul>
+          </div>
+          
+          {documentRequirements.optional.length > 0 && (
+            <div>
+              <h5 className="font-medium text-purple-700 mb-2">Optional Documents</h5>
+              <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                {documentRequirements.optional.map((doc, index) => (
+                  <li key={index}>{doc}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-sm text-yellow-700">
+            <strong>Note:</strong> Upload all documents first, then tag each document in the section below.
+          </p>
+        </div>
+      </div>
+
+      {/* Documents Count - YOUR EXISTING CODE */}
+      <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
         <div className="flex justify-between items-center">
           <div>
-            <h4 className="font-semibold text-blue-800">Documents Status</h4>
-            <p className="text-xs text-blue-700">
+            <h4 className="font-semibold text-purple-800">Documents Status</h4>
+            <p className="text-xs text-purple-700">
               Total Documents: {currentDocuments.length}
             </p>
           </div>
@@ -1863,14 +4313,14 @@ console.log(response.data);
               console.log("Form documents:", form.documents);
               console.log("Current documents array:", currentDocuments);
             }}
-            className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+            className="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600"
           >
             Debug
           </button>
         </div>
       </div>
 
-      {/* Upload Area */}
+      {/* Upload Area - YOUR EXISTING WORKING CODE */}
       <div className="border rounded-xl p-5">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -1921,7 +4371,7 @@ console.log(response.data);
           </p>
         </div>
 
-        {/* Documents List */}
+        {/* Documents List - YOUR EXISTING WORKING CODE */}
         {currentDocuments.length > 0 && (
           <div className="mt-6">
             <h5 className="text-md font-semibold text-gray-700 mb-4">
@@ -1981,7 +4431,7 @@ console.log(response.data);
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Empty State - YOUR EXISTING WORKING CODE */}
         {currentDocuments.length === 0 && !uploading && (
           <div className="text-center py-8">
             <div className="text-gray-400 mb-2">
@@ -1992,11 +4442,81 @@ console.log(response.data);
             </p>
           </div>
         )}
+
+        {/* Tagging Section - NEW SECTION */}
+        {currentDocuments.length > 0 && (
+          <div className="border rounded-xl p-5 mt-6">
+            <h4 className="text-md font-semibold text-gray-700 mb-4">
+              Document Tagging
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Tag each uploaded document with its document type
+            </p>
+            
+            <div className="space-y-4">
+              {currentDocuments.map((documentUrl, index) => (
+                <div key={index} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-xl">
+                      {getFileIcon(documentUrl)}
+                    </span>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">
+                        {getFileNameFromUrl(documentUrl)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={form.documentTags?.[index] || ""}
+                      onChange={(e) => handleDocumentTag(index, e.target.value)}
+                      className="border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none min-w-48"
+                    >
+                      <option value="">Select document type</option>
+                      {[...documentRequirements.mandatory, ...documentRequirements.optional].map((docType) => (
+                        <option key={docType} value={docType}>{docType}</option>
+                      ))}
+                      <option value="other">Other</option>
+                    </select>
+                    
+                    {form.documentTags?.[index] && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        Tagged
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tagging Summary */}
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-sm text-green-700">
+                <strong>Tagging Progress:</strong> {form.documentTags?.filter(tag => tag && tag !== '').length || 0} of {currentDocuments.length} documents tagged
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
+
+// Add document tagging handler
+const handleDocumentTag = (index, tag) => {
+  const currentTags = form.documentTags || [];
+  const updatedTags = [...currentTags];
+  updatedTags[index] = tag;
+  
+  handleChange({
+    target: {
+      name: 'documentTags',
+      value: updatedTags
+    }
+  });
+};
 // ================== STEP 6: Payment ==================
 const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Ensure form fields are properly initialized
@@ -2032,20 +4552,20 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
             <FaCreditCard />
           </div>
           <h3 className="text-lg font-semibold text-gray-800">
-            Step 6: Payment
+           7: Payment
           </h3>
         </div>
-        <button
+        {/* <button
           type="button"
           onClick={handleSave}
           disabled={isSaving}
           className="flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-700 hover:shadow transition disabled:opacity-50"
         >
           <FaSave /> {isSaving ? "Saving..." : "Save Progress"}
-        </button>
+        </button> */}
       </div>
 
-      <div className="bg-blue-50 border rounded-xl p-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-purple-50 border rounded-xl p-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <p className="text-sm text-gray-500">Total Premium:</p>
           <p className="font-semibold text-lg">₹{form.totalPremium || 0}</p>
@@ -2104,7 +4624,7 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
             name="paymentMode"
             value={form.paymentMode || ""}
             onChange={handleChange}
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
               errors.paymentMode ? "border-red-500" : "border-gray-300"
             }`}
           >
@@ -2127,7 +4647,7 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
               name="paymentAmount"
               value={form.paymentAmount || ""}
               onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.paymentAmount ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="0"
@@ -2143,7 +4663,7 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
               name="paymentDate"
               value={form.paymentDate || ""}
               onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.paymentDate ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -2158,7 +4678,7 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
               name="transactionId"
               value={form.transactionId || ""}
               onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.transactionId ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Enter transaction ID"
@@ -2174,7 +4694,7 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
               name="receiptDate"
               value={form.receiptDate || ""}
               onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.receiptDate ? "border-red-500" : "border-gray-300"
               }`}
             />
@@ -2191,7 +4711,7 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
             name="bankName"
             value={form.bankName || ""}
             onChange={handleChange}
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
               errors.bankName ? "border-red-500" : "border-gray-300"
             }`}
             placeholder="Enter bank name"
@@ -2230,19 +4750,19 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
         </h4>
         <ul className="list-disc pl-6 space-y-1 text-sm text-gray-600">
           <li>
-            <span className="text-blue-600">Customer Payments:</span> Ensure all
+            <span className="text-purple-600">Customer Payments:</span> Ensure all
             payment details are accurately recorded for accounting purposes.
           </li>
           <li>
-            <span className="text-blue-600">Cheque Payments:</span> Verify
+            <span className="text-purple-600">Cheque Payments:</span> Verify
             cheque details and ensure sufficient funds before processing.
           </li>
           <li>
-            <span className="text-blue-600">Online Payments:</span> Keep
+            <span className="text-purple-600">Online Payments:</span> Keep
             transaction ID for reference and reconciliation.
           </li>
           <li>
-            <span className="text-blue-600">In-House Payments:</span> Used for
+            <span className="text-purple-600">In-House Payments:</span> Used for
             deal adjustments or when payment is handled through other
             transactions.
           </li>
@@ -2250,6 +4770,277 @@ const Payment = ({ form, handleChange, handleSave, isSaving, errors }) => {
       </div>
     </div>
   );
+};
+
+// ================== STEP 8: Payout Details ==================
+const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
+  // Calculate derived values
+  const odAmount = parseFloat(form.odAmount) || 0;
+  const ncbAmount = odAmount * 0.10; // 10% of OD
+  const subVention = parseFloat(form.subVention) || 0;
+  const netAmount = ncbAmount - subVention;
+
+  // Auto-calculate NCB when OD amount changes
+  useEffect(() => {
+    if (form.odAmount) {
+      const calculatedNcb = (parseFloat(form.odAmount) * 0.10).toFixed(2);
+      // Only update if the calculated value is different from current value
+      if (parseFloat(form.ncbAmount || 0) !== parseFloat(calculatedNcb)) {
+        handleChange({
+          target: {
+            name: 'ncbAmount',
+            value: calculatedNcb
+          }
+        });
+      }
+    }
+  }, [form.odAmount]);
+
+  // Handle OD amount change manually to trigger NCB calculation
+  const handleOdAmountChange = (e) => {
+    const { name, value } = e.target;
+    handleChange(e); // Update OD amount first
+    
+    // Then calculate and update NCB amount
+    if (value) {
+      const calculatedNcb = (parseFloat(value) * 0.10).toFixed(2);
+      setTimeout(() => {
+        handleChange({
+          target: {
+            name: 'ncbAmount',
+            value: calculatedNcb
+          }
+        });
+      }, 100);
+    }
+  };
+
+  // Handle manual NCB input (if user wants to override)
+  const handleNcbAmountChange = (e) => {
+    const { name, value } = e.target;
+    handleChange(e);
+    
+    // If user manually sets NCB, show warning if it's not 10% of OD
+    if (value && form.odAmount) {
+      const expectedNcb = (parseFloat(form.odAmount) * 0.10).toFixed(2);
+      const userNcb = parseFloat(value).toFixed(2);
+      
+      if (userNcb !== expectedNcb) {
+        console.warn(`NCB manually set to ${userNcb}, but expected ${expectedNcb} (10% of OD)`);
+      }
+    }
+  };
+
+  return (
+    <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-full bg-gray-100 text-gray-700">
+            <FaCreditCard />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">
+              Step 8: Payout Details
+            </h3>
+            <p className="text-xs text-gray-500">
+              Financial breakdown and calculations
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="border rounded-xl p-5 mb-6">
+        <h4 className="text-md font-semibold text-gray-700 mb-4">
+          Payout Calculation
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Net Premium */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Net Premium (₹) *
+            </label>
+            <input
+              type="number"
+              name="netPremium"
+              value={form.netPremium || ""}
+              onChange={handleChange}
+              placeholder="Enter net premium amount"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.netPremium ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.netPremium && <p className="text-red-500 text-xs mt-1">{errors.netPremium}</p>}
+          </div>
+
+          {/* OD Amount */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              OD Amount (₹) *
+            </label>
+            <input
+              type="number"
+              name="odAmount"
+              value={form.odAmount || ""}
+              onChange={handleOdAmountChange}
+              placeholder="Enter OD amount"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.odAmount ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.odAmount && <p className="text-red-500 text-xs mt-1">{errors.odAmount}</p>}
+            <p className="text-xs text-gray-500 mt-1">Own Damage Amount</p>
+          </div>
+
+          {/* NCB Amount (Auto-calculated as 10% of OD) */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              NCB Amount (₹) *
+            </label>
+            <input
+              type="number"
+              name="ncbAmount"
+              value={form.ncbAmount || ncbAmount}
+              onChange={handleNcbAmountChange}
+              placeholder="Auto-calculated as 10% of OD"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              10% of OD Amount ({odAmount.toLocaleString('en-IN')} × 10% = ₹{ncbAmount.toLocaleString('en-IN')})
+            </p>
+          </div>
+
+          {/* Sub Vention */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Sub Vention (₹) *
+            </label>
+            <input
+              type="number"
+              name="subVention"
+              value={form.subVention || ""}
+              onChange={handleChange}
+              placeholder="Enter sub vention amount"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.subVention ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.subVention && <p className="text-red-500 text-xs mt-1">{errors.subVention}</p>}
+          </div>
+        </div>
+
+        {/* Real-time Calculation Display */}
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h5 className="font-semibold text-gray-700 mb-3">Real-time Calculation</h5>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-gray-600">OD Amount:</span>
+              <div className="font-semibold">₹{odAmount.toLocaleString('en-IN')}</div>
+            </div>
+            <div>
+              <span className="text-gray-600">NCB (10%):</span>
+              <div className="font-semibold text-purple-600">₹{ncbAmount.toLocaleString('en-IN')}</div>
+            </div>
+            <div>
+              <span className="text-gray-600">Sub Vention:</span>
+              <div className="font-semibold">₹{subVention.toLocaleString('en-IN')}</div>
+            </div>
+            <div>
+              <span className="text-gray-600">Net Amount:</span>
+              <div className="font-semibold text-green-600">₹{netAmount.toLocaleString('en-IN')}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Net Amount Calculation (Read-only) */}
+        <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-gray-600">Final Calculation</p>
+              <p className="text-lg font-semibold text-purple-700">
+                Net Amount: ₹{netAmount.toLocaleString('en-IN')}
+              </p>
+            </div>
+            <div className="text-sm text-gray-500 text-right">
+              <div>Formula: NCB Amount - Sub Vention</div>
+              <div>₹{ncbAmount.toLocaleString('en-IN')} - ₹{subVention.toLocaleString('en-IN')}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="border rounded-xl p-5">
+        <h4 className="text-md font-semibold text-gray-700 mb-3">
+          Payout Formula
+        </h4>
+        <div className="text-sm text-gray-600 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">NCB Amount:</span>
+            <span>10% of OD Amount (OD × 0.10)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Net Amount:</span>
+            <span>NCB Amount - Sub Vention</span>
+          </div>
+          
+          {/* Example Calculation */}
+          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+            <p className="text-green-700 text-sm font-medium mb-2">Example Calculation:</p>
+            <div className="space-y-1 text-xs">
+              <div>If OD Amount = ₹10,000</div>
+              <div>Then NCB Amount = ₹10,000 × 10% = ₹1,000</div>
+              <div>If Sub Vention = ₹200</div>
+              <div>Then Net Amount = ₹1,000 - ₹200 = ₹800</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Add validation for Payout Details
+const payoutValidation = (form) => {
+  const errors = {};
+
+  if (!form.netPremium) {
+    errors.netPremium = "Net premium is required";
+  } else if (parseFloat(form.netPremium) <= 0) {
+    errors.netPremium = "Net premium must be greater than 0";
+  }
+
+  if (!form.odAmount) {
+    errors.odAmount = "OD amount is required";
+  } else if (parseFloat(form.odAmount) <= 0) {
+    errors.odAmount = "OD amount must be greater than 0";
+  }
+
+  if (!form.ncbAmount) {
+    errors.ncbAmount = "NCB amount is required";
+  } else {
+    const expectedNcb = (parseFloat(form.odAmount || 0) * 0.10).toFixed(2);
+    const actualNcb = parseFloat(form.ncbAmount).toFixed(2);
+    if (actualNcb !== expectedNcb) {
+      errors.ncbAmount = `NCB should be 10% of OD (₹${expectedNcb})`;
+    }
+  }
+
+  if (!form.subVention) {
+    errors.subVention = "Sub vention is required";
+  } else if (parseFloat(form.subVention) < 0) {
+    errors.subVention = "Sub vention cannot be negative";
+  }
+
+  // Validate that net amount is not negative
+  const ncbAmount = parseFloat(form.ncbAmount || 0);
+  const subVention = parseFloat(form.subVention || 0);
+  const netAmount = ncbAmount - subVention;
+  
+  if (netAmount < 0) {
+    errors.subVention = "Sub vention cannot be greater than NCB amount";
+  }
+
+  return errors;
 };
 
 // ================== MAIN COMPONENT ==================
@@ -2289,6 +5080,46 @@ const NewPolicyPage = () => {
   const [isEditMode, setIsEditMode] = useState(!!id);
   const [loadingPolicy, setLoadingPolicy] = useState(!!id);
 
+  // ============ ADD THE CLEAR LOCALSTORAGE EFFECT HERE ============
+  useEffect(() => {
+    if (!isEditMode && !id) {
+      console.log("🧹 Clearing localStorage for new case");
+      localStorage.removeItem('insuranceQuotes');
+      
+      // Also clear any old quote fields in form
+      setForm(prev => ({
+        ...prev,
+        insurer: "",
+        coverageType: "", 
+        premium: "",
+        idv: "",
+        ncb: "",
+        duration: "",
+        insuranceQuotes: []
+      }));
+    }
+  }, [isEditMode, id]);
+    
+  // ============ ADD THE CLEAR LOCALSTORAGE EFFECT HERE ============
+  useEffect(() => {
+    if (!isEditMode && !id) {
+      console.log("🧹 Clearing localStorage for new case");
+      localStorage.removeItem('insuranceQuotes');
+      
+      // Also clear any old quote fields in form
+      setForm(prev => ({
+        ...prev,
+        insurer: "",
+        coverageType: "", 
+        premium: "",
+        idv: "",
+        ncb: "",
+        duration: "",
+        insuranceQuotes: []
+      }));
+    }
+  }, [isEditMode, id]);
+  // 
   // Enhanced debug form state changes
   useEffect(() => {
     console.log("=== FORM STATE UPDATED ===");
@@ -2391,7 +5222,15 @@ const NewPolicyPage = () => {
         ncb: actualData.insurance_quote?.ncb || "",
         duration: actualData.insurance_quote?.duration || "",
         
-        // Policy Info (Step 4)
+         // Add these for Previous Policy (Step 4)
+  previousInsuranceCompany: actualData.previous_policy.insuranceCompany || "",
+  previousPolicyNumber: actualData.previous_policy.policyNumber ||" ",
+  previousPolicyType: actualData.previous_policy.policyType || "",
+  previousIssueDate: actualData.previous_policy.issueDate || "",
+  previousDueDate: actualData.previous_policy.dueDate || "",
+  previousClaimTaken: actualData.previous_policy.claimTakenLastYear ||"",
+  previousNcbDiscount: actualData.previous_policy.ncbDiscount || "",
+        // Policy Info (Step 5)
         policyIssued: actualData.policy_info?.policyIssued || "",
         insuranceCompany: actualData.policy_info?.insuranceCompany || "",
         policyNumber: actualData.policy_info?.policyNumber || "",
@@ -2403,7 +5242,7 @@ const NewPolicyPage = () => {
         idvAmount: actualData.policy_info?.idvAmount || "",
         totalPremium: actualData.policy_info?.totalPremium || "",
         
-        // Payment Info (Step 6)
+        // Payment Info (Step 7)
         paymentMadeBy: actualData.payment_info?.paymentMadeBy || "",
         paymentMode: actualData.payment_info?.paymentMode || "",
         paymentAmount: actualData.payment_info?.paymentAmount || "",
@@ -2411,8 +5250,13 @@ const NewPolicyPage = () => {
         transactionId: actualData.payment_info?.transactionId || "",
         receiptDate: actualData.payment_info?.receiptDate || "",
         bankName: actualData.payment_info?.bankName || "",
-        
-        // Documents (Step 5)
+         
+        // Add these for Payout
+  netPremium: actualData.payout.netPremium || "",
+  odAmount: actualData.payout.odAmount || "",
+  ncbAmount: actualData.payout.ncbAmount || "",
+  subVention: actualData.payout.subVention || "",
+        // Documents (Step 6)
         documents: actualData.documents || [],
         
         // Metadata
@@ -2420,18 +5264,18 @@ const NewPolicyPage = () => {
         created_by: actualData.created_by || "ADMIN123"
       };
       
-      console.log("🔄 Transformed Form Data:", transformedData);
-      console.log("✅ Final insuranceQuotes after transformation:", transformedData.insuranceQuotes);
-      console.log("✅ Final insuranceQuotes length:", transformedData.insuranceQuotes.length);
+      console.log(" Transformed Form Data:", transformedData);
+      console.log(" Final insuranceQuotes after transformation:", transformedData.insuranceQuotes);
+      console.log(" Final insuranceQuotes length:", transformedData.insuranceQuotes.length);
       
       // Set the form with the transformed data
       setForm(transformedData);
-      setSaveMessage("✅ Policy data loaded successfully! You can now edit the form.");
+      setSaveMessage(" Policy data loaded successfully! You can now edit the form.");
       
     } catch (error) {
-      console.error("❌ Error fetching policy data:", error);
-      console.error("📋 Error details:", error.response?.data);
-      setSaveMessage(`❌ Error loading policy data: ${error.message}`);
+      console.error(" Error fetching policy data:", error);
+      console.error(" Error details:", error.response?.data);
+      setSaveMessage(` Error loading policy data: ${error.message}`);
     } finally {
       setLoadingPolicy(false);
     }
@@ -2464,14 +5308,14 @@ const NewPolicyPage = () => {
     
     // Handle documents array separately - this is called from Documents component
     if (name === "documents" && Array.isArray(value)) {
-      console.log("📄 Updating documents array:", value);
+      console.log(" Updating documents array:", value);
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
     
     // Handle insuranceQuotes array separately - this is called from InsuranceQuotes component
     if (name === "insuranceQuotes" && Array.isArray(value)) {
-      console.log("💰 Updating insuranceQuotes array:", value);
+      console.log(" Updating insuranceQuotes array:", value);
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
@@ -2482,15 +5326,15 @@ const NewPolicyPage = () => {
 
   // Special handler for documents from Documents component
   const handleDocumentsUpdate = (documentsArray) => {
-    console.log("📄 Documents updated in main component:", documentsArray);
+    console.log(" Documents updated in main component:", documentsArray);
     setForm((f) => ({ ...f, documents: documentsArray }));
   };
 
   // Special handler for insurance quotes from InsuranceQuotes component
   const handleInsuranceQuotesUpdate = (quotesArray) => {
-    console.log("💰 Insurance quotes updated in main component:", quotesArray);
-    console.log("💰 Previous quotes:", form.insuranceQuotes);
-    console.log("💰 New quotes count:", quotesArray.length);
+    console.log(" Insurance quotes updated in main component:", quotesArray);
+    console.log(" Previous quotes:", form.insuranceQuotes);
+    console.log(" New quotes count:", quotesArray.length);
     
     setForm((f) => ({ 
       ...f, 
@@ -2523,17 +5367,23 @@ const NewPolicyPage = () => {
       case 3:
         stepErrors = validationRules.validateStep3(form);
         break;
-      case 4:
-        stepErrors = validationRules.validateStep4(form);
-        break;
-      case 5:
-        stepErrors = validationRules.validateStep5(form);
-        break;
-      case 6:
-        stepErrors = validationRules.validateStep6(form);
-        break;
-      default:
-        stepErrors = {};
+       case 4:  // New validation for Previous Policy
+      stepErrors = previousPolicyValidation(form);
+      break;
+    case 5:
+      stepErrors = validationRules.validateStep4(form);
+      break;
+    case 6:
+      stepErrors = validationRules.validateStep5(form);
+      break;
+    case 7:
+      stepErrors = validationRules.validateStep6(form);
+      break;
+    case 8:  // New validation for Payout
+      stepErrors = payoutValidation(form);
+      break;
+    default:
+      stepErrors = {};
     }
     
     setErrors(stepErrors);
@@ -2577,7 +5427,7 @@ const NewPolicyPage = () => {
         created_by: form.created_by || "ADMIN123"
       };
 
-      console.log("💰 Creating policy with insuranceQuotes:", policyData.insuranceQuotes);
+      console.log(" Creating policy with insuranceQuotes:", policyData.insuranceQuotes);
       console.log("Creating policy with data:", policyData);
 
       const response = await axios.post(`${API_BASE_URL}/policies`, policyData, {
@@ -2691,7 +5541,20 @@ const NewPolicyPage = () => {
             }
           };
           break;
-        case 4: // New Policy Details
+          case 4: // Previous Policy Details
+     updateData = {
+    previous_policy: {  // Changed from previous_policy to previous_policy
+      insuranceCompany: form.previousInsuranceCompany || "",
+      policyNumber: form.previousPolicyNumber || "",
+      policyType: form.previousPolicyType || "",
+      issueDate: form.previousIssueDate || "",
+      dueDate: form.previousDueDate || "",
+      claimTakenLastYear: form.previousClaimTaken || "",
+      ncbDiscount: form.previousNcbDiscount || 0
+    }
+  };
+  break;
+        case 5: // New Policy Details
           updateData = {
             policy_info: {
               policyIssued: form.policyIssued || "",
@@ -2707,12 +5570,12 @@ const NewPolicyPage = () => {
             }
           };
           break;
-        case 5: // Documents
+        case 6: // Documents
           updateData = {
             documents: form.documents || []
           };
           break;
-        case 6: // Payment
+        case 7: // Payment
           updateData = {
             payment_info: {
               paymentMadeBy: form.paymentMadeBy || "",
@@ -2725,6 +5588,17 @@ const NewPolicyPage = () => {
             }
           };
           break;
+          case 8: // Payout Details
+  updateData = {
+    payout: {  // Ensure this matches your backend expectation
+      netPremium: form.netPremium || 0,
+      odAmount: form.odAmount || 0,
+      ncbAmount: form.ncbAmount || 0,
+      subVention: form.subVention || 0,
+      netAmount: (form.ncbAmount || 0) - (form.subVention || 0)
+    }
+  };
+  break;
         default:
           updateData = {};
       }
@@ -2732,8 +5606,8 @@ const NewPolicyPage = () => {
       // CRITICAL: ALWAYS include insuranceQuotes in every update
       updateData.insuranceQuotes = form.insuranceQuotes || [];
       
-      console.log("💰 Sending insuranceQuotes to API:", updateData.insuranceQuotes);
-      console.log("💰 insuranceQuotes length being sent:", updateData.insuranceQuotes.length);
+      console.log(" Sending insuranceQuotes to API:", updateData.insuranceQuotes);
+      console.log(" insuranceQuotes length being sent:", updateData.insuranceQuotes.length);
 
       console.log(`${isEditMode ? 'Updating' : 'Saving'} policy ${policyId} with:`, updateData);
 
@@ -2743,9 +5617,9 @@ const NewPolicyPage = () => {
         }
       });
       
-      console.log("✅ API Response:", response.data);
+      console.log(" API Response:", response.data);
       
-      setSaveMessage(isEditMode ? "✅ Policy updated successfully!" : "✅ Progress saved successfully!");
+      setSaveMessage(isEditMode ? " Policy updated successfully!" : " Progress saved successfully!");
       
       return response.data;
     } catch (error) {
@@ -2754,14 +5628,14 @@ const NewPolicyPage = () => {
       
       if (error.response) {
         errorMessage = `Save error: ${error.response.status} - ${JSON.stringify(error.response.data)}`;
-        console.error("📋 API Error details:", error.response.data);
+        console.error(" API Error details:", error.response.data);
       } else if (error.request) {
         errorMessage = "Network error: No response from server";
       } else {
         errorMessage = `Error: ${error.message}`;
       }
       
-      setSaveMessage(`❌ ${errorMessage}`);
+      setSaveMessage(` ${errorMessage}`);
       throw error;
     } finally {
       setIsSaving(false);
@@ -2770,7 +5644,7 @@ const NewPolicyPage = () => {
 
   const handleSave = async () => {
     if (!validateCurrentStep()) {
-      setSaveMessage("❌ Please fix the validation errors before saving");
+      setSaveMessage(" Please fix the validation errors before saving");
       return;
     }
     
@@ -2784,7 +5658,7 @@ const NewPolicyPage = () => {
   // Handle form completion and navigation - UPDATED to ensure insuranceQuotes are saved
   const handleFinish = async () => {
     if (!validateCurrentStep()) {
-      setSaveMessage("❌ Please fix the validation errors before finishing");
+      setSaveMessage(" Please fix the validation errors before finishing");
       return;
     }
 
@@ -2836,6 +5710,16 @@ const NewPolicyPage = () => {
           ncb: form.ncb,
           duration: form.duration
         },
+         // Add Previous Policy section
+  previous_policy: {
+    insuranceCompany: form.previousInsuranceCompany || "",
+    policyNumber: form.previousPolicyNumber || "",
+    policyType: form.previousPolicyType || "",
+    issueDate: form.previousIssueDate || "",
+    dueDate: form.previousDueDate || "",
+    claimTakenLastYear: form.previousClaimTaken || "",
+    ncbDiscount: form.previousNcbDiscount || 0
+  },
         insurance_quotes: form.insuranceQuotes || [], // ← ADDED THIS LINE
         policy_info: {
           policyIssued: form.policyIssued,
@@ -2859,13 +5743,21 @@ const NewPolicyPage = () => {
           receiptDate: form.receiptDate,
           bankName: form.bankName
         },
+         payout: {
+    netPremium: form.netPremium || 0,
+    odAmount: form.odAmount || 0,
+    ncbAmount: form.ncbAmount || 0,
+    subVention: form.subVention || 0,
+    netAmount: (form.ncbAmount || 0) - (form.subVention || 0)
+  },
+  
         status: "completed",
         completed_at: Date.now(),
         ts: form.ts,
         created_by: form.created_by
       };
 
-      console.log(`💰 Finalizing policy with insuranceQuotes:`, finalData.insuranceQuotes);
+      console.log(` Finalizing policy with insuranceQuotes:`, finalData.insuranceQuotes);
       console.log(`Finalizing policy ${policyId} with complete data:`, finalData);
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, finalData, {
@@ -2874,7 +5766,7 @@ const NewPolicyPage = () => {
         }
       });
 
-      setSaveMessage("✅ Policy completed successfully! Redirecting to policies page...");
+      setSaveMessage(" Policy completed successfully! Redirecting to policies page...");
       setIsCompleted(true);
       
       setTimeout(() => {
@@ -2883,7 +5775,7 @@ const NewPolicyPage = () => {
       
     } catch (error) {
       console.error("Error completing policy:", error);
-      setSaveMessage("❌ Error completing policy. Please try again.");
+      setSaveMessage(" Error completing policy. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -2896,7 +5788,7 @@ const NewPolicyPage = () => {
     }
 
     if (!validateCurrentStep()) {
-      setSaveMessage("❌ Please fix the validation errors before proceeding");
+      setSaveMessage(" Please fix the validation errors before proceeding");
       return;
     }
 
@@ -2951,7 +5843,7 @@ const NewPolicyPage = () => {
             </Link>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
             <p className="mt-3 text-gray-600">Loading policy data...</p>
           </div>
         </div>
@@ -2966,9 +5858,9 @@ const NewPolicyPage = () => {
           <div className={`mb-4 p-3 rounded-md ${
             saveMessage.includes("❌") || saveMessage.includes("Error") || saveMessage.includes("validation") 
               ? "bg-red-100 text-red-700 border border-red-300" 
-              : saveMessage.includes("✅") || saveMessage.includes("completed successfully") || saveMessage.includes("successfully")
+              : saveMessage.includes("") || saveMessage.includes("completed successfully") || saveMessage.includes("successfully")
               ? "bg-green-100 text-green-700 border border-green-300"
-              : "bg-blue-100 text-blue-700 border border-blue-300"
+              : "bg-purple-100 text-purple-700 border border-purple-300"
           }`}>
             {saveMessage}
             {isCompleted && (
@@ -2980,19 +5872,18 @@ const NewPolicyPage = () => {
         )}
 
         {/* Debug Section - Always visible in development */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* {process.env.NODE_ENV === 'development' && (
           <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-md">
             <div className="flex justify-between items-center">
-              <div>
-                <h4 className="font-semibold text-yellow-800">Debug Info</h4>
+               <div>
+                <h4 className="font-semibold text-yellow-800">Case Info</h4>
                 <p className="text-xs text-yellow-700">
                   Edit Mode: {isEditMode ? 'Yes' : 'No'} | 
                   Policy ID: {policyId || 'Not set'} | 
                   Step: {step} | 
                   Saving: {isSaving ? 'Yes' : 'No'} |
-                  Quotes: {form.insuranceQuotes?.length || 0} {/* ← ADDED THIS LINE */}
-                </p>
-              </div>
+                  Quotes: {form.insuranceQuotes?.length || 0} 
+              </div> 
               <button
                 onClick={() => {
                   console.log("=== CURRENT FORM STATE ===");
@@ -3015,10 +5906,10 @@ const NewPolicyPage = () => {
               <div>Customer: "{form.customerName || 'Empty'}"</div>
               <div>Mobile: "{form.mobile || 'Empty'}"</div>
               <div>Documents: {form.documents?.length || 0} files</div>
-              <div>Quotes: {form.insuranceQuotes?.length || 0} quotes</div> {/* ← ADDED THIS LINE */}
+              <div>Quotes: {form.insuranceQuotes?.length || 0} quotes</div> 
             </div>
           </div>
-        )}
+        )}*/}
 
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -3072,7 +5963,7 @@ const NewPolicyPage = () => {
                       isCompleted
                         ? "bg-green-500 text-white shadow-sm"
                         : isCurrent
-                        ? "bg-white border-2 border-blue-600 text-blue-600 shadow-sm"
+                        ? "bg-white border-2 border-purple-600 text-purple-600 shadow-sm"
                         : "bg-gray-100 text-gray-500"
                     }`}
                   >
@@ -3083,7 +5974,7 @@ const NewPolicyPage = () => {
                       isCompleted
                         ? "text-green-600"
                         : isCurrent
-                        ? "text-blue-600"
+                        ? "text-purple-600"
                         : "text-gray-400"
                     }`}
                   >
@@ -3099,9 +5990,11 @@ const NewPolicyPage = () => {
         {step === 1 && <CaseDetails {...stepProps} />}
         {step === 2 && <VehicleDetails {...stepProps} />}
         {step === 3 && <InsuranceQuotes {...stepProps} />}
-        {step === 4 && <NewPolicyDetails {...stepProps} />}
-        {step === 5 && <Documents {...stepProps} />}
-        {step === 6 && <Payment {...stepProps} />}
+        {step === 4 && <PreviousPolicyDetails {...stepProps} />}      {/* New */}
+        {step === 5 && <NewPolicyDetails {...stepProps} />}
+        {step === 6 && <Documents {...stepProps} />}
+        {step === 7 && <Payment {...stepProps} />}      
+        {step === 8 && <PayoutDetails {...stepProps} />} 
 
         {/* Navigation Buttons */}
         <div className="mt-8 bg-transparent p-4 rounded-md flex items-center justify-between border-t border-gray-100">
@@ -3119,13 +6012,13 @@ const NewPolicyPage = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button
+            {/* <button
               onClick={handleSave}
               disabled={isSaving || isCompleted}
               className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
               <FaSave /> {isSaving ? "Saving..." : "Save Progress"}
-            </button>
+            </button> */}
 
             <div className="text-sm text-gray-500 hidden md:block">
               Progress: {progressPercent}%
@@ -3134,7 +6027,7 @@ const NewPolicyPage = () => {
             <button
               onClick={nextStep}
               disabled={isCompleted || isSaving}
-              className="inline-flex items-center gap-3 px-5 py-2 rounded-md bg-black text-white text-sm hover:opacity-95 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-3 px-5 py-2 rounded-md bg-purple-600 text-white text-sm hover:opacity-95 disabled:opacity-50 transition-colors"
             >
               {isSaving ? "Processing..." : nextLabel} 
               {!isSaving && step < steps.length && <FaChevronRight />}

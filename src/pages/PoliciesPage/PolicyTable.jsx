@@ -31,8 +31,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
 
   // Function to handle view click
   const handleViewClick = (policy) => {
-    setSelectedPolicy(policy);
-    setIsModalOpen(true);
+    // setSelectedPolicy(policy);
+    // setIsModalOpen(true);
     if (onView) {
       onView(policy);
     }
@@ -110,7 +110,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       },
       pending: { 
         text: 'Pending', 
-        class: 'bg-blue-50 text-blue-700 border border-blue-200'
+        class: 'bg-purple-50 text-purple-700 border border-purple-200'
       },
       expired: { 
         text: 'Expired', 
@@ -198,7 +198,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
         <p className="mt-3 text-gray-600 text-sm">Loading policies...</p>
       </div>
     );
@@ -266,8 +266,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-blue-600 text-xs font-mono">
-                        {policy._id ? policy._id.substring(0, 8) + '...' : policy.id}
+                      <div className="font-semibold text-purple-600 text-xs font-mono">
+                        {policy._id ? policy._id : policy.id}
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -314,7 +314,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                       <div className="flex space-x-2">
                         <button 
                           onClick={() => handleViewClick(policy)}
-                          className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline"
+                          className="text-purple-600 hover:text-purple-800 text-xs font-medium hover:underline"
                         >
                           View
                         </button>
@@ -379,7 +379,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                         onClick={() => handlePageChange(pageNumber)}
                         className={`px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           currentPage === pageNumber
-                            ? 'bg-blue-500 text-white'
+                            ? 'bg-purple-500 text-white'
                             : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                         }`}
                       >
@@ -414,7 +414,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
           <p className="text-gray-500 text-xs mb-4">Try adjusting your filter criteria</p>
           <button
             onClick={() => setStatusFilter('all')}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs font-medium"
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-xs font-medium"
           >
             Show All Policies
           </button>
@@ -448,7 +448,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
             {policyToDelete && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <div className="text-sm text-gray-700">
-                  <div className="font-medium">Policy ID: {policyToDelete._id ? policyToDelete._id.substring(0, 8) + '...' : policyToDelete.id}</div>
+                  <div className="font-medium">Policy ID: {policyToDelete._id ? policyToDelete._id : policyToDelete.id}</div>
                   {policyToDelete.customer_details?.name && (
                     <div>Customer: {policyToDelete.customer_details.name}</div>
                   )}

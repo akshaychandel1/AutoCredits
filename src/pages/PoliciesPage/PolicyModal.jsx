@@ -46,37 +46,157 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     return 'N/A';
   };
 
-  // Get insurance quotes - FIXED: Check for insurance_quotes (plural with underscore)
+  // Enhanced function to get insurance quotes from all possible fields
   const getInsuranceQuotes = () => {
     console.log("🔍 Checking insurance quotes in policy:", policy);
-    console.log(" - insurance_quotes:", policy.insurance_quotes);
-    console.log(" - insurance_quote:", policy.insurance_quote);
-    console.log(" - insuranceQuotes:", policy.insuranceQuotes);
     
-    // Check for insurance_quotes array first (your actual backend format)
-    if (policy.insurance_quotes && Array.isArray(policy.insurance_quotes)) {
-      console.log("✅ Found insurance quotes under 'insurance_quotes':", policy.insurance_quotes);
-      return policy.insurance_quotes;
+    // Check all possible fields where quotes might be stored
+    const possibleQuoteFields = [
+      'quotes', // Most likely field name
+      'insurance_quotes',
+      'insuranceQuotes', 
+      'insurance_quote',
+      'quoteDetails',
+      'quote_data'
+    ];
+
+    for (const field of possibleQuoteFields) {
+      if (policy[field]) {
+        console.log(`✅ Found quotes in '${field}':`, policy[field]);
+        
+        // Handle array format
+        if (Array.isArray(policy[field])) {
+          return policy[field];
+        }
+        // Handle object format (single quote)
+        else if (typeof policy[field] === 'object') {
+          return [policy[field]]; // Convert to array for consistent handling
+        }
+        // Handle string that might be JSON
+        else if (typeof policy[field] === 'string') {
+          try {
+            const parsed = JSON.parse(policy[field]);
+            return Array.isArray(parsed) ? parsed : [parsed];
+          } catch {
+            // If it's not JSON, skip
+            continue;
+          }
+        }
+      }
     }
-    // Check for insurance_quote array (alternative format)
-    if (policy.insurance_quote && Array.isArray(policy.insurance_quote)) {
-      console.log("✅ Found insurance quotes under 'insurance_quote':", policy.insurance_quote);
-      return policy.insurance_quote;
+
+    // Check nested fields
+    if (policy.policy_info?.quotes && Array.isArray(policy.policy_info.quotes)) {
+      console.log("✅ Found quotes in 'policy_info.quotes':", policy.policy_info.quotes);
+      return policy.policy_info.quotes;
     }
-    // Fallback to insuranceQuotes (frontend format)
-    if (policy.insuranceQuotes && Array.isArray(policy.insuranceQuotes)) {
-      console.log("✅ Found insurance quotes under 'insuranceQuotes':", policy.insuranceQuotes);
-      return policy.insuranceQuotes;
+
+    if (policy.vehicle_details?.quotes && Array.isArray(policy.vehicle_details.quotes)) {
+      console.log("✅ Found quotes in 'vehicle_details.quotes':", policy.vehicle_details.quotes);
+      return policy.vehicle_details.quotes;
     }
-    
+
     console.log("❌ No insurance quotes found in any field");
+    console.log("📋 Available policy fields:", Object.keys(policy));
+    if (policy.policy_info) console.log("📋 Policy info fields:", Object.keys(policy.policy_info));
+    if (policy.vehicle_details) console.log("📋 Vehicle details fields:", Object.keys(policy.vehicle_details));
+    
     return [];
+  };
+
+  // Function to extract insurer name from quote
+  const getInsurerName = (quote) => {
+    // Check all possible fields for insurer name
+    const possibleInsurerFields = [
+      'insuranceCompany',
+      'insurer',
+      'quoteInsurer', 
+      'company',
+      'insurance_company',
+      'provider',
+      'insurerName'
+    ];
+
+    for (const field of possibleInsurerFields) {
+      if (quote[field]) {
+        return quote[field];
+      }
+    }
+
+    // If no specific insurer field, check for company info
+    if (quote.companyInfo?.name) {
+      return quote.companyInfo.name;
+    }
+
+    return 'Unknown Insurer';
+  };
+
+  // Function to extract IDV from quote
+  const getIDV = (quote) => {
+    const possibleIDVFields = ['idv', 'IDV', 'insuredValue', 'sum_insured'];
+    for (const field of possibleIDVFields) {
+      if (quote[field]) {
+        return parseInt(quote[field]) || 0;
+      }
+    }
+    return 0;
+  };
+
+  // Function to extract premium from quote
+  const getPremium = (quote) => {
+    const possiblePremiumFields = [
+      'premium', 
+      'totalPremium',
+      'finalPremium',
+      'amount',
+      'premiumAmount'
+    ];
+    
+    for (const field of possiblePremiumFields) {
+      if (quote[field]) {
+        return parseInt(quote[field]) || 0;
+      }
+    }
+    return 0;
+  };
+
+  // Function to extract coverage type from quote
+  const getCoverageType = (quote) => {
+    const possibleCoverageFields = ['coverageType', 'coverage_type', 'type', 'policyType'];
+    for (const field of possibleCoverageFields) {
+      if (quote[field]) {
+        return quote[field];
+      }
+    }
+    return 'Comprehensive';
+  };
+
+  // Function to extract policy duration from quote
+  const getDuration = (quote) => {
+    const possibleDurationFields = ['duration', 'policyDuration', 'term', 'policy_term'];
+    for (const field of possibleDurationFields) {
+      if (quote[field]) {
+        return quote[field];
+      }
+    }
+    return '1';
+  };
+
+  // Function to extract NCB from quote
+  const getNCB = (quote) => {
+    const possibleNCBFields = ['ncb', 'ncbDiscount', 'ncb_percentage'];
+    for (const field of possibleNCBFields) {
+      if (quote[field]) {
+        return quote[field];
+      }
+    }
+    return '0';
   };
 
   const insuranceQuotes = getInsuranceQuotes();
   const hasMultipleQuotes = insuranceQuotes.length > 1;
 
-  console.log("📊 Final insurance quotes:", insuranceQuotes);
+  console.log("📊 Final processed insurance quotes:", insuranceQuotes);
   console.log("📊 Has multiple quotes:", hasMultipleQuotes);
 
   // Get dates conditionally
@@ -313,7 +433,8 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                               <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Insurer</th>
                               <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">IDV</th>
                               <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Premium</th>
-                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Zone</th>
+                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Type</th>
+                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">NCB</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
@@ -321,22 +442,27 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                               <tr key={index} className="hover:bg-gray-50">
                                 <td className="py-2 px-2">
                                   <div className="font-medium text-gray-900 text-xs">
-                                    {quote.quoteInsurer || quote.insurer || 'N/A'}
+                                    {getInsurerName(quote)}
                                   </div>
                                 </td>
                                 <td className="py-2 px-2">
                                   <div className="text-gray-700 text-xs">
-                                    ₹{(parseInt(quote.idv) || 0).toLocaleString('en-IN')}
+                                    ₹{getIDV(quote).toLocaleString('en-IN')}
                                   </div>
                                 </td>
                                 <td className="py-2 px-2">
                                   <div className="text-gray-700 text-xs">
-                                    ₹{(parseInt(quote.premium) || 0).toLocaleString('en-IN')}
+                                    ₹{getPremium(quote).toLocaleString('en-IN')}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-2">
+                                  <div className="text-gray-700 text-xs capitalize">
+                                    {getCoverageType(quote)}
                                   </div>
                                 </td>
                                 <td className="py-2 px-2">
                                   <div className="text-gray-700 text-xs">
-                                    {quote.zone || 'N/A'}
+                                    {getNCB(quote)}%
                                   </div>
                                 </td>
                               </tr>
@@ -352,21 +478,40 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                             <div className="flex justify-between items-center">
                               <span className="text-sm font-medium text-gray-600">Insurer:</span>
                               <span className="text-sm font-semibold text-gray-900">
-                                {quote.quoteInsurer || quote.insurer || 'N/A'}
+                                {getInsurerName(quote)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-sm font-medium text-gray-600">IDV Amount:</span>
                               <span className="text-sm font-semibold text-gray-900">
-                                ₹{(parseInt(quote.idv) || 0).toLocaleString('en-IN')}
+                                ₹{getIDV(quote).toLocaleString('en-IN')}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-sm font-medium text-gray-600">Premium:</span>
                               <span className="text-sm font-semibold text-gray-900">
-                                ₹{(parseInt(quote.premium) || 0).toLocaleString('en-IN')}
+                                ₹{getPremium(quote).toLocaleString('en-IN')}
                               </span>
                             </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Coverage Type:</span>
+                              <span className="text-sm font-semibold text-gray-900 capitalize">
+                                {getCoverageType(quote)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Policy Duration:</span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                {getDuration(quote)} year(s)
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">NCB Discount:</span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                {getNCB(quote)}%
+                              </span>
+                            </div>
+                            {/* Additional quote details */}
                             {quote.zone && (
                               <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium text-gray-600">Zone:</span>
@@ -385,24 +530,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                                 <span className="text-sm font-semibold text-gray-900">
                                   ₹{(parseInt(quote.electricalAccessories) || 0).toLocaleString('en-IN')}
                                 </span>
-                              </div>
-                            )}
-                            {quote.coverageType && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600">Coverage Type:</span>
-                                <span className="text-sm font-semibold text-gray-900 capitalize">{quote.coverageType}</span>
-                              </div>
-                            )}
-                            {quote.ncb && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600">NCB:</span>
-                                <span className="text-sm font-semibold text-gray-900">{quote.ncb}%</span>
-                              </div>
-                            )}
-                            {quote.duration && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600">Duration:</span>
-                                <span className="text-sm font-semibold text-gray-900">{quote.duration} year(s)</span>
                               </div>
                             )}
                           </div>
@@ -448,7 +575,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
             </div>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-medium text-sm"
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-sm"
             >
               Close Policy Details
             </button>

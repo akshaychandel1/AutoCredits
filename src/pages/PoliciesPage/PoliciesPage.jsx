@@ -246,7 +246,7 @@ const PoliciesPage = () => {
             Refresh
           </button>
           <Link to="/new-policy">
-            <button className="flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white px-5 py-2 rounded-lg shadow-md transition">
+            <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg shadow-md transition">
               <FiPlus className="text-lg" /> New Policy
             </button>
           </Link>

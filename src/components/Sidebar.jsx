@@ -50,7 +50,7 @@ const Sidebar = () => {
       {/* Logo/Header */}
       <div className="h-20 flex items-center px-6 border-b border-gray-200 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center shadow-sm">
             <span className="text-white font-bold text-lg">AC</span>
           </div>
           <div>
@@ -69,13 +69,13 @@ const Sidebar = () => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 text-sm font-small rounded-xl transition-all duration-200 group ${
                 isActive
-                  ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
-                  : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+                  ? "bg-purple-600 text-white shadow-sm shadow-purple-500/25"
+                  : "text-gray-600 hover:bg-purple-50 hover:text-purple-700"
               }`
             }
           >
             <span className={`transition-transform duration-200 group-hover:scale-110 ${
-              ({ isActive }) => isActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"
+              ({ isActive }) => isActive ? "text-white" : "text-gray-500 group-hover:text-purple-700"
             }`}>
               {item.icon}
             </span>
@@ -89,13 +89,13 @@ const Sidebar = () => {
         {/* User Info */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
               <FiUser className="text-white text-sm" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-gray-800 font-semibold text-sm truncate">{user.name}</p>
               <p className="text-gray-500 text-xs truncate">{user.id}</p>
-              <p className="text-blue-600 text-xs font-medium bg-blue-100 px-2 py-0.5 rounded-full inline-block mt-1">
+              <p className="text-purple-600 text-xs font-medium bg-purple-100 px-2 py-0.5 rounded-full inline-block mt-1">
                 {user.role}
               </p>
             </div>
