@@ -11,6 +11,7 @@ import {
   FiLogOut,
   FiUser,
 } from "react-icons/fi";
+import logo from '../assets/logo.png'
 
 const Sidebar = () => {
   const menuItems = [
@@ -50,12 +51,10 @@ const Sidebar = () => {
       {/* Logo/Header */}
       <div className="h-20 flex items-center px-6 border-b border-gray-200 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-lg">AC</span>
-          </div>
+          <img src={logo} alt="" />
           <div>
-            <h1 className="text-gray-800 font-bold text-xl">AUTO CREDIT</h1>
-            <p className="text-gray-500 text-xs">Insurance Portal</p>
+            {/* <h1 className="text-gray-800 font-bold text-xl">AUTO CREDIT</h1>
+            <p className="text-gray-500 text-xs">Insurance Portal</p> */}
           </div>
         </div>
       </div>
