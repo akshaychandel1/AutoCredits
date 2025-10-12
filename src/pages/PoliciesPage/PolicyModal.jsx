@@ -1,24 +1,124 @@
 // src/pages/PoliciesPage/PolicyModal.jsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  FaCar,
+  FaUser,
+  FaPhone,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaFileInvoiceDollar,
+  FaCalendarAlt,
+  FaEdit,
+  FaTimes,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaClock,
+  FaMoneyBillWave,
+  FaCreditCard,
+  FaIdCard,
+  FaBuilding,
+  FaTag,
+  FaFileAlt,
+  FaShieldAlt,
+  FaPercentage,
+  FaHistory,
+  FaArrowRight
+} from 'react-icons/fa';
+import logo from "../../assets/logo.png";
 
 const PolicyModal = ({ policy, isOpen, onClose }) => {
+  const navigate = useNavigate();
+
   if (!isOpen || !policy) return null;
+
+  // Function to handle edit click
+  const handleEditClick = () => {
+    const policyId = policy._id || policy.id;
+    navigate(`/new-policy/${policyId}`);
+    onClose(); // Close modal after navigation
+  };
 
   // Function to format status display
   const getStatusDisplay = (status) => {
-    switch (status) {
-      case 'active':
-      case 'completed':
-        return { text: 'Active', class: 'bg-green-100 text-green-700 border border-green-200' };
-      case 'draft':
-        return { text: 'Draft', class: 'bg-yellow-100 text-yellow-700 border border-yellow-200' };
-      case 'pending':
-        return { text: 'Pending', class: 'bg-blue-100 text-blue-700 border border-blue-200' };
-      case 'expired':
-        return { text: 'Expired', class: 'bg-red-100 text-red-700 border border-red-200' };
-      default:
-        return { text: status, class: 'bg-gray-100 text-gray-700 border border-gray-200' };
+    const statusConfig = {
+      active: { 
+        text: 'Active', 
+        class: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+        icon: FaCheckCircle,
+        color: 'emerald'
+      },
+      completed: { 
+        text: 'Completed', 
+        class: 'bg-blue-50 text-blue-700 border border-blue-200',
+        icon: FaCheckCircle,
+        color: 'blue'
+      },
+      draft: { 
+        text: 'Draft', 
+        class: 'bg-amber-50 text-amber-700 border border-amber-200',
+        icon: FaClock,
+        color: 'amber'
+      },
+      pending: { 
+        text: 'Pending', 
+        class: 'bg-purple-50 text-purple-700 border border-purple-200',
+        icon: FaClock,
+        color: 'purple'
+      },
+      expired: { 
+        text: 'Expired', 
+        class: 'bg-rose-50 text-rose-700 border border-rose-200',
+        icon: FaExclamationTriangle,
+        color: 'rose'
+      },
+      'payment completed': {
+        text: 'Payment Completed',
+        class: 'bg-green-50 text-green-700 border border-green-200',
+        icon: FaCheckCircle,
+        color: 'green'
+      }
+    };
+
+    return statusConfig[status] || { 
+      text: status, 
+      class: 'bg-gray-50 text-gray-700 border border-gray-200',
+      icon: FaTag,
+      color: 'gray'
+    };
+  };
+
+  // Function to format payment status display
+  const getPaymentStatusDisplay = (policy) => {
+    const totalPaid = policy.payment_info?.totalPaidAmount || 0;
+    const totalPremium = policy.policy_info?.totalPremium || policy.insurance_quote?.premium || 0;
+    
+    let paymentStatus = 'pending';
+    if (totalPaid >= totalPremium && totalPremium > 0) {
+      paymentStatus = 'fully paid';
+    } else if (totalPaid > 0) {
+      paymentStatus = 'partially paid';
     }
+
+    const paymentConfig = {
+      'fully paid': {
+        text: 'Fully Paid',
+        class: 'bg-green-100 text-green-800 border border-green-200',
+        icon: FaCheckCircle
+      },
+      'partially paid': {
+        text: 'Partially Paid',
+        class: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+        icon: FaMoneyBillWave
+      },
+      'pending': {
+        text: 'Payment Pending',
+        class: 'bg-red-100 text-red-800 border border-red-200',
+        icon: FaClock
+      }
+    };
+
+    return paymentConfig[paymentStatus] || paymentConfig.pending;
   };
 
   // Function to format date
@@ -27,7 +127,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     try {
       return new Date(dateString).toLocaleDateString('en-IN', {
         year: 'numeric',
-        month: 'long',
+        month: 'short',
         day: 'numeric'
       });
     } catch {
@@ -38,83 +138,60 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
   // Function to get premium info
   const getPremiumInfo = (policy) => {
     if (policy.policy_info?.totalPremium) {
-      return `₹${policy.policy_info.totalPremium}`;
+      return parseInt(policy.policy_info.totalPremium);
     }
     if (policy.insurance_quote?.premium) {
-      return `₹${policy.insurance_quote.premium}`;
+      return parseInt(policy.insurance_quote.premium);
     }
-    return 'N/A';
+    return 0;
   };
 
-  // Enhanced function to get insurance quotes from all possible fields
-  const getInsuranceQuotes = () => {
-    console.log("🔍 Checking insurance quotes in policy:", policy);
+  // Function to get paid amount
+  const getPaidAmount = (policy) => {
+    const totalPaid = policy.payment_info?.totalPaidAmount || 0;
+    const totalPremium = getPremiumInfo(policy);
     
-    // Check all possible fields where quotes might be stored
+    return {
+      paid: totalPaid,
+      total: totalPremium,
+      percentage: totalPremium > 0 ? (totalPaid / totalPremium) * 100 : 0
+    };
+  };
+
+  // Enhanced function to get insurance quotes
+  const getInsuranceQuotes = () => {
     const possibleQuoteFields = [
-      'quotes', // Most likely field name
       'insurance_quotes',
       'insuranceQuotes', 
-      'insurance_quote',
-      'quoteDetails',
-      'quote_data'
+      'quotes',
+      'insurance_quote'
     ];
 
     for (const field of possibleQuoteFields) {
       if (policy[field]) {
-        console.log(`✅ Found quotes in '${field}':`, policy[field]);
-        
-        // Handle array format
         if (Array.isArray(policy[field])) {
           return policy[field];
-        }
-        // Handle object format (single quote)
-        else if (typeof policy[field] === 'object') {
-          return [policy[field]]; // Convert to array for consistent handling
-        }
-        // Handle string that might be JSON
-        else if (typeof policy[field] === 'string') {
-          try {
-            const parsed = JSON.parse(policy[field]);
-            return Array.isArray(parsed) ? parsed : [parsed];
-          } catch {
-            // If it's not JSON, skip
-            continue;
-          }
+        } else if (typeof policy[field] === 'object') {
+          return [policy[field]];
         }
       }
     }
 
     // Check nested fields
     if (policy.policy_info?.quotes && Array.isArray(policy.policy_info.quotes)) {
-      console.log("✅ Found quotes in 'policy_info.quotes':", policy.policy_info.quotes);
       return policy.policy_info.quotes;
     }
 
-    if (policy.vehicle_details?.quotes && Array.isArray(policy.vehicle_details.quotes)) {
-      console.log("✅ Found quotes in 'vehicle_details.quotes':", policy.vehicle_details.quotes);
-      return policy.vehicle_details.quotes;
-    }
-
-    console.log("❌ No insurance quotes found in any field");
-    console.log("📋 Available policy fields:", Object.keys(policy));
-    if (policy.policy_info) console.log("📋 Policy info fields:", Object.keys(policy.policy_info));
-    if (policy.vehicle_details) console.log("📋 Vehicle details fields:", Object.keys(policy.vehicle_details));
-    
     return [];
   };
 
   // Function to extract insurer name from quote
   const getInsurerName = (quote) => {
-    // Check all possible fields for insurer name
     const possibleInsurerFields = [
       'insuranceCompany',
       'insurer',
-      'quoteInsurer', 
       'company',
-      'insurance_company',
-      'provider',
-      'insurerName'
+      'provider'
     ];
 
     for (const field of possibleInsurerFields) {
@@ -122,114 +199,151 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
         return quote[field];
       }
     }
-
-    // If no specific insurer field, check for company info
-    if (quote.companyInfo?.name) {
-      return quote.companyInfo.name;
-    }
-
     return 'Unknown Insurer';
   };
 
-  // Function to extract IDV from quote
-  const getIDV = (quote) => {
-    const possibleIDVFields = ['idv', 'IDV', 'insuredValue', 'sum_insured'];
-    for (const field of possibleIDVFields) {
-      if (quote[field]) {
-        return parseInt(quote[field]) || 0;
-      }
-    }
-    return 0;
+  // Function to extract quote details
+  const getQuoteDetails = (quote) => {
+    return {
+      insurer: getInsurerName(quote),
+      idv: parseInt(quote.idv) || 0,
+      premium: parseInt(quote.premium) || 0,
+      totalPremium: parseInt(quote.totalPremium) || parseInt(quote.premium) || 0,
+      coverageType: quote.coverageType || 'comprehensive',
+      policyDuration: quote.policyDuration || 1,
+      ncbDiscount: quote.ncbDiscount || 0,
+      odAmount: parseInt(quote.odAmount) || 0,
+      thirdPartyAmount: parseInt(quote.thirdPartyAmount) || 0
+    };
   };
 
-  // Function to extract premium from quote
-  const getPremium = (quote) => {
-    const possiblePremiumFields = [
-      'premium', 
-      'totalPremium',
-      'finalPremium',
-      'amount',
-      'premiumAmount'
-    ];
-    
-    for (const field of possiblePremiumFields) {
-      if (quote[field]) {
-        return parseInt(quote[field]) || 0;
-      }
-    }
-    return 0;
+  // Get accepted quote
+  const getAcceptedQuote = () => {
+    const quotes = getInsuranceQuotes();
+    return quotes.find(quote => quote.accepted === true) || quotes[0];
   };
 
-  // Function to extract coverage type from quote
-  const getCoverageType = (quote) => {
-    const possibleCoverageFields = ['coverageType', 'coverage_type', 'type', 'policyType'];
-    for (const field of possibleCoverageFields) {
-      if (quote[field]) {
-        return quote[field];
-      }
-    }
-    return 'Comprehensive';
+  // Get customer details
+  const getCustomerDetails = () => {
+    const customer = policy.customer_details || {};
+    return {
+      name: customer.name || 'N/A',
+      mobile: customer.mobile || 'N/A',
+      email: customer.email || 'N/A',
+      city: customer.city || 'N/A',
+      pincode: customer.pincode || 'N/A',
+      address: customer.residenceAddress || 'N/A',
+      buyerType: policy.buyer_type || 'individual',
+      age: customer.age || 'N/A',
+      gender: customer.gender || 'N/A',
+      panNumber: customer.panNumber || 'N/A',
+      aadhaarNumber: customer.aadhaarNumber || 'N/A'
+    };
   };
 
-  // Function to extract policy duration from quote
-  const getDuration = (quote) => {
-    const possibleDurationFields = ['duration', 'policyDuration', 'term', 'policy_term'];
-    for (const field of possibleDurationFields) {
-      if (quote[field]) {
-        return quote[field];
-      }
-    }
-    return '1';
+  // Get vehicle details
+  const getVehicleDetails = () => {
+    const vehicle = policy.vehicle_details || {};
+    return {
+      make: vehicle.make || 'N/A',
+      model: vehicle.model || 'N/A',
+      variant: vehicle.variant || 'N/A',
+      regNo: vehicle.regNo || 'N/A',
+      engineNo: vehicle.engineNo || 'N/A',
+      chassisNo: vehicle.chassisNo || 'N/A',
+      makeYear: vehicle.makeYear || 'N/A',
+      makeMonth: vehicle.makeMonth || 'N/A'
+    };
   };
 
-  // Function to extract NCB from quote
-  const getNCB = (quote) => {
-    const possibleNCBFields = ['ncb', 'ncbDiscount', 'ncb_percentage'];
-    for (const field of possibleNCBFields) {
-      if (quote[field]) {
-        return quote[field];
-      }
-    }
-    return '0';
+  // Get previous policy details
+  const getPreviousPolicy = () => {
+    const prev = policy.previous_policy || {};
+    return {
+      insuranceCompany: prev.insuranceCompany || 'N/A',
+      policyNumber: prev.policyNumber || 'N/A',
+      policyType: prev.policyType || 'N/A',
+      issueDate: prev.issueDate || 'N/A',
+      dueDate: prev.dueDate || 'N/A',
+      claimTakenLastYear: prev.claimTakenLastYear || 'no',
+      ncbDiscount: prev.ncbDiscount || 0
+    };
   };
 
+  // Get payout details
+  const getPayoutDetails = () => {
+    const payout = policy.payout || {};
+    return {
+      netPremium: payout.netPremium || 0,
+      odAmount: payout.odAmount || 0,
+      ncbAmount: payout.ncbAmount || 0,
+      subVention: payout.subVention || 0,
+      netAmount: payout.netAmount || 0
+    };
+  };
+
+  // Data extraction
+  const customer = getCustomerDetails();
+  const vehicle = getVehicleDetails();
+  const previousPolicy = getPreviousPolicy();
+  const payout = getPayoutDetails();
   const insuranceQuotes = getInsuranceQuotes();
-  const hasMultipleQuotes = insuranceQuotes.length > 1;
-
-  console.log("📊 Final processed insurance quotes:", insuranceQuotes);
-  console.log("📊 Has multiple quotes:", hasMultipleQuotes);
-
-  // Get dates conditionally
-  const createdDate = formatDate(policy.createdAt);
-  const startDate = formatDate(policy.policy_info?.startDate);
-  const expiryDate = formatDate(policy.policy_info?.dueDate);
-
+  const acceptedQuote = getAcceptedQuote();
+  const quoteDetails = acceptedQuote ? getQuoteDetails(acceptedQuote) : null;
+  const premiumInfo = getPremiumInfo(policy);
+  const paidInfo = getPaidAmount(policy);
   const statusDisplay = getStatusDisplay(policy.status);
+  const paymentDisplay = getPaymentStatusDisplay(policy);
+  const PaymentIcon = paymentDisplay.icon;
 
   return (
-    <div className="fixed inset-0 bg-opacity-10 backdrop-blur-md flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-auto max-w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="border-b border-gray-200 p-3 bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">P</span>
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-6 flex-shrink-0">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-3">
+                <div className="w-28 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center"><img src={logo} alt="" srcset="" />
+                  <FaFileInvoiceDollar className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">Policy Details</h1>
+                  <p className="text-gray-300 text-sm">Complete insurance case information</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Policy Details</h2>
-                <p className="text-gray-600 mt-1">Complete policy information and documentation</p>
+              
+              <div className="flex flex-wrap items-center gap-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-300">Policy ID:</span>
+                  <span className="font-mono  bg-opacity-10 px-2 py-1 rounded text-sm">
+                    {policy._id || policy.id}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-300">Customer:</span>
+                  <span className="font-semibold">{customer.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-300">Vehicle:</span>
+                  <span className="font-semibold">{vehicle.make} {vehicle.model}</span>
+                </div>
               </div>
             </div>
+            
             <div className="flex items-center gap-3">
-              <span className={`px-4 py-2 rounded-lg text-sm font-semibold ${statusDisplay.class}`}>
-                {statusDisplay.text}
-              </span>
+              <button
+                onClick={handleEditClick}
+                className="flex items-center gap-2 bg-white text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors font-medium text-sm"
+              >
+                <FaEdit className="w-4 h-4" />
+                Edit Case
+              </button>
               <button
                 onClick={onClose}
-                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
+                className="w-10 h-10 flex items-center justify-center text-white hover:bg-white hover:text-gray-950 hover:bg-opacity-10 rounded-xl transition-all"
               >
-                <span className="text-2xl font-light">×</span>
+                <FaTimes className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -237,46 +351,88 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
 
         {/* Content Area - Scrollable */}
         <div className="flex-1 p-6 overflow-y-auto">
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 h-full min-w-[800px]">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
-            {/* Left Sidebar - Premium Amount & Quick Overview */}
-            <div className="xl:col-span-3 space-y-6">
-              {/* Premium Highlight Card */}
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white">
-                <div className="text-sm font-medium opacity-90">Premium Amount</div>
-                <div className="text-3xl font-bold mt-2">{getPremiumInfo(policy)}</div>
-                <div className="text-xs opacity-80 mt-1">Total Policy Value</div>
-              </div>
-
-              {/* Status & Dates Card */}
-              <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-4">Quick Overview</h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">Status</div>
-                    <div className={`mt-1 px-3 py-1 rounded-full text-sm font-semibold inline-block ${statusDisplay.class}`}>
-                      {statusDisplay.text}
+            {/* Left Column - Customer & Vehicle */}
+            <div className="space-y-6">
+              {/* Customer Information */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-5 py-4 border-b border-blue-200">
+                  <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                      <FaUser className="w-5 h-5 text-white" />
+                    </div>
+                    Customer Information
+                  </h2>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Name</label>
+                      <div className="font-semibold text-gray-900 mt-1">{customer.name}</div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Type</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <FaBuilding className={`w-4 h-4 ${customer.buyerType === 'corporate' ? 'text-blue-500' : 'text-gray-400'}`} />
+                        <span className="font-medium text-gray-900 capitalize">{customer.buyerType}</span>
+                      </div>
                     </div>
                   </div>
                   
-                  {(createdDate || startDate || expiryDate) && (
-                    <div className="space-y-3 pt-2 border-t border-gray-100">
-                      {createdDate && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <FaPhone className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <div className="text-xs text-gray-500">Mobile</div>
+                        <div className="font-medium text-gray-900">{customer.mobile}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <FaEnvelope className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <div className="text-xs text-gray-500">Email</div>
+                        <div className="font-medium text-gray-900 text-sm break-all">{customer.email}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <FaMapMarkerAlt className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <div className="text-xs text-gray-500">Location</div>
+                        <div className="font-medium text-gray-900">{customer.city} - {customer.pincode}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {(customer.age !== 'N/A' || customer.gender !== 'N/A') && (
+                    <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                      {customer.age !== 'N/A' && (
                         <div>
-                          <div className="text-xs text-gray-500">Created</div>
-                          <div className="text-sm font-medium text-gray-900">{createdDate}</div>
+                          <label className="text-xs text-gray-500 uppercase font-semibold">Age</label>
+                          <div className="font-medium text-gray-900">{customer.age} years</div>
                         </div>
                       )}
-                      {startDate && (
+                      {customer.gender !== 'N/A' && (
                         <div>
-                          <div className="text-xs text-gray-500">Start Date</div>
-                          <div className="text-sm font-medium text-green-600">{startDate}</div>
+                          <label className="text-xs text-gray-500 uppercase font-semibold">Gender</label>
+                          <div className="font-medium text-gray-900 capitalize">{customer.gender}</div>
                         </div>
                       )}
-                      {expiryDate && (
-                        <div>
-                          <div className="text-xs text-gray-500">Expiry Date</div>
-                          <div className="text-sm font-medium text-orange-600">{expiryDate}</div>
+                    </div>
+                  )}
+
+                  {(customer.panNumber !== 'N/A' || customer.aadhaarNumber !== 'N/A') && (
+                    <div className="pt-3 border-t border-gray-100 space-y-2">
+                      {customer.panNumber !== 'N/A' && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 font-semibold">PAN Number</span>
+                          <span className="font-mono text-sm text-gray-900">{customer.panNumber}</span>
+                        </div>
+                      )}
+                      {customer.aadhaarNumber !== 'N/A' && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 font-semibold">Aadhaar Number</span>
+                          <span className="font-mono text-sm text-gray-900">{customer.aadhaarNumber}</span>
                         </div>
                       )}
                     </div>
@@ -284,301 +440,417 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Customer Information */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200">
-                <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  Customer Information
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">Full Name</div>
-                    <div className="text-lg font-semibold text-gray-900 mt-1">{policy.customer_details?.name || 'N/A'}</div>
-                  </div>
-                  <div className="space-y-3">
+              {/* Vehicle Information */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-green-50 to-green-100 px-5 py-4 border-b border-green-200">
+                  <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                      <FaCar className="w-5 h-5 text-white" />
+                    </div>
+                    Vehicle Information
+                  </h2>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">Mobile</div>
-                      <div className="text-base text-gray-900 mt-1">{policy.customer_details?.mobile || 'N/A'}</div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Make</label>
+                      <div className="font-semibold text-gray-900 mt-1">{vehicle.make}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">Email</div>
-                      <div className="text-sm text-gray-900 mt-1 break-all">{policy.customer_details?.email || 'N/A'}</div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Model</label>
+                      <div className="font-semibold text-gray-900 mt-1">{vehicle.model}</div>
                     </div>
                   </div>
-                  {policy.customer_details?.residenceAddress && (
+                  
+                  {vehicle.variant !== 'N/A' && (
                     <div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">Address</div>
-                      <div className="text-sm text-gray-700 mt-1 leading-relaxed">
-                        {policy.customer_details.residenceAddress}
-                        {policy.customer_details?.pincode && ` - ${policy.customer_details.pincode}`}
-                        {policy.customer_details?.city && `, ${policy.customer_details.city}`}
-                      </div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Variant</label>
+                      <div className="font-medium text-gray-900 mt-1">{vehicle.variant}</div>
                     </div>
                   )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Registration</label>
+                      <div className="font-mono text-sm text-gray-900 mt-1 bg-gray-100 px-2 py-1 rounded">
+                        {vehicle.regNo}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Year</label>
+                      <div className="font-medium text-gray-900 mt-1">{vehicle.makeYear}</div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-100 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 font-semibold">Engine No</span>
+                      <span className="font-mono text-sm text-gray-900">{vehicle.engineNo}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500 font-semibold">Chassis No</span>
+                      <span className="font-mono text-sm text-gray-900">{vehicle.chassisNo}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Middle Column - Only Policy Details */}
-            <div className="xl:col-span-5">
-              <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm h-full">
-                <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  Policy Details
-                </h3>
-                <div className="space-y-4">
-                  {/* Basic Policy Info */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* Middle Column - Policy & Payment */}
+            <div className="space-y-6">
+              {/* Policy Information */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 px-5 py-4 border-b border-purple-200">
+                  <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                      <FaFileAlt className="w-5 h-5 text-white" />
+                    </div>
+                    Policy Information
+                  </h2>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">Policy ID</div>
-                      <div className="font-mono text-sm text-gray-900 mt-1">{policy._id || policy.id}</div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Status</label>
+                      <div className="mt-1">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${statusDisplay.class}`}>
+                          <statusDisplay.icon className="w-3 h-3" />
+                          {statusDisplay.text}
+                        </span>
+                      </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">Policy Type</div>
-                      <div className="text-sm font-medium text-gray-900 mt-1 capitalize">
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Type</label>
+                      <div className="font-semibold text-gray-900 mt-1 capitalize">
                         {policy.insurance_quote?.coverageType || policy.insurance_category || 'Insurance'}
                       </div>
                     </div>
                   </div>
 
-                  {/* Policy Information Details */}
-                  <div className="space-y-3">
-                    {policy.policy_info && Object.entries(policy.policy_info).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                        <span className="text-sm text-gray-600 font-medium capitalize flex-1">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}:
+                  {quoteDetails && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Insurer</span>
+                        <span className="font-semibold text-gray-900">{quoteDetails.insurer}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">IDV Amount</span>
+                        <span className="font-semibold text-gray-900">₹{quoteDetails.idv.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Policy Duration</span>
+                        <span className="font-semibold text-gray-900">{quoteDetails.policyDuration} Year(s)</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">NCB Discount</span>
+                        <span className="font-semibold text-green-600">{quoteDetails.ncbDiscount}%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Policy Dates */}
+                  <div className="pt-3 border-t border-gray-100 space-y-2">
+                    {policy.policy_info?.issueDate && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600 flex items-center gap-2">
+                          <FaCalendarAlt className="w-3 h-3 text-gray-400" />
+                          Issue Date
                         </span>
-                        <span className="text-sm font-medium text-gray-900 text-right flex-1 ml-4 break-words">
-                          {String(value)}
+                        <span className="font-medium text-gray-900">{formatDate(policy.policy_info.issueDate)}</span>
+                      </div>
+                    )}
+                    {policy.policy_info?.dueDate && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600 flex items-center gap-2">
+                          <FaCalendarAlt className="w-3 h-3 text-gray-400" />
+                          Expiry Date
+                        </span>
+                        <span className={`font-medium ${new Date(policy.policy_info.dueDate) < new Date() ? 'text-red-600' : 'text-gray-900'}`}>
+                          {formatDate(policy.policy_info.dueDate)}
                         </span>
                       </div>
-                    ))}
-                    {(!policy.policy_info || Object.keys(policy.policy_info).length === 0) && (
-                      <p className="text-gray-400 text-sm text-center py-4">No policy details available</p>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right Column - Vehicle Info & Quote Details */}
-            <div className="xl:col-span-4 space-y-6">
-              {/* Vehicle Information */}
-              <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  Vehicle Information
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">Make & Model</div>
-                    <div className="text-base font-semibold text-gray-900 mt-1">
-                      {policy.vehicle_details ? 
-                        `${policy.vehicle_details.make || ''} ${policy.vehicle_details.model || ''}`.trim() 
-                        : 'N/A'
-                      }
+              {/* Payment Information */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-amber-50 to-amber-100 px-5 py-4 border-b border-amber-200">
+                  <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
+                      <FaCreditCard className="w-5 h-5 text-white" />
                     </div>
+                    Payment Information
+                  </h2>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PaymentIcon className="w-4 h-4" />
+                      <span className="text-sm font-semibold text-gray-700">Payment Status</span>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${paymentDisplay.class}`}>
+                      {paymentDisplay.text}
+                    </span>
                   </div>
+
                   <div className="space-y-3">
-                    {policy.vehicle_details?.variant && (
-                      <div>
-                        <div className="text-xs text-gray-500 uppercase tracking-wide">Variant</div>
-                        <div className="text-sm text-gray-900 mt-1">{policy.vehicle_details.variant}</div>
-                      </div>
-                    )}
-                    {policy.vehicle_details?.makeYear && (
-                      <div>
-                        <div className="text-xs text-gray-500 uppercase tracking-wide">Year</div>
-                        <div className="text-sm text-gray-900 mt-1">{policy.vehicle_details.makeYear}</div>
-                      </div>
-                    )}
-                  </div>
-                  {policy.vehicle_details?.engineNo && (
-                    <div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">Engine No.</div>
-                      <div className="font-mono text-sm text-gray-900 mt-1">{policy.vehicle_details.engineNo}</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Total Premium</span>
+                      <span className="font-semibold text-gray-900">₹{premiumInfo.toLocaleString('en-IN')}</span>
                     </div>
-                  )}
-                  {policy.vehicle_details?.chassisNo && (
-                    <div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">Chassis No.</div>
-                      <div className="font-mono text-sm text-gray-900 mt-1">{policy.vehicle_details.chassisNo}</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Paid Amount</span>
+                      <span className="font-semibold text-green-600">₹{paidInfo.paid.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Balance</span>
+                      <span className="font-semibold text-red-600">₹{(premiumInfo - paidInfo.paid).toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+
+                  {/* Payment Progress */}
+                  <div className="pt-2">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Payment Progress</span>
+                      <span>{paidInfo.percentage.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          paidInfo.percentage === 100 ? 'bg-green-500' : 
+                          paidInfo.percentage > 0 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${paidInfo.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Payment Details */}
+                  {policy.payment_info && (
+                    <div className="pt-3 border-t border-gray-100 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Payment Mode</span>
+                        <span className="text-sm font-medium text-gray-900">{policy.payment_info.paymentMode || 'N/A'}</span>
+                      </div>
+                      {policy.payment_info.transactionId && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Transaction ID</span>
+                          <span className="font-mono text-sm text-gray-900">{policy.payment_info.transactionId}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Insurance Quotes - UPDATED SECTION */}
-              <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
-                    Insurance Quotes
-                    {hasMultipleQuotes && (
-                      <span className="bg-cyan-100 text-cyan-800 text-xs px-2 py-1 rounded-full">
-                        {insuranceQuotes.length} quotes
+              {/* Previous Policy */}
+              {previousPolicy.insuranceCompany !== 'N/A' && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
+                    <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-500 rounded-lg flex items-center justify-center">
+                        <FaHistory className="w-5 h-5 text-white" />
+                      </div>
+                      Previous Policy
+                    </h2>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Insurance Company</span>
+                      <span className="font-semibold text-gray-900">{previousPolicy.insuranceCompany}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Policy Number</span>
+                      <span className="font-mono text-sm text-gray-900">{previousPolicy.policyNumber}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">NCB Discount</span>
+                      <span className="font-semibold text-green-600">{previousPolicy.ncbDiscount}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Claim History</span>
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        previousPolicy.claimTakenLastYear === 'yes' 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {previousPolicy.claimTakenLastYear === 'yes' ? 'Claim Taken' : 'No Claim'}
                       </span>
-                    )}
-                  </h3>
-                </div>
-
-                {insuranceQuotes.length > 0 ? (
-                  <div className="space-y-4">
-                    {hasMultipleQuotes ? (
-                      // Table view for multiple quotes
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-200">
-                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Insurer</th>
-                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">IDV</th>
-                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Premium</th>
-                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">Type</th>
-                              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase">NCB</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100">
-                            {insuranceQuotes.map((quote, index) => (
-                              <tr key={index} className="hover:bg-gray-50">
-                                <td className="py-2 px-2">
-                                  <div className="font-medium text-gray-900 text-xs">
-                                    {getInsurerName(quote)}
-                                  </div>
-                                </td>
-                                <td className="py-2 px-2">
-                                  <div className="text-gray-700 text-xs">
-                                    ₹{getIDV(quote).toLocaleString('en-IN')}
-                                  </div>
-                                </td>
-                                <td className="py-2 px-2">
-                                  <div className="text-gray-700 text-xs">
-                                    ₹{getPremium(quote).toLocaleString('en-IN')}
-                                  </div>
-                                </td>
-                                <td className="py-2 px-2">
-                                  <div className="text-gray-700 text-xs capitalize">
-                                    {getCoverageType(quote)}
-                                  </div>
-                                </td>
-                                <td className="py-2 px-2">
-                                  <div className="text-gray-700 text-xs">
-                                    {getNCB(quote)}%
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      // Detailed view for single quote
-                      <div className="space-y-3">
-                        {insuranceQuotes.map((quote, index) => (
-                          <div key={index} className="space-y-3">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-600">Insurer:</span>
-                              <span className="text-sm font-semibold text-gray-900">
-                                {getInsurerName(quote)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-600">IDV Amount:</span>
-                              <span className="text-sm font-semibold text-gray-900">
-                                ₹{getIDV(quote).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-600">Premium:</span>
-                              <span className="text-sm font-semibold text-gray-900">
-                                ₹{getPremium(quote).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-600">Coverage Type:</span>
-                              <span className="text-sm font-semibold text-gray-900 capitalize">
-                                {getCoverageType(quote)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-600">Policy Duration:</span>
-                              <span className="text-sm font-semibold text-gray-900">
-                                {getDuration(quote)} year(s)
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-600">NCB Discount:</span>
-                              <span className="text-sm font-semibold text-gray-900">
-                                {getNCB(quote)}%
-                              </span>
-                            </div>
-                            {/* Additional quote details */}
-                            {quote.zone && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600">Zone:</span>
-                                <span className="text-sm font-semibold text-gray-900">{quote.zone}</span>
-                              </div>
-                            )}
-                            {quote.odDiscount && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600">OD Discount:</span>
-                                <span className="text-sm font-semibold text-gray-900">{quote.odDiscount}%</span>
-                              </div>
-                            )}
-                            {quote.electricalAccessories && quote.electricalAccessories !== "0" && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm font-medium text-gray-600">Electrical Accessories:</span>
-                                <span className="text-sm font-semibold text-gray-900">
-                                  ₹{(parseInt(quote.electricalAccessories) || 0).toLocaleString('en-IN')}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <div className="text-gray-400 mb-2">
-                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
                     </div>
-                    <p className="text-gray-400 text-sm">No insurance quotes available</p>
-                    <p className="text-gray-400 text-xs mt-1">Quotes will appear here when added</p>
                   </div>
-                )}
-              </div>
-
-              {/* Additional Notes */}
-              {policy.notes && (
-                <div className="bg-yellow-50 rounded-xl p-5 border border-yellow-200">
-                  <h3 className="font-bold text-gray-900 text-lg mb-3 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    Additional Notes
-                  </h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {policy.notes}
-                  </p>
                 </div>
               )}
+            </div>
+
+            {/* Right Column - Quotes & Payout */}
+            <div className="space-y-6">
+              {/* Insurance Quotes */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-cyan-50 to-cyan-100 px-5 py-4 border-b border-cyan-200">
+                  <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                    <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center">
+                      <FaShieldAlt className="w-5 h-5 text-white" />
+                    </div>
+                    Insurance Quotes
+                    <span className="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">
+                      {insuranceQuotes.length} Available
+                    </span>
+                  </h2>
+                </div>
+                <div className="p-5">
+                  {insuranceQuotes.length > 0 ? (
+                    <div className="space-y-3">
+                      {insuranceQuotes.slice(0, 3).map((quote, index) => {
+                        const details = getQuoteDetails(quote);
+                        const isAccepted = quote.accepted === true;
+                        
+                        return (
+                          <div 
+                            key={index}
+                            className={`p-3 rounded-lg border ${
+                              isAccepted 
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="font-semibold text-gray-900">{details.insurer}</div>
+                              {isAccepted && (
+                                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                  <FaCheckCircle className="w-3 h-3" />
+                                  Accepted
+                                </span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="text-gray-600">Premium:</div>
+                              <div className="font-semibold text-gray-900">₹{details.totalPremium.toLocaleString('en-IN')}</div>
+                              
+                              <div className="text-gray-600">IDV:</div>
+                              <div className="font-semibold text-gray-900">₹{details.idv.toLocaleString('en-IN')}</div>
+                              
+                              <div className="text-gray-600">NCB:</div>
+                              <div className="font-semibold text-green-600">{details.ncbDiscount}%</div>
+                              
+                              <div className="text-gray-600">Type:</div>
+                              <div className="font-semibold text-gray-900 capitalize">{details.coverageType}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {insuranceQuotes.length > 3 && (
+                        <div className="text-center text-sm text-gray-500 pt-2">
+                          +{insuranceQuotes.length - 3} more quotes available
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-gray-400">
+                      <FaShieldAlt className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No insurance quotes available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Payout Details */}
+              {(payout.netPremium > 0 || payout.odAmount > 0) && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-5 py-4 border-b border-emerald-200">
+                    <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                        <FaMoneyBillWave className="w-5 h-5 text-white" />
+                      </div>
+                      Payout Details
+                    </h2>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Net Premium</span>
+                      <span className="font-semibold text-gray-900">₹{payout.netPremium.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">OD Amount</span>
+                      <span className="font-semibold text-gray-900">₹{payout.odAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                    {payout.ncbAmount > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">NCB Amount</span>
+                        <span className="font-semibold text-green-600">₹{payout.ncbAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    {payout.subVention > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Subvention</span>
+                        <span className="font-semibold text-blue-600">₹{payout.subVention.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    {payout.netAmount !== 0 && (
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                        <span className="text-sm font-semibold text-gray-700">Net Amount</span>
+                        <span className="font-semibold text-gray-900">₹{payout.netAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* System Information */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
+                  <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-500 rounded-lg flex items-center justify-center">
+                      <FaTag className="w-5 h-5 text-white" />
+                    </div>
+                    System Information
+                  </h2>
+                </div>
+                <div className="p-5 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Created Date</span>
+                    <span className="font-medium text-gray-900">{formatDate(policy.created_at || policy.ts)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Last Updated</span>
+                    <span className="font-medium text-gray-900">{formatDate(policy.updated_at) || 'N/A'}</span>
+                  </div>
+                  {policy.created_by && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Created By</span>
+                      <span className="font-medium text-gray-900">{policy.created_by}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-4 bg-gray-50 flex-shrink-0">
+        <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 flex-shrink-0">
           <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              Policy Type: {policy.insurance_quote?.coverageType || policy.insurance_category || 'Insurance'}
-              {hasMultipleQuotes && ` • ${insuranceQuotes.length} quotes available`}
+            <div className="text-sm text-gray-600">
+              Case created on {formatDate(policy.created_at || policy.ts)}
+              {policy.updated_at && ` • Last updated: ${formatDate(policy.updated_at)}`}
             </div>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-sm"
-            >
-              Close Policy Details
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleEditClick}
+                className="flex items-center gap-2 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm"
+              >
+                <FaEdit className="w-4 h-4" />
+                Edit Case
+              </button>
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 bg-white text-gray-700 border border-gray-300 px-6 py-2 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
+              >
+                <FaTimes className="w-4 h-4" />
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -1,0 +1,1333 @@
+const NewPolicyPage = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const hasClearedStorage = useRef(false);
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    buyer_type: "individual",
+    insurance_category: "motor",
+    status: "draft",
+    ts: Date.now(),
+    created_by: "ADMIN123",
+    insuranceQuotes: [],
+    previousClaimTaken: "no",
+    // Corporate fields
+    companyName: "",
+    employeeName:"",
+    contactPersonName: "",
+    companyPanNumber: "",
+    gstNumber: "",
+    // Individual fields
+    customerName: "",
+    mobile: "",
+    email: "",
+    age: "",
+    gender: "",
+    panNumber: "",
+    aadhaarNumber: "",
+    residenceAddress: "",
+    pincode: "",
+    city: "",
+    alternatePhone: "",
+    // Nominee fields
+    nomineeName: "",
+    relation: "",
+    nomineeAge: "",
+    // Reference fields
+    referenceName: "",
+    referencePhone: "",
+    // Vehicle fields
+    regNo: "",
+    make: "",
+    model: "",
+    variant: "",
+    engineNo: "",
+    chassisNo: "",
+    makeMonth: "",
+    makeYear: "",
+    // Previous Policy fields
+    previousInsuranceCompany: "",
+    previousPolicyNumber: "",
+    previousPolicyType: "",
+    previousIssueDate: "",
+    previousPolicyStartDate: "", 
+    previousPolicyDuration: "", 
+    previousPolicyEndDate: "", 
+    previousDueDate: "",
+    previousNcbDiscount: "",
+    // Insurance Quote fields
+    insurer: "",
+    coverageType: "",
+    premium: "",
+    idv: "",
+    ncb: "",
+    duration: "",
+    // New Policy fields
+    policyIssued: "",
+    insuranceCompany: "",
+    policyNumber: "",
+    covernoteNumber: "",
+    issueDate: "",
+    policyStartDate: "",
+    dueDate: "",
+    ncbDiscount: "",
+    insuranceDuration: "",
+    idvAmount: "",
+    totalPremium: "",
+    // Documents - changed to object for tagging
+    documents: {},
+    documentTags: {},
+    // Payment fields
+    paymentMadeBy: "Customer",
+    paymentMode: "",
+    paymentAmount: "",
+    paymentDate: "",
+    transactionId: "",
+    receiptDate: "",
+    bankName: "",
+    subvention_payment: "No Subvention",
+    paymentStatus: "Payment Pending",
+    totalPaidAmount: 0,
+    // Payout fields
+    netPremium: "",
+     odAddonPercentage: 10, // default value
+    odAmount: "",
+    ncbAmount: "",
+    subVention: "",
+    // Additional fields
+    policyPrefilled: false
+  });
+  const [policyId, setPolicyId] = useState(id || null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(!!id);
+  const [loadingPolicy, setLoadingPolicy] = useState(!!id);
+  const [acceptedQuote, setAcceptedQuote] = useState(null);
+  const [paymentLedger, setPaymentLedger] = useState([]);
+
+  const steps = [
+    "Case Details",
+    "Vehicle Details", 
+    "Previous Policy",
+    "Insurance Quotes",
+    "New Policy",
+    "Documents",
+    "Payment",
+    "Payout"
+  ];
+
+  // Enhanced function to calculate total premium
+  const getTotalPremium = () => {
+    console.log("🔍 Calculating total premium...");
+    
+    // First check if we have an accepted quote with premium
+    if (acceptedQuote && acceptedQuote.premium) {
+      console.log("✅ Using premium from accepted quote:", acceptedQuote.premium);
+      return parseFloat(acceptedQuote.premium);
+    }
+    
+    // Then check if we have premium in the insurance quote section
+    if (form.premium) {
+      console.log("✅ Using premium from form.premium:", form.premium);
+      return parseFloat(form.premium);
+    }
+    
+    // Then check if we have totalPremium in policy info
+    if (form.totalPremium) {
+      console.log("✅ Using premium from form.totalPremium:", form.totalPremium);
+      return parseFloat(form.totalPremium);
+    }
+    
+    // Check insurance quotes array
+    if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
+      const acceptedQuoteFromArray = form.insuranceQuotes.find(quote => quote.accepted === true);
+      if (acceptedQuoteFromArray && acceptedQuoteFromArray.premium) {
+        console.log("✅ Using premium from accepted quote in insuranceQuotes array:", acceptedQuoteFromArray.premium);
+        return parseFloat(acceptedQuoteFromArray.premium);
+      }
+    }
+    
+    console.log("❌ No premium found, defaulting to 0");
+    // Default to 0 if no premium found
+    return 0;
+  };
+
+  const totalPremium = getTotalPremium();
+
+  // Debug effect to track premium calculation
+  useEffect(() => {
+    console.log("💰 Premium Calculation Debug:");
+    console.log("   - acceptedQuote:", acceptedQuote);
+    console.log("   - form.premium:", form.premium);
+    console.log("   - form.totalPremium:", form.totalPremium);
+    console.log("   - form.insuranceQuotes:", form.insuranceQuotes);
+    console.log("   - Calculated totalPremium:", totalPremium);
+  }, [acceptedQuote, form.premium, form.totalPremium, form.insuranceQuotes, totalPremium]);
+
+  // Debug effect for payment ledger
+  useEffect(() => {
+    console.log("💰 Payment Ledger Updated:", {
+      ledger: paymentLedger,
+      length: paymentLedger.length,
+      total: paymentLedger.reduce((sum, p) => sum + p.amount, 0)
+    });
+  }, [paymentLedger]);
+
+  const handleQuoteAccepted = (quote) => {
+    console.log("✅ Quote accepted in parent:", quote);
+    setAcceptedQuote(quote);
+    
+    if (policyId) {
+      setTimeout(() => {
+        updatePolicy();
+      }, 500);
+    }
+  };
+
+  // ENHANCED: Function to update payment ledger from Payment component
+  const handlePaymentLedgerUpdate = (ledger) => {
+    console.log("💰 Payment ledger updated in main component:", {
+      ledger: ledger,
+      length: ledger.length,
+      total: ledger.reduce((sum, payment) => sum + payment.amount, 0)
+    });
+    setPaymentLedger(ledger);
+    
+    // Update form with payment status and total paid amount
+    const totalPaid = ledger.reduce((sum, payment) => sum + payment.amount, 0);
+    const paymentStatus = totalPaid >= totalPremium ? 'Fully Paid' : 'Payment Pending';
+    
+    setForm(prev => ({
+      ...prev,
+      totalPaidAmount: totalPaid,
+      paymentStatus: paymentStatus
+    }));
+  };
+
+  // ============ FIXED CLEAR LOCALSTORAGE EFFECT ============
+  useEffect(() => {
+    if (!isEditMode && !id && !hasClearedStorage.current) {
+      console.log("🧹 Clearing localStorage for new case");
+      localStorage.removeItem('insuranceQuotes');
+      
+      setForm(prev => ({
+        ...prev,
+        insurer: "",
+        coverageType: "", 
+        premium: "",
+        idv: "",
+        ncb: "",
+        duration: "",
+        insuranceQuotes: [],
+        previousClaimTaken: "no"
+      }));
+      
+      setAcceptedQuote(null);
+      setPaymentLedger([]); // Clear payment ledger for new case
+      hasClearedStorage.current = true;
+    }
+  }, [isEditMode, id]);
+
+  // Debug when component mounts
+  useEffect(() => {
+    console.log("Component mounted - Edit Mode:", isEditMode, "Policy ID:", id);
+  }, [isEditMode, id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchPolicyData(id);
+    }
+  }, [id]);
+
+  // Enhanced function to fetch policy data for editing with proper mapping
+  const fetchPolicyData = async (policyId) => {
+    setLoadingPolicy(true);
+    try {
+      console.log("🔍 Fetching policy data for ID:", policyId);
+      const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
+      const policyData = response.data;
+      
+      console.log("📦 Full API Response:", policyData);
+      
+      if (!policyData || !policyData.data) {
+        console.error("❌ No policy data received from API");
+        setSaveMessage("❌ No policy data found for this ID");
+        return;
+      }
+
+      const actualData = policyData.data;
+      console.log("📊 Actual Policy Data:", actualData);
+      
+      // Transform documents array to object with tagging
+      const documentsObject = {};
+      const documentTagsObject = {};
+      if (actualData.documents && Array.isArray(actualData.documents)) {
+        actualData.documents.forEach((docUrl, index) => {
+          const docId = `doc_${index}`;
+          documentsObject[docId] = docUrl;
+          documentTagsObject[docId] = docUrl.tag||""; // Initialize tags as empty
+        });
+      }
+
+      // Find accepted quote from insurance_quotes array
+      let acceptedQuoteData = null;
+      if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
+        acceptedQuoteData = actualData.insurance_quotes.find(quote => quote.accepted === true);
+        if (!acceptedQuoteData && actualData.insurance_quotes.length > 0) {
+          acceptedQuoteData = actualData.insurance_quotes[0]; // Fallback to first quote
+        }
+      }
+
+      // Create a clean transformed data object with ALL fields properly mapped
+      const transformedData = {
+        // Basic info
+        buyer_type: actualData.buyer_type || "individual",
+        insurance_category: actualData.insurance_category || "motor",
+        status: actualData.status || "draft",
+        
+        // Customer details - handle both individual and corporate
+        customerName: actualData.customer_details?.name || "",
+        mobile: actualData.customer_details?.mobile || "",
+        email: actualData.customer_details?.email || "",
+        employeeName: actualData.customer_details?.employeeName || "",
+        gender: actualData.customer_details?.gender || "",
+        panNumber: actualData.customer_details?.panNumber || "",
+        aadhaarNumber: actualData.customer_details?.aadhaarNumber || "",
+        residenceAddress: actualData.customer_details?.residenceAddress || "",
+        pincode: actualData.customer_details?.pincode || "",
+        city: actualData.customer_details?.city || "",
+        alternatePhone: actualData.customer_details?.alternatePhone || "",
+        
+        // Corporate fields
+        // employeeName: actualData.customer_etails?.employeeName || "",
+        companyName: actualData.customer_details?.companyName || "",
+        contactPersonName: actualData.customer_details?.contactPersonName || "",
+        companyPanNumber: actualData.customer_details?.companyPanNumber || "",
+        gstNumber: actualData.customer_details?.gstNumber || "",
+        
+        // Nominee
+        nomineeName: actualData.nominee?.name || "",
+        relation: actualData.nominee?.relation || "",
+        nomineeAge: actualData.nominee?.age || "",
+        
+        // Reference
+        referenceName: actualData.refrence?.name || "",
+        referencePhone: actualData.refrence?.phone || "",
+        
+        // Vehicle details
+        regNo: actualData.vehicle_details?.regNo || "",
+        make: actualData.vehicle_details?.make || "",
+        model: actualData.vehicle_details?.model || "",
+        variant: actualData.vehicle_details?.variant || "",
+        engineNo: actualData.vehicle_details?.engineNo || "",
+        chassisNo: actualData.vehicle_details?.chassisNo || "",
+        makeMonth: actualData.vehicle_details?.makeMonth || "",
+        makeYear: actualData.vehicle_details?.makeYear || "",
+        
+        // Previous policy
+        previousInsuranceCompany: actualData.previous_policy?.insuranceCompany || "",
+        previousPolicyNumber: actualData.previous_policy?.policyNumber || "",
+        previousPolicyType: actualData.previous_policy?.policyType || "",
+        previousIssueDate: actualData.previous_policy?.issueDate || "",
+        previousDueDate: actualData.previous_policy?.dueDate || "",
+       previousPolicyStartDate: actualData.previous_policy?.policyStartDate || "", 
+       previousPolicyDuration: actualData.previous_policy?.policyDuration || "",
+       previousPolicyEndDate: actualData.previous_policy?.policyEndDate || "",
+        previousClaimTaken: actualData.previous_policy?.claimTakenLastYear || "no",
+        previousNcbDiscount: actualData.previous_policy?.ncbDiscount || "",
+        
+        // Insurance quotes
+        insuranceQuotes: actualData.insurance_quotes || [],
+        
+        // Insurance quote (legacy)
+        insurer: actualData.insurance_quote?.insurer || "",
+        coverageType: actualData.insurance_quote?.coverageType || "",
+        premium: actualData.insurance_quote?.premium || "",
+        idv: actualData.insurance_quote?.idv || "",
+        ncb: actualData.insurance_quote?.ncb || "",
+        duration: actualData.insurance_quote?.duration || "",
+        
+        // Policy info
+        policyIssued: actualData.policy_info?.policyIssued || "",
+        insuranceCompany: actualData.policy_info?.insuranceCompany || "",
+        policyNumber: actualData.policy_info?.policyNumber || "",
+        covernoteNumber: actualData.policy_info?.covernoteNumber || "",
+        issueDate: actualData.policy_info?.issueDate || "",
+        policyStartDate: actualData.policy_info?.policyStartDate || "",
+        dueDate: actualData.policy_info?.dueDate || "",
+        ncbDiscount: actualData.policy_info?.ncbDiscount || "",
+        insuranceDuration: actualData.policy_info?.insuranceDuration || "",
+        idvAmount: actualData.policy_info?.idvAmount || "",
+        totalPremium: actualData.policy_info?.totalPremium || "",
+        
+        // Payment info
+        paymentMadeBy: actualData.payment_info?.paymentMadeBy || "Customer",
+        paymentMode: actualData.payment_info?.paymentMode || "",
+        paymentAmount: actualData.payment_info?.paymentAmount || "",
+        paymentDate: actualData.payment_info?.paymentDate || "",
+        transactionId: actualData.payment_info?.transactionId || "",
+        receiptDate: actualData.payment_info?.receiptDate || "",
+        bankName: actualData.payment_info?.bankName || "",
+        subvention_payment: actualData.payment_info?.subvention_payment || "No Subvention",
+        paymentStatus: actualData.payment_info?.paymentStatus || "Payment Pending",
+        totalPaidAmount: actualData.payment_info?.totalPaidAmount || 0,
+         
+        // Payout
+        netPremium: actualData.payout?.netPremium || "",
+        odAmount: actualData.payout?.odAmount || "",
+        ncbAmount: actualData.payout?.ncbAmount || "",
+        subVention: actualData.payout?.subVention || "",
+        
+        // Documents as object
+        documents: documentsObject,
+        documentTags: documentTagsObject,
+        
+        // System fields
+        ts: actualData.ts || Date.now(),
+        created_by: actualData.created_by || "ADMIN123",
+        policyPrefilled: true
+      };
+      
+      console.log("✅ Transformed Form Data:", transformedData);
+      console.log("📋 Previous Claim Taken:", transformedData.previousClaimTaken);
+      console.log("💰 Insurance Quotes after transformation:", transformedData.insuranceQuotes);
+      console.log("📄 Documents as object:", transformedData.documents);
+      console.log("💳 Payment Info:", {
+        paymentMadeBy: transformedData.paymentMadeBy,
+        paymentMode: transformedData.paymentMode,
+        paymentAmount: transformedData.paymentAmount,
+        paymentStatus: transformedData.paymentStatus,
+        totalPaidAmount: transformedData.totalPaidAmount
+      });
+      
+      setForm(transformedData);
+      
+      // Set accepted quote
+      if (acceptedQuoteData) {
+        console.log("✅ Setting accepted quote from data:", acceptedQuoteData);
+        setAcceptedQuote(acceptedQuoteData);
+      }
+      
+      // Set payment ledger from payment history if available
+      if (actualData.payment_ledger && Array.isArray(actualData.payment_ledger)) {
+        console.log("💰 Setting payment ledger from API:", actualData.payment_ledger);
+        setPaymentLedger(actualData.payment_ledger);
+      } else if (actualData.payment_info?.paymentHistory && Array.isArray(actualData.payment_info.paymentHistory)) {
+        console.log("💰 Setting payment ledger from payment history:", actualData.payment_info.paymentHistory);
+        setPaymentLedger(actualData.payment_info.paymentHistory);
+      } else {
+        console.log("💰 No payment ledger found in API response");
+        setPaymentLedger([]);
+      }
+      
+      setSaveMessage("✅ Policy data loaded successfully! You can now edit the form.");
+      
+    } catch (error) {
+      console.error("❌ Error fetching policy data:", error);
+      console.error("❌ Error details:", error.response?.data);
+      setSaveMessage(`❌ Error loading policy data: ${error.message}`);
+    } finally {
+      setLoadingPolicy(false);
+    }
+  };
+
+  // Enhanced handleChange to properly handle all field types including documents object
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+    
+    if (type === "radio") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
+    if (type === "checkbox") {
+      setForm((f) => ({ ...f, [name]: checked }));
+      return;
+    }
+    
+    if (type === "number") {
+      setForm((f) => ({ ...f, [name]: value === "" ? "" : Number(value) }));
+      return;
+    }
+    
+    // Handle documents object updates
+    if (name.startsWith("documents.")) {
+      const docId = name.split('.')[1];
+      setForm((f) => ({ 
+        ...f, 
+        documents: {
+          ...f.documents,
+          [docId]: value
+        }
+      }));
+      return;
+    }
+    
+    // Handle document tags updates
+    if (name.startsWith("documentTags.")) {
+      const docId = name.split('.')[1];
+      setForm((f) => ({ 
+        ...f, 
+        documentTags: {
+          ...f.documentTags,
+          [docId]: value
+        }
+      }));
+      return;
+    }
+    
+    if (name === "insuranceQuotes" && Array.isArray(value)) {
+      console.log("💰 Updating insuranceQuotes array:", value);
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
+    if (name === "previousClaimTaken" && value === "yes") {
+      setForm((f) => ({ 
+        ...f, 
+        [name]: value,
+        ncb: "0%"
+      }));
+      return;
+    }
+    
+    setForm((f) => ({ ...f, [name]: value }));
+  };
+
+  // Updated documents update handler for object format
+  const handleDocumentsUpdate = (documentsObject) => {
+    console.log("📄 Documents updated in main component (object):", documentsObject);
+    setForm((f) => ({ 
+      ...f, 
+      documents: documentsObject,
+      // Initialize empty tags for new documents
+      documentTags: Object.keys(documentsObject).reduce((tags, docId) => ({
+        ...tags,
+        [docId]: f.documentTags?.[docId] || ""
+      }), {})
+    }));
+  };
+
+  // ============ FIXED INSURANCE QUOTES UPDATE ============
+  const handleInsuranceQuotesUpdate = useCallback((quotesArray) => {
+    // Prevent infinite loop by checking if quotes actually changed
+    const currentQuotes = form.insuranceQuotes || [];
+    const newQuotes = quotesArray || [];
+    
+    // Only update if quotes actually changed
+    if (JSON.stringify(currentQuotes) !== JSON.stringify(newQuotes)) {
+      console.log("💰 Insurance quotes updated in main component:", newQuotes.length, "quotes");
+      setForm((f) => ({ 
+        ...f, 
+        insuranceQuotes: newQuotes 
+      }));
+    }
+  }, [form.insuranceQuotes]);
+
+  const handleNestedChange = (section, field, value) => {
+    setForm((f) => ({
+      ...f,
+      [section]: {
+        ...f[section],
+        [field]: value
+      }
+    }));
+  };
+
+  // Validation functions
+  const validateCurrentStep = () => {
+    let stepErrors = {};
+    
+    switch (step) {
+      case 1:
+        stepErrors = validationRules.validateStep1(form);
+        break;
+      case 2:
+        stepErrors = validationRules.validateStep2(form);
+        break;
+      case 3:
+        stepErrors = previousPolicyValidation(form);
+        break;
+      case 4:
+        stepErrors = validationRules.validateStep3(form, acceptedQuote);
+        break;
+      case 5:
+        stepErrors = validationRules.validateStep4(form);
+        break;
+      case 6:
+        stepErrors = validationRules.validateStep5(form);
+        break;
+      case 7:
+        if (paymentLedger.length === 0) {
+          stepErrors = validationRules.validateStep6(form);
+          if (Object.keys(stepErrors).length > 0) {
+            stepErrors.paymentLedger = "Please add at least one payment or fill all payment fields";
+          }
+        }
+        break;
+      case 8:
+        stepErrors = payoutValidation(form, acceptedQuote);
+        break;
+      default:
+        stepErrors = {};
+    }
+    
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  const createPolicy = async () => {
+    try {
+      setIsSaving(true);
+      
+      // Prepare customer details based on buyer type
+      const customerDetails = {
+        name: form.customerName || "",
+        mobile: form.mobile || "",
+        email: form.email || "",
+        residenceAddress: form.residenceAddress || "",
+        pincode: form.pincode || "",
+        city: form.city || "",
+        alternatePhone: form.alternatePhone || ""
+      };
+
+      // Add individual or corporate specific fields
+      if (form.buyer_type === "individual") {
+        customerDetails.employeeName = form.employeeName || "";
+        customerDetails.gender = form.gender || "";
+        customerDetails.panNumber = form.panNumber || "";
+        customerDetails.aadhaarNumber = form.aadhaarNumber || "";
+      } else if (form.buyer_type === "corporate") {
+        customerDetails.employeeName = form.employeeName || "";
+        customerDetails.companyName = form.companyName || "";
+        customerDetails.contactPersonName = form.contactPersonName || "";
+        customerDetails.companyPanNumber = form.companyPanNumber || "";
+        customerDetails.gstNumber = form.gstNumber || "";
+      }
+
+      const policyData = {
+        buyer_type: form.buyer_type || "individual",
+        customer_details: customerDetails,
+        nominee: {
+          name: form.nomineeName || "",
+          relation: form.relation || "",
+          age: form.nomineeAge || ""
+        },
+        refrence: {
+          name: form.referenceName || "",
+          phone: form.referencePhone || ""
+        },
+        insurance_category: form.insurance_category || "motor",
+        status: form.status || "pending",
+        insurance_quotes: form.insuranceQuotes || [],
+        ts: Date.now(),
+        created_by: form.created_by || "ADMIN123"
+      };
+
+      console.log("📝 Creating policy with data:", policyData);
+
+      const response = await axios.post(`${API_BASE_URL}/policies`, policyData, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      
+      if (response.data && response.data.id) {
+        setPolicyId(response.data.id);
+        setSaveMessage("✅ Policy created successfully!");
+        return response.data.id;
+      } else {
+        throw new Error("No policy ID in response");
+      }
+    } catch (error) {
+      console.error("❌ Error creating policy:", error);
+      let errorMessage = "Error creating policy";
+      
+      if (error.response) {
+        errorMessage = `Server error: ${error.response.status} - ${JSON.stringify(error.response.data)}`;
+      } else if (error.request) {
+        errorMessage = "Network error: No response from server";
+      } else {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      setSaveMessage(errorMessage);
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ENHANCED updatePolicy function with payment data support
+  const updatePolicy = async (overrideData = null) => {
+    try {
+      setIsSaving(true);
+      
+      if (!policyId && !isEditMode) {
+        console.log("📝 No policy ID found, creating new policy...");
+        const newPolicyId = await createPolicy();
+        if (!newPolicyId) {
+          throw new Error("Failed to create policy");
+        }
+        setPolicyId(newPolicyId);
+        return;
+      }
+
+      if (!policyId) {
+        throw new Error("Policy ID is required for update");
+      }
+
+      let updateData = {};
+      
+      // If overrideData is provided, use it directly (for payment data)
+      if (overrideData) {
+        console.log("🔄 Using override data for update:", overrideData);
+        updateData = overrideData;
+      } else {
+        // Standard step-based update data
+        switch (step) {
+          case 1:
+            // Prepare customer details based on buyer type
+            const customerDetails = {
+              name: form.customerName || "",
+              mobile: form.mobile || "",
+              email: form.email || "",
+              residenceAddress: form.residenceAddress || "",
+              pincode: form.pincode || "",
+              city: form.city || "",
+              alternatePhone: form.alternatePhone || "",
+              employeeName : form.employeeName || "",
+            };
+
+            // Add individual or corporate specific fields
+            if (form.buyer_type === "individual") {
+              customerDetails.age = form.age || "";
+              customerDetails.gender = form.gender || "";
+              customerDetails.panNumber = form.panNumber || "";
+              customerDetails.aadhaarNumber = form.aadhaarNumber || "";
+            } else if (form.buyer_type === "corporate") {
+              customerDetails.companyName = form.companyName || "";
+              customerDetails.contactPersonName = form.contactPersonName || "";
+              customerDetails.companyPanNumber = form.companyPanNumber || "";
+              customerDetails.gstNumber = form.gstNumber || "";
+            }
+
+            updateData = {
+              buyer_type: form.buyer_type,
+              customer_details: customerDetails,
+              nominee: {
+                name: form.nomineeName || "",
+                relation: form.relation || "",
+                age: form.nomineeAge || ""
+              },
+              refrence: {
+                name: form.referenceName || "",
+                phone: form.referencePhone || ""
+              }
+            };
+            break;
+          case 2:
+            updateData = {
+              vehicle_details: {
+                regNo: form.regNo || "",
+                make: form.make || "",
+                model: form.model || "",
+                variant: form.variant || "",
+                engineNo: form.engineNo || "",
+                chassisNo: form.chassisNo || "",
+                makeMonth: form.makeMonth || "",
+                makeYear: form.makeYear || ""
+              }
+            };
+            break;
+          case 3:
+            updateData = {
+              previous_policy: {
+                insuranceCompany: form.previousInsuranceCompany || "",
+                policyNumber: form.previousPolicyNumber || "",
+                policyType: form.previousPolicyType || "",
+                issueDate: form.previousIssueDate || "",
+                policyStartDate: form.previousPolicyStartDate || "", // ADD THIS
+                policyDuration: form.previousPolicyDuration || "", // ADD THIS
+                policyEndDate: form.previousPolicyEndDate || "", // ADD THIS
+                dueDate: form.previousDueDate || "",
+                claimTakenLastYear: form.previousClaimTaken || "no",
+                ncbDiscount: form.previousNcbDiscount || 0
+              }
+            };
+            break;
+          case 4:
+            updateData = {
+              insurance_quote: {
+                insurer: form.insurer || "",
+                coverageType: form.coverageType || "",
+                premium: form.premium || "",
+                idv: form.idv || "",
+                ncb: form.ncb || "",
+                duration: form.duration || ""
+              }
+            };
+            break;
+          case 5:
+            updateData = {
+              policy_info: {
+                policyStartDate: form.policyStartDate || "",
+                insuranceCompany: form.insuranceCompany || "",
+                policyNumber: form.policyNumber || "",
+                issueDate: form.issueDate || "",
+                dueDate: form.dueDate || "",
+                ncbDiscount: form.ncbDiscount || "",
+                insuranceDuration: form.insuranceDuration || "",
+                idvAmount: form.idvAmount || "",
+                totalPremium: form.totalPremium || ""
+              }
+            };
+            break;
+          case 6:
+            // Convert documents object back to array for API
+            const docs = Object.keys(form.documents || {});
+            let documentsArray = [];
+            for(let i=0;i<docs.length;i++){
+              const id = docs[i];
+              let doc = (form.documents || {})[id];
+              doc.tag = form.documentTags[id];
+              documentsArray.push(doc);
+            }
+            updateData = {
+              documents: documentsArray
+            };
+            break;
+          case 7:
+            // FIXED: Payment data structure with ledger
+            const totalPaid = paymentLedger.reduce((sum, payment) => sum + payment.amount, 0);
+            const paymentStatus = totalPaid >= totalPremium ? 'Fully Paid' : 'Payment Pending';
+            
+            updateData = {
+              payment_info: {
+                paymentMadeBy: form.paymentMadeBy || "",
+                paymentMode: form.paymentMode || "",
+                paymentAmount: form.paymentAmount || "",
+                paymentDate: form.paymentDate || "",
+                transactionId: form.transactionId || "",
+                receiptDate: form.receiptDate || "",
+                bankName: form.bankName || "",
+                subvention_payment: form.subvention_payment || "No Subvention",
+                paymentStatus: paymentStatus,
+                totalPaidAmount: totalPaid
+              },
+              payment_ledger: paymentLedger
+            };
+            break;
+          case 8:
+            updateData = {
+              payout: {
+                netPremium: form.netPremium || 0,
+                odAmount: form.odAmount || 0,
+                ncbAmount: form.ncbAmount || 0,
+                subVention: form.subVention || 0,
+                netAmount: (form.ncbAmount || 0) - (form.subVention || 0),
+              },
+              payment_ledger: paymentLedger,
+            };
+            break;
+          default:
+            updateData = {};
+        }
+      }
+
+      // Always include insurance quotes in updates
+      if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
+        updateData.insurance_quotes = form.insuranceQuotes;
+      }
+      
+      // Include payment ledger if it exists and not already included
+      if (paymentLedger.length > 0 && !updateData.payment_ledger) {
+        updateData.payment_ledger = paymentLedger;
+      }
+
+       const totalPaidAmount = paymentLedger.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+  const currentPaymentAmount = parseFloat(form.paymentAmount) || 0;
+  const remainingAmount = (parseFloat(totalPremium) || 0) - totalPaidAmount;
+  if(remainingAmount==0 && totalPaidAmount>0){
+    updateData.status = 'payment completed';
+  }
+
+      // DEBUG: Log exactly what's being sent
+      console.log("🚀 SENDING TO BACKEND:", {
+        policyId,
+        updateData,
+        hasPaymentInfo: !!updateData.payment_info,
+        hasPaymentLedger: !!updateData.payment_ledger,
+        paymentLedgerLength: updateData.payment_ledger?.length || 0,
+        insuranceQuotesLength: updateData.insurance_quotes?.length || 0
+      });
+
+      console.log("💰 Sending insurance_quotes to API:", updateData.insurance_quotes);
+      console.log("💰 Sending payment_ledger to API:", updateData.payment_ledger || paymentLedger);
+      console.log("📊 Previous Claim Status:", form.previousClaimTaken);
+      console.log("💳 Payment Data being sent:", updateData.payment_info);
+
+      const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, updateData, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      
+      console.log("✅ API Response:", response.data);
+      
+      setSaveMessage(isEditMode ? "✅ Policy updated successfully!" : "✅ Progress saved successfully!");
+      
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error updating policy:", error);
+      let errorMessage = "Error saving progress";
+      
+      if (error.response) {
+        errorMessage = `Save error: ${error.response.status} - ${JSON.stringify(error.response.data)}`;
+        console.error("❌ API Error details:", error.response.data);
+      } else if (error.request) {
+        errorMessage = "Network error: No response from server";
+      } else {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      setSaveMessage(`❌ ${errorMessage}`);
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ENHANCED handleSave function to accept payment data
+  const handleSave = async (paymentData = null) => {
+    if (!validateCurrentStep()) {
+      setSaveMessage("❌ Please fix the validation errors before saving");
+      return;
+    }
+    
+    try {
+      // If paymentData is provided, use it for update
+      if (paymentData) {
+        console.log("💾 Saving payment data:", paymentData);
+        await updatePolicy(paymentData);
+      } else {
+        await updatePolicy();
+      }
+    } catch (error) {
+      // Error handling is done in updatePolicy
+    }
+  };
+
+  // NEW: Handle Save and Exit
+  const handleSaveAndExit = async () => {
+    try {
+      setIsSaving(true);
+      
+      // Save current progress first
+      if (policyId) {
+        await updatePolicy();
+      } else {
+        await createPolicy();
+      }
+      
+      // Navigate back to policies page after successful save
+      setTimeout(() => {
+        navigate("/policies");
+      }, 1000);
+      
+    } catch (error) {
+      console.error("❌ Error saving before exit:", error);
+      setSaveMessage("❌ Error saving progress. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleFinish = async () => {
+    if (!validateCurrentStep()) {
+      setSaveMessage("❌ Please fix the validation errors before finishing");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      
+      // Prepare customer details based on buyer type
+      const customerDetails = {
+        name: form.customerName,
+        mobile: form.mobile,
+        email: form.email,
+        residenceAddress: form.residenceAddress,
+        pincode: form.pincode,
+        city: form.city,
+        alternatePhone: form.alternatePhone || ""
+      };
+
+      // Add individual or corporate specific fields
+      if (form.buyer_type === "individual") {
+        customerDetails.employeeName = form.employeeName || "";
+        customerDetails.gender = form.gender;
+        customerDetails.panNumber = form.panNumber;
+        customerDetails.aadhaarNumber = form.aadhaarNumber;
+      } else if (form.buyer_type === "corporate") {
+        customerDetails.employeeName = form.employeeName || '';
+        customerDetails.companyName = form.companyName;
+        customerDetails.contactPersonName = form.contactPersonName;
+        customerDetails.companyPanNumber = form.companyPanNumber;
+        customerDetails.gstNumber = form.gstNumber;
+      }
+
+      // Convert documents object to array for final save
+      const documentsArray = Object.values(form.documents || {});
+
+      // Calculate final payment status
+      const totalPaid = paymentLedger.reduce((sum, payment) => sum + payment.amount, 0);
+      const paymentStatus = totalPaid >= totalPremium ? 'Fully Paid' : 'Payment Pending';
+
+      const finalData = {
+        buyer_type: form.buyer_type,
+        customer_details: customerDetails,
+        nominee: {
+          name: form.nomineeName,
+          relation: form.relation,
+          age: form.nomineeAge
+        },
+        refrence: {
+          name: form.referenceName,
+          phone: form.referencePhone
+        },
+        vehicle_details: {
+          regNo: form.regNo,
+          make: form.make,
+          model: form.model,
+          variant: form.variant,
+          engineNo: form.engineNo,
+          chassisNo: form.chassisNo,
+          makeMonth: form.makeMonth,
+          makeYear: form.makeYear
+        },
+        previous_policy: {
+          insuranceCompany: form.previousInsuranceCompany || "",
+          policyNumber: form.previousPolicyNumber || "",
+          policyType: form.previousPolicyType || "",
+          issueDate: form.previousIssueDate || "",
+          policyStartDate: form.previousPolicyStartDate || "", // ADD THIS
+          policyDuration: form.previousPolicyDuration || "", // ADD THIS
+          policyEndDate: form.previousPolicyEndDate || "", // ADD THIS
+          dueDate: form.previousDueDate || "",
+          claimTakenLastYear: form.previousClaimTaken || "no",
+          ncbDiscount: form.previousNcbDiscount || 0
+        },
+        insurance_quote: {
+          insurer: form.insurer,
+          coverageType: form.coverageType,
+          premium: form.premium,
+          idv: form.idv,
+          ncb: form.ncb,
+          duration: form.duration
+        },
+        insurance_quotes: form.insuranceQuotes || [],
+        policy_info: {
+          policyIssued: form.policyIssued,
+          insuranceCompany: form.insuranceCompany,
+          policyNumber: form.policyNumber,
+          covernoteNumber: form.covernoteNumber,
+          issueDate: form.issueDate,
+          policyStartDate:form.policyStartDate,          
+          dueDate: form.dueDate,
+          ncbDiscount: form.ncbDiscount,
+          insuranceDuration: form.insuranceDuration,
+          idvAmount: form.idvAmount,
+          totalPremium: form.totalPremium
+        },
+        documents: documentsArray,
+        payment_info: {
+          paymentMadeBy: form.paymentMadeBy,
+          paymentMode: form.paymentMode,
+          paymentAmount: form.paymentAmount,
+          paymentDate: form.paymentDate,
+          transactionId: form.transactionId,
+          receiptDate: form.receiptDate,
+          bankName: form.bankName,
+          subvention_payment: form.subvention_payment || "No Subvention",
+          paymentStatus: paymentStatus,
+          totalPaidAmount: totalPaid
+        },
+        payment_ledger: paymentLedger,
+        payout: {
+          netPremium: form.netPremium || 0,
+          odAmount: form.odAmount || 0,
+          ncbAmount: form.ncbAmount || 0,
+          subVention: form.subVention || 0,
+          netAmount: (form.ncbAmount || 0) - (form.subVention || 0)
+        },
+        status: "completed",
+        completed_at: Date.now(),
+        ts: form.ts,
+        created_by: form.created_by
+      };
+
+      console.log(`✅ Finalizing policy with previous claim:`, form.previousClaimTaken);
+      console.log(`✅ Finalizing policy ${policyId} with complete data:`, finalData);
+      console.log(`💰 Final payment ledger:`, paymentLedger);
+      console.log(`💳 Final payment info:`, finalData.payment_info);
+
+      const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, finalData, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      setSaveMessage("✅ Policy completed successfully! Redirecting to policies page...");
+      setIsCompleted(true);
+      
+      setTimeout(() => {
+        navigate("/policies");
+      }, 2000);
+      
+    } catch (error) {
+      console.error("❌ Error completing policy:", error);
+      setSaveMessage("❌ Error completing policy. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const nextStep = async () => {
+    if (step === steps.length) {
+      await handleFinish();
+      return;
+    }
+
+    if (!validateCurrentStep()) {
+      setSaveMessage("❌ Please fix the validation errors before proceeding");
+      return;
+    }
+
+    try {
+      await updatePolicy();
+      setStep((s) => Math.min(s + 1, steps.length));
+      setErrors({});
+      setSaveMessage("");
+    } catch (error) {
+      console.log("Save failed, staying on current step");
+    }
+  };
+
+  const prevStep = () => {
+    setStep((s) => Math.max(s - 1, 1));
+    setErrors({});
+    setSaveMessage("");
+  };
+
+  const progressPercent = Math.round(((step - 1) / (steps.length - 1)) * 100);
+  const nextLabel = step < steps.length ? `Next: ${steps[step]}` : "Finish";
+
+  const stepProps = {
+    form,
+    handleChange,
+    handleSave,
+    isSaving,
+    errors,
+    onDocumentsUpdate: handleDocumentsUpdate,
+    onInsuranceQuotesUpdate: handleInsuranceQuotesUpdate,
+    isNcbEligible: form.previousClaimTaken !== "yes",
+    acceptedQuote,
+    onQuoteAccepted: handleQuoteAccepted,
+    totalPremium,
+    onNextStep: nextStep,
+    paymentLedger,
+    onPaymentLedgerUpdate: handlePaymentLedgerUpdate,
+    isEditMode: !!id 
+  };
+
+  if (loadingPolicy) {
+    return (
+      <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-extrabold text-gray-800">
+                Edit Insurance Case #{id}
+              </h1>
+              <p className="text-sm text-gray-500">Loading policy data...</p>
+            </div>
+            <Link
+              to="/policies"
+              className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-600 hover:shadow"
+            >
+              <FaChevronLeft /> Back to Cases
+            </Link>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+            <p className="mt-3 text-gray-600">Loading policy data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-6">
+      <div className="max-w-6xl mx-auto">
+        {saveMessage && (
+          <div className={`mb-4 p-3 rounded-md ${
+            saveMessage.includes("❌") || saveMessage.includes("Error") || saveMessage.includes("validation") 
+              ? "bg-red-100 text-red-700 border border-red-300" 
+              : saveMessage.includes("✅") || saveMessage.includes("completed successfully") || saveMessage.includes("successfully")
+              ? "bg-green-100 text-green-700 border border-green-300"
+              : "bg-purple-100 text-purple-700 border border-purple-300"
+          }`}>
+            {saveMessage}
+            {isCompleted && (
+              <div className="text-sm mt-1">
+                Redirecting to policies page...
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-800">
+              {isEditMode ? 'Edit Insurance Case' : 'New Insurance Case'} 
+              {policyId && ` #${policyId}`}
+            </h1>
+            <p className="text-sm text-gray-500">
+              {isEditMode ? 'Edit existing insurance case' : 'Create a new insurance case'}
+              {isEditMode && " - All fields are pre-filled with existing data"}
+            </p>
+          </div>
+          <Link
+            to="/policies"
+            className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-600 hover:shadow"
+          >
+            <FaChevronLeft /> Back to Cases
+          </Link>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-gray-600">
+              Step {step} of {steps.length}
+            </div>
+            <div className="text-sm text-gray-500">
+              {progressPercent}% Complete
+            </div>
+          </div>
+
+          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-6">
+            <div
+              className="h-2 bg-black rounded-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            {steps.map((title, idx) => {
+              const i = idx + 1;
+              const isCompleted = i < step;
+              const isCurrent = i === step;
+
+              return (
+                <div
+                  key={title}
+                  className="flex-1 relative flex flex-col items-center"
+                >
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
+                      isCompleted
+                        ? "bg-green-500 text-white shadow-sm"
+                        : isCurrent
+                        ? "bg-white border-2 border-purple-600 text-purple-600 shadow-sm"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {isCompleted ? <FaCheck /> : i}
+                  </div>
+                  <div
+                    className={`mt-2 text-xs text-center font-medium ${
+                      isCompleted
+                        ? "text-green-600"
+                        : isCurrent
+                        ? "text-purple-600"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {title}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Step components */}
+        {step === 1 && <CaseDetails {...stepProps} />}
+        {step === 2 && <VehicleDetails {...stepProps} />}
+        {step === 3 && <PreviousPolicyDetails {...stepProps} />}
+        {step === 4 && <InsuranceQuotes {...stepProps} />}
+        {step === 5 && <NewPolicyDetails {...stepProps} acceptedQuote={acceptedQuote} />}
+        {step === 6 && <Documents {...stepProps} />}
+        {step === 7 && <Payment {...stepProps} totalPremium={totalPremium} />}
+        {step === 8 && <PayoutDetails {...stepProps} />}
+
+        {/* FIXED FOOTER - Always visible with proper styling */}
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-50/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg z-50">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={prevStep}
+                  disabled={step === 1 || isCompleted || isSaving}
+                  className="flex items-center gap-2 px-5 py-2 rounded-md border border-gray-300 bg-white text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                >
+                  <FaChevronLeft /> Previous
+                </button>
+                
+                {/* NEW: Save and Exit Button */}
+                <button
+                  onClick={handleSaveAndExit}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-5 py-2 rounded-md border border-gray-300 bg-white text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                >
+                  <FaSave className="text-gray-600" />
+                  {isSaving ? "Saving..." : "Save & Exit"}
+                </button>
+                
+                <div className="text-sm text-gray-500 hidden md:block">
+                  Step {step} of {steps.length}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-500 hidden md:block">
+                  Progress: {progressPercent}%
+                </div>
+                
+                <button
+                  onClick={nextStep}
+                  disabled={isCompleted || isSaving}
+                  className="inline-flex items-center gap-3 px-5 py-2 rounded-md bg-purple-600 text-white text-sm hover:opacity-95 disabled:opacity-50 transition-colors"
+                >
+                  {isSaving ? "Processing..." : nextLabel} 
+                  {!isSaving && step < steps.length && <FaChevronRight />}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Add padding to bottom to account for fixed footer */}
+        <div className="h-20"></div>
+      </div>
+    </div>
+  );
+};
