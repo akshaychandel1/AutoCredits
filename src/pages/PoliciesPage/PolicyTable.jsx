@@ -957,7 +957,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                 ? 'bg-green-100 text-green-800 border border-green-200' 
                                 : 'bg-gray-100 text-gray-800 border border-gray-200'
                             }`}>
-                              {policy.documents && policy.documents.length > 0 ? `${policy.documents.length} uploaded` : 'No docs'}
+                              {policy.documents && policy.documents.length > 0 ? `${policy.documents.length} ` : 'No docs'}
                             </span>
                           </div>
                         </div>
