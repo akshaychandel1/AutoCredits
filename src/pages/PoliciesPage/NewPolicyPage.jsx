@@ -2650,82 +2650,144 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.width;
       const pageHeight = pdf.internal.pageSize.height;
-      const margin = 20;
+      const margin = 15;  // Reduced margin for more content space
       const contentWidth = pageWidth - (2 * margin);
 
-      // Set professional color scheme
-      const primaryColor = [41, 128, 185];
-      const secondaryColor = [52, 152, 219];
-      const accentColor = [46, 204, 113];
-      const textColor = [51, 51, 51];
-      const lightGray = [245, 245, 245];
+      // Enhanced color scheme for a unique, modern look
+      const primaryColor = [0, 102, 204];  // Deep blue
+      const secondaryColor = [51, 153, 255];  // Light blue
+      const accentColor = [0, 204, 102];  // Vibrant green
+      const textColor = [34, 34, 34];  // Dark gray
+      const lightBg = [240, 248, 255];  // Very light blue
+      const borderColor = [204, 204, 204];  // Soft gray
 
-      // Header with gradient effect
+      // Modern Header with subtle gradient simulation
       pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      pdf.rect(0, 0, pageWidth, 80, 'F');
-      
-      // Company Logo and Title
-      pdf.setFontSize(24);
+      pdf.rect(0, 0, pageWidth, 50, 'F');  // Main header band
+      pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+      pdf.rect(0, 50, pageWidth, 10, 'F');  // Subtle accent line
+
+      // Title with modern font styling
+      pdf.setFontSize(26);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(255, 255, 255);
-      pdf.text('INSURANCE QUOTES COMPARISON', pageWidth / 2, 35, { align: 'center' });
-      
+      pdf.text('Insurance Quote Comparison', margin, 35);
+
       pdf.setFontSize(12);
-      pdf.text('AutoCredit Insurance - Professional Quote Analysis', pageWidth / 2, 45, { align: 'center' });
-      
-      // Customer Information Box
+      pdf.setFont('helvetica', 'italic');
+      pdf.text('Tailored Options for Your Vehicle', pageWidth - margin, 35, { align: 'right' });
+
+      // Customer Information Section with card-like design
       pdf.setFillColor(255, 255, 255);
-      pdf.rect(margin, 60, contentWidth, 25, 'F');
-      pdf.setDrawColor(200, 200, 200);
-      pdf.rect(margin, 60, contentWidth, 25, 'S');
-      
-      pdf.setFontSize(10);
+      pdf.roundedRect(margin, 70, contentWidth, 35, 5, 5, 'F');  // Rounded card
+      pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      pdf.roundedRect(margin, 70, contentWidth, 35, 5, 5, 'S');
+
+      pdf.setFontSize(11);
       pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('CUSTOMER DETAILS:', margin + 5, 70);
+      pdf.text('Your Details:', margin + 10, 82);
+
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Name: ${form.customerName || 'Not Provided'}`, margin + 5, 77);
-      pdf.text(`Vehicle: ${form.make || ''} ${form.model || ''} ${form.variant || ''}`, margin + 80, 77);
-      pdf.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - margin - 5, 77, { align: 'right' });
+      pdf.text(`Customer: ${form.customerName || 'Not Specified'}`, margin + 10, 92);
+      pdf.text(`Vehicle: ${form.make || ''} ${form.model || ''} ${form.variant || ''}`, margin + 10, 100);
+      pdf.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - margin - 10, 92, { align: 'right' });
+      pdf.text(`Quotes Analyzed: ${quotesToDownload.length}`, pageWidth - margin - 10, 100, { align: 'right' });
 
-      let yPosition = 95;
+      let yPosition = 120;
 
-      // Summary Statistics
+      // Quick Summary Dashboard
       if (quotesToDownload.length > 1) {
-        const lowestPremium = Math.min(...quotesToDownload.map(q => q.totalPremium));
-        const highestPremium = Math.max(...quotesToDownload.map(q => q.totalPremium));
-        const avgPremium = quotesToDownload.reduce((sum, q) => sum + q.totalPremium, 0) / quotesToDownload.length;
+        pdf.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+        pdf.roundedRect(margin, yPosition, contentWidth, 40, 5, 5, 'F');
+        pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+        pdf.roundedRect(margin, yPosition, contentWidth, 40, 5, 5, 'S');
 
-        pdf.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-        pdf.rect(margin, yPosition, contentWidth, 20, 'F');
-        pdf.setDrawColor(200, 200, 200);
-        pdf.rect(margin, yPosition, contentWidth, 20, 'S');
-        
-        pdf.setFontSize(9);
-        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.setFontSize(11);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('QUOTE SUMMARY:', margin + 5, yPosition + 8);
+        pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.text('Quick Insights', margin + 10, yPosition + 12);
+
+        const lowestPremium = Math.min(...quotesToDownload.map(q => q.totalPremium));
+        const avgPremium = quotesToDownload.reduce((sum, q) => sum + q.totalPremium, 0) / quotesToDownload.length;
+        const savingsPotential = Math.max(...quotesToDownload.map(q => q.totalPremium)) - lowestPremium;
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
         pdf.setFont('helvetica', 'normal');
-        
-        pdf.text(`Total Quotes: ${quotesToDownload.length}`, margin + 5, yPosition + 15);
-        pdf.text(`Lowest Premium: ₹${lowestPremium.toLocaleString('en-IN')}`, margin + 60, yPosition + 15);
-        pdf.text(`Highest Premium: ₹${highestPremium.toLocaleString('en-IN')}`, margin + 120, yPosition + 15);
-        pdf.text(`Average Premium: ₹${avgPremium.toLocaleString('en-IN')}`, pageWidth - margin - 5, yPosition + 15, { align: 'right' });
-        
-        yPosition += 30;
+
+        // Dashboard items
+        const dashItems = [
+          { label: 'Best Price', value: `₹${lowestPremium.toLocaleString('en-IN')}`, color: accentColor },
+          { label: 'Average', value: `₹${Math.round(avgPremium).toLocaleString('en-IN')}`, color: secondaryColor },
+          { label: 'Potential Savings', value: `₹${savingsPotential.toLocaleString('en-IN')}`, color: accentColor }
+        ];
+
+        let dashX = margin + 10;
+        dashItems.forEach(item => {
+          pdf.setTextColor(item.color[0], item.color[1], item.color[2]);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(item.value, dashX, yPosition + 25);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(9);
+          pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+          pdf.text(item.label, dashX, yPosition + 33);
+          dashX += contentWidth / 3;
+        });
+
+        yPosition += 50;
       }
 
-      // Main Comparison Table
-      createProfessionalComparisonTable(pdf, quotesToDownload, margin, yPosition, pageWidth, pageHeight);
+      // Enhanced Comparison Table with improved readability
+      yPosition = createEnhancedComparisonTable(pdf, quotesToDownload, margin, yPosition, pageWidth, pageHeight, contentWidth);
 
-      // Footer
-      const footerY = pageHeight - 15;
-      pdf.setFontSize(8);
+      // Recommendation Section
+      if (quotesToDownload.length > 1) {
+        yPosition += 10;
+        if (yPosition > pageHeight - 60) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+
+        pdf.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+        pdf.roundedRect(margin, yPosition, contentWidth, 40, 5, 5, 'F');
+        pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+        pdf.roundedRect(margin, yPosition, contentWidth, 40, 5, 5, 'S');
+
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+        pdf.text('Our Recommendation', margin + 10, yPosition + 12);
+
+        const bestQuote = [...quotesToDownload].sort((a, b) => a.totalPremium - b.totalPremium)[0];
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`We recommend ${bestQuote.insuranceCompany} for the best value at ₹${bestQuote.totalPremium.toLocaleString('en-IN')}.`, margin + 10, yPosition + 25);
+        pdf.text(`It offers comprehensive coverage with ${Object.keys(bestQuote.selectedAddOns || {}).length} add-ons and ${bestQuote.ncbDiscount}% NCB.`, margin + 10, yPosition + 33);
+
+        yPosition += 50;
+      }
+
+      // Elegant Footer
+      if (yPosition > pageHeight - 30) {
+        pdf.addPage();
+        yPosition = pageHeight - 25;
+      } else {
+        yPosition = pageHeight - 25;
+      }
+
+      pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      pdf.line(margin, yPosition - 5, pageWidth - margin, yPosition - 5);
+
+      pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
-      pdf.text('Generated by AutoCredit Insurance | Contact: support@autocredit.com | Phone: +91-XXXXX-XXXXX', 
-               pageWidth / 2, footerY, { align: 'center' });
+      pdf.setFont('helvetica', 'italic');
+      pdf.text('Powered by AutoCredit Insurance • Confidential • For internal use only', margin, yPosition);
+      pdf.text(`Page 1 of ${pdf.internal.getNumberOfPages()}`, pageWidth - margin, yPosition, { align: 'right' });
 
-      const fileName = `insurance-quotes-${form.customerName || 'customer'}-${new Date().getTime()}.pdf`;
+      const fileName = `premium-insurance-comparison-${form.customerName || 'client'}-${new Date().getTime()}.pdf`;
       pdf.save(fileName);
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -2735,178 +2797,135 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     }
   };
 
-  // Professional table creation function
-  const createProfessionalComparisonTable = (pdf, quotes, startX, startY, pageWidth, pageHeight) => {
-    const margin = 20;
-    const tableWidth = pageWidth - (2 * margin);
-    
-    // Enhanced column structure for better comparison
-    const colWidths = [
-      tableWidth * 0.16, // Company
-      tableWidth * 0.12, // Coverage
-      tableWidth * 0.12, // IDV
-      tableWidth * 0.10, // Base Premium
-      tableWidth * 0.08, // Add-ons
-      tableWidth * 0.08, // NCB
-      tableWidth * 0.12, // Total Premium
-      tableWidth * 0.12, // Duration
-      tableWidth * 0.10  // Key Features
-    ];
-    
-    let yPosition = startY;
-    
-    // Table headers
-    const headers = ['Insurance Company', 'Coverage', 'IDV (₹)', 'Base Premium', 'Add-ons', 'NCB %', 'Total Premium', 'Policy Term', 'Key Features'];
-    
-    // Draw professional table header
-    pdf.setFillColor(52, 152, 219);
-    pdf.rect(margin, yPosition, tableWidth, 12, 'F');
-    
-    pdf.setFontSize(9);
-    pdf.setTextColor(255, 255, 255);
+  // Enhanced table creation function for better comparison
+  const createEnhancedComparisonTable = (pdf, quotes, startX, startY, pageWidth, pageHeight, contentWidth) => {
+    let yPosition = startY + 10;
+
+    // Table Header with modern design
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
-    
-    let xPosition = margin;
-    headers.forEach((header, index) => {
-      pdf.text(header, xPosition + 2, yPosition + 8);
-      xPosition += colWidths[index];
-    });
-    
-    yPosition += 12;
-    
-    // Sort quotes by total premium (lowest first)
-    const sortedQuotes = [...quotes].sort((a, b) => a.totalPremium - b.totalPremium);
-    
-    // Table rows
-    pdf.setTextColor(0, 0, 0);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    
-    sortedQuotes.forEach((quote, rowIndex) => {
-      // Check for page break
-      if (yPosition > pageHeight - 40) {
-        pdf.addPage();
-        yPosition = 20;
-        // Redraw header on new page
-        pdf.setFillColor(52, 152, 219);
-        pdf.rect(margin, yPosition, tableWidth, 12, 'F');
-        pdf.setFontSize(9);
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFont('helvetica', 'bold');
-        
-        let headerX = margin;
-        headers.forEach((header, index) => {
-          pdf.text(header, headerX + 2, yPosition + 8);
-          headerX += colWidths[index];
-        });
-        
-        yPosition += 12;
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(8);
-      }
-      
-      // Alternate row colors for better readability
-      if (rowIndex % 2 === 0) {
-        pdf.setFillColor(250, 250, 250);
-      } else {
-        pdf.setFillColor(255, 255, 255);
-      }
-      pdf.rect(margin, yPosition, tableWidth, 25, 'F');
-      pdf.setDrawColor(220, 220, 220);
-      pdf.rect(margin, yPosition, tableWidth, 25, 'S');
-      
-      xPosition = margin;
-      
-      // Company name (truncated if too long)
-      const companyName = quote.insuranceCompany.length > 12 ? 
-        quote.insuranceCompany.substring(0, 12) + '...' : quote.insuranceCompany;
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(companyName, xPosition + 2, yPosition + 8);
-      xPosition += colWidths[0];
-      
-      // Coverage type
-      pdf.setFont('helvetica', 'normal');
-      const coverageType = quote.coverageType === 'comprehensive' ? 'Comp' : '3rd Party';
-      pdf.text(coverageType, xPosition + 2, yPosition + 8);
-      xPosition += colWidths[1];
-      
-      // IDV
-      pdf.text(`₹${(quote.idv || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
-      xPosition += colWidths[2];
-      
-      // Base Premium
-      pdf.text(`₹${(quote.premium || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
-      xPosition += colWidths[3];
-      
-      // Add-ons count with amount
-      const addOnsCount = Object.keys(quote.selectedAddOns || {}).length;
-      const addOnsText = addOnsCount > 0 ? 
-        `${addOnsCount} (₹${quote.addOnsPremium.toLocaleString('en-IN')})` : '0';
-      pdf.text(addOnsText, xPosition + 2, yPosition + 8);
-      xPosition += colWidths[4];
-      
-      // NCB with discount amount
-      pdf.text(`${quote.ncbDiscount}%`, xPosition + 2, yPosition + 8);
-      pdf.setFontSize(7);
-      pdf.setTextColor(0, 128, 0);
-      pdf.text(`(₹${(quote.ncbDiscountAmount || 0).toLocaleString('en-IN')})`, xPosition + 2, yPosition + 13);
-      pdf.setFontSize(8);
-      pdf.setTextColor(0, 0, 0);
-      xPosition += colWidths[5];
-      
-      // Total Premium (highlighted) - Mark best price
-      pdf.setFont('helvetica', 'bold');
-      if (rowIndex === 0 && sortedQuotes.length > 1) {
-        pdf.setTextColor(46, 204, 113); // Green for best price
-        pdf.text(`₹${(quote.totalPremium || 0).toLocaleString('en-IN')} ✓`, xPosition + 2, yPosition + 8);
-      } else {
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(`₹${(quote.totalPremium || 0).toLocaleString('en-IN')}`, xPosition + 2, yPosition + 8);
-      }
-      pdf.setFont('helvetica', 'normal');
-      xPosition += colWidths[6];
-      
-      // Policy Duration - Use the descriptive label directly
-      const durationText = quote.policyDurationLabel || quote.policyDuration;
-      pdf.text(durationText, xPosition + 2, yPosition + 8);
-      xPosition += colWidths[7];
-      
-      // Key Features (first 2-3 add-ons or main features)
-      const addOnsList = Object.values(quote.selectedAddOns || {});
-      let keyFeatures = 'Basic';
-      if (addOnsList.length > 0) {
-        keyFeatures = addOnsList.slice(0, 2).map(addOn => 
-          addOn.description.split(' ')[0]
-        ).join(', ');
-        if (addOnsList.length > 2) {
-          keyFeatures += '...';
-        }
-      }
-      pdf.text(keyFeatures, xPosition + 2, yPosition + 8);
-      
-      // Additional info in second line
-      pdf.setFontSize(7);
-      pdf.setTextColor(100, 100, 100);
-      const savedAmount = quote.ncbDiscountAmount > 0 ? `Save: ₹${quote.ncbDiscountAmount.toLocaleString('en-IN')}` : '';
-      pdf.text(savedAmount, margin + 2, yPosition + 18);
-      
-      // Reset for next row
-      pdf.setFontSize(8);
-      pdf.setTextColor(0, 0, 0);
-      
-      yPosition += 25;
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    pdf.roundedRect(startX, yPosition, contentWidth, 14, 3, 3, 'F');
+
+    const headers = ['Provider', 'Total Premium', 'IDV', 'Coverage', 'NCB', 'Add-ons', 'Term', 'Key Highlights'];
+    const colWidths = [contentWidth * 0.18, contentWidth * 0.12, contentWidth * 0.12, contentWidth * 0.12, contentWidth * 0.08, contentWidth * 0.12, contentWidth * 0.10, contentWidth * 0.16];
+
+    let xPosition = startX + 5;
+    headers.forEach((header, idx) => {
+      pdf.text(header, xPosition, yPosition + 10);
+      xPosition += colWidths[idx];
     });
 
-    // Add recommendation note if multiple quotes
-    if (sortedQuotes.length > 1) {
-      yPosition += 5;
-      pdf.setFontSize(9);
-      pdf.setTextColor(46, 204, 113);
+    yPosition += 14;
+
+    // Sort quotes by total premium ascending
+    const sortedQuotes = [...quotes].sort((a, b) => a.totalPremium - b.totalPremium);
+
+    pdf.setFontSize(10);
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'normal');
+
+    sortedQuotes.forEach((quote, rowIndex) => {
+      // Page break check
+      if (yPosition + 40 > pageHeight - 30) {  // Increased height for more details
+        pdf.addPage();
+        yPosition = 20;
+
+        // Redraw header
+        pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        pdf.roundedRect(startX, yPosition, contentWidth, 14, 3, 3, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        xPosition = startX + 5;
+        headers.forEach((header, idx) => {
+          pdf.text(header, xPosition, yPosition + 10);
+          xPosition += colWidths[idx];
+        });
+        yPosition += 14;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont('helvetica', 'normal');
+      }
+
+      // Row background with alternating colors and hover-like effect for best quote
+      const isBest = rowIndex === 0;
+      pdf.setFillColor(isBest ? [230, 255, 241] : (rowIndex % 2 === 0 ? 255 : 248, rowIndex % 2 === 0 ? 255 : 248, rowIndex % 2 === 0 ? 255 : 248));  // Light green for best, white/gray alternate
+      pdf.rect(startX, yPosition, contentWidth, 40, 'F');  // Taller rows for sub-details
+
+      pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      pdf.rect(startX, yPosition, contentWidth, 40, 'S');
+
+      xPosition = startX + 5;
+
+      // Provider with bold and color
       pdf.setFont('helvetica', 'bold');
-      pdf.text('✓ Best Value: ' + sortedQuotes[0].insuranceCompany + ' (₹' + 
-               sortedQuotes[0].totalPremium.toLocaleString('en-IN') + ')', margin, yPosition);
-    }
+      pdf.setTextColor(isBest ? accentColor[0] : textColor[0], isBest ? accentColor[1] : textColor[1], isBest ? accentColor[2] : textColor[2]);
+      pdf.text(quote.insuranceCompany, xPosition, yPosition + 10);
+      if (isBest) pdf.text('★ Best Value', xPosition, yPosition + 18, { fontSize: 8 });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+      xPosition += colWidths[0];
+
+      // Total Premium highlighted
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`₹${(quote.totalPremium || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 10);
+      pdf.setFontSize(8);
+      pdf.text(`GST: ₹${(quote.gstAmount || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      xPosition += colWidths[1];
+
+      // IDV
+      pdf.text(`₹${(quote.idv || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 10);
+      pdf.setFontSize(8);
+      pdf.text(`OD: ₹${(quote.odAmountAfterNcb || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
+      pdf.setFontSize(10);
+      xPosition += colWidths[2];
+
+      // Coverage
+      pdf.text(quote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party', xPosition, yPosition + 10);
+      pdf.setFontSize(8);
+      pdf.text(`TP: ₹${(quote.thirdPartyAmount || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
+      pdf.setFontSize(10);
+      xPosition += colWidths[3];
+
+      // NCB
+      pdf.text(`${quote.ncbDiscount}%`, xPosition, yPosition + 10);
+      pdf.setFontSize(8);
+      pdf.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
+      pdf.text(`Save: ₹${(quote.ncbDiscountAmount || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+      pdf.setFontSize(10);
+      xPosition += colWidths[4];
+
+      // Add-ons
+      const addOnsCount = Object.keys(quote.selectedAddOns || {}).length;
+      pdf.text(`${addOnsCount} Add-ons`, xPosition, yPosition + 10);
+      pdf.setFontSize(8);
+      pdf.text(`₹${(quote.addOnsPremium || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
+      pdf.setFontSize(10);
+      xPosition += colWidths[5];
+
+      // Term
+      pdf.text(quote.policyDurationLabel || quote.policyDuration, xPosition, yPosition + 10);
+      xPosition += colWidths[6];
+
+      // Key Highlights as bullet list
+      pdf.setFontSize(8);
+      const highlights = [];
+      if (quote.selectedAddOns) {
+        Object.values(quote.selectedAddOns).slice(0, 3).forEach(addOn => {
+          highlights.push(`• ${addOn.description.split(' ')[0]}`);
+        });
+      }
+      highlights.forEach((hl, i) => {
+        pdf.text(hl, xPosition, yPosition + 10 + (i * 8));
+      });
+      if (highlights.length === 0) pdf.text('Standard Coverage', xPosition, yPosition + 10);
+      pdf.setFontSize(10);
+
+      yPosition += 40;
+    });
 
     return yPosition;
   };
@@ -3789,6 +3808,33 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     return { odExpiry, tpExpiry };
   };
 
+  // Fixed function to get duration value from accepted quote
+  const getDurationValueFromQuote = (quote, vehicleType) => {
+    if (vehicleType === "used") {
+      // For used cars, always use "1 Year"
+      return "1 Year";
+    } else {
+      // For new cars, map the policyDuration to the appropriate option
+      const durationMap = {
+        1: "1yr OD + 3yr TP",
+        2: "2yr OD + 3yr TP", 
+        3: "3yr OD + 3yr TP"
+      };
+      
+      const mappedValue = durationMap[quote.policyDuration];
+      
+      if (mappedValue) {
+        return mappedValue;
+      } else {
+        // Fallback: try to find a matching option
+        const fallbackOption = getPolicyDurationOptions(vehicleType).find(
+          opt => opt.odYears === quote.policyDuration
+        );
+        return fallbackOption ? fallbackOption.value : "1yr OD + 3yr TP";
+      }
+    }
+  };
+
   // Handle issue date change
   const handleIssueDateChange = (e) => {
     const issueDate = e.target.value;
@@ -3871,91 +3917,54 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     }
   };
 
-  // Effect to auto-fill when acceptedQuote changes (including when editing)
- // Function to get duration value from accepted quote
-const getDurationValueFromQuote = (quote, vehicleType) => {
-  if (vehicleType === "new") {
-    // For new cars, map the policyDuration to the appropriate option
-    if (quote.policyDuration === 1) {
-      return "1yr OD + 3yr TP";
-    } else if (quote.policyDuration === 3) {
-      return "3yr OD + 3yr TP";
-    } else if (quote.policyDuration === 2) {
-      return "2yr OD + 2yr TP"; // If you have this option
+  // Effect to auto-fill when acceptedQuote changes
+  useEffect(() => {
+    if (acceptedQuote) {
+      // Check if this is a different quote than the last one we processed
+      const isDifferentQuote = acceptedQuote.id !== lastAcceptedQuoteId;
+      
+      if (isDifferentQuote) {
+        console.log("🔄 Auto-filling policy details from accepted quote...");
+        
+        // Auto-fill basic policy details from accepted quote
+        handleChange({
+          target: { name: 'insuranceCompany', value: acceptedQuote.insuranceCompany }
+        });
+        handleChange({
+          target: { name: 'idvAmount', value: acceptedQuote.idv?.toString() || '' }
+        });
+        handleChange({
+          target: { name: 'totalPremium', value: acceptedQuote.totalPremium?.toString() || '' }
+        });
+        handleChange({
+          target: { name: 'ncbDiscount', value: acceptedQuote.ncbDiscount?.toString() || '' }
+        });
+        
+        // Auto-fill insurance duration from accepted quote
+        const durationValue = getDurationValueFromQuote(acceptedQuote, form.vehicleType);
+        console.log("🎯 Setting insurance duration to:", durationValue);
+        
+        handleChange({
+          target: { name: 'insuranceDuration', value: durationValue }
+        });
+        
+        // Update the last processed quote ID
+        setLastAcceptedQuoteId(acceptedQuote.id);
+        
+        console.log("✅ Policy details auto-filled successfully");
+      }
     } else {
-      // Fallback: convert number to years format
-      return `${quote.policyDuration} Year${quote.policyDuration > 1 ? 's' : ''}`;
+      // Reset the tracker if no quote is accepted
+      setLastAcceptedQuoteId(null);
     }
-  } else {
-    // For used cars, always use "1 Year"
-    return "1 Year";
-  }
-};
+  }, [acceptedQuote, lastAcceptedQuoteId, handleChange, form.vehicleType]);
 
-// Enhanced debug function to log what's happening
-const logAutoFillDetails = (quote, durationValue) => {
-  console.log("📋 Auto-fill Details:", {
-    quoteId: quote.id,
-    insuranceCompany: quote.insuranceCompany,
-    originalDuration: quote.policyDuration,
-    vehicleType: form.vehicleType,
-    mappedDuration: durationValue,
-    availableOptions: policyDurationOptions.map(opt => opt.value)
-  });
-};
-
-// Effect to auto-fill when acceptedQuote changes (including when editing)
-useEffect(() => {
-  if (acceptedQuote) {
-    console.log("🔄 Processing accepted quote:", acceptedQuote.insuranceCompany, "ID:", acceptedQuote.id);
-    
-    // Check if this is a different quote than the last one we processed
-    const isDifferentQuote = acceptedQuote.id !== lastAcceptedQuoteId;
-    
-    if (isDifferentQuote) {
-      console.log("🔄 New/different quote accepted, auto-filling policy details...");
-      
-      // Auto-fill policy details from accepted quote
-      handleChange({
-        target: { name: 'insuranceCompany', value: acceptedQuote.insuranceCompany }
-      });
-      handleChange({
-        target: { name: 'idvAmount', value: acceptedQuote.idv.toString() }
-      });
-      handleChange({
-        target: { name: 'totalPremium', value: acceptedQuote.totalPremium.toString() }
-      });
-      handleChange({
-        target: { name: 'ncbDiscount', value: acceptedQuote.ncbDiscount.toString() }
-      });
-      
-      // Auto-fill insurance duration from accepted quote
-      const durationValue = getDurationValueFromQuote(acceptedQuote, form.vehicleType);
-      handleChange({
-        target: { name: 'insuranceDuration', value: durationValue }
-      });
-      
-      logAutoFillDetails(acceptedQuote, durationValue);
-      console.log("✅ Policy details updated with accepted quote including duration:", durationValue);
-      
-      // Update the last processed quote ID
-      setLastAcceptedQuoteId(acceptedQuote.id);
-    } else {
-      console.log("ℹ️ Same quote as before, no need to re-fill");
-    }
-  } else {
-    console.log("❌ No accepted quote available");
-    // Reset the tracker if no quote is accepted
-    setLastAcceptedQuoteId(null);
-  }
-}, [acceptedQuote, lastAcceptedQuoteId, handleChange, form.vehicleType]);
   // Reset form when accepted quote is removed
   useEffect(() => {
     if (!acceptedQuote && lastAcceptedQuoteId) {
-      console.log("🔄 Accepted quote was removed, clearing policy fields");
       setLastAcceptedQuoteId(null);
     }
-  }, [acceptedQuote, lastAcceptedQuoteId, handleChange]);
+  }, [acceptedQuote, lastAcceptedQuoteId]);
 
   // Get selected duration option details
   const selectedDurationOption = policyDurationOptions.find(opt => opt.value === form.insuranceDuration);
@@ -4006,7 +4015,7 @@ useEffect(() => {
                 </h4>
                 <p className="text-sm text-gray-600">
                   {form.vehicleType === "new" 
-                    ? "Available policy durations: 1yr OD + 3yr TP, 3yr OD + 3yr TP"
+                    ? "Available policy durations: 1yr OD + 3yr TP, 2yr OD + 3yr TP, 3yr OD + 3yr TP"
                     : "Policy duration: 1 Year (default for used vehicles)"
                   }
                 </p>
@@ -4166,7 +4175,7 @@ useEffect(() => {
               name="policyStartDate"
               value={form.policyStartDate || ""}
               onChange={handlePolicyStartDateChange}
-              min={form.issueDate || ''} // Cannot be before issue date
+              min={form.issueDate || ''}
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.policyStartDate ? "border-red-500" : "border-gray-300"
               }`}
@@ -4180,58 +4189,51 @@ useEffect(() => {
             </p>
           </div>
 
-          {/* Insurance Duration - Dropdown */}
-          {/* Insurance Duration - Dropdown */}
-<div>
-  <label className="block mb-1 text-sm font-medium text-gray-600">
-    Insurance Duration *
-  </label>
-  <select
-    name="insuranceDuration"
-    value={form.insuranceDuration || ""}
-    onChange={handleDurationChange}
-    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-      errors.insuranceDuration ? "border-red-500" : "border-gray-300"
-    } ${
-      form.vehicleType === "used" ? "bg-gray-100 cursor-not-allowed" : ""
-    }`}
-    disabled={form.vehicleType === "used"} // Disabled for used cars
-  >
-    <option value="">Select Duration</option>
-    {policyDurationOptions.map((option, index) => (
-      <option key={index} value={option.value}>
-        {option.label} {form.vehicleType === "used" && option.value === "1 Year" ? '(Used Car Default)' : ''}
-      </option>
-    ))}
-  </select>
-  
-  {/* Auto-fill status */}
-  {acceptedQuote && form.insuranceDuration && (
-    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-      <CheckCircle className="w-3 h-3" />
-      Auto-filled from accepted quote: {acceptedQuote.policyDuration} Year{acceptedQuote.policyDuration > 1 ? 's' : ''}
-      {form.vehicleType === "new" && (
-        <span className="text-blue-600">
-          ({form.insuranceDuration})
-        </span>
-      )}
-    </p>
-  )}
-  
-  {errors.insuranceDuration && <p className="text-red-500 text-xs mt-1">{errors.insuranceDuration}</p>}
-  
-  {form.vehicleType === "used" && (
-    <p className="text-xs text-gray-500 mt-1">
-      Used vehicles are limited to 1 Year policy duration (auto-filled from accepted quote)
-    </p>
-  )}
-  
-  {form.vehicleType === "new" && acceptedQuote && (
-    <p className="text-xs text-blue-600 mt-1">
-      Duration taken from accepted quote: {acceptedQuote.policyDuration} Year{acceptedQuote.policyDuration > 1 ? 's' : ''}
-    </p>
-  )}
-</div>
+          {/* Insurance Duration - Dropdown - FIXED */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Insurance Duration *
+            </label>
+            <select
+              name="insuranceDuration"
+              value={form.insuranceDuration || (form.vehicleType === "used" ? "1 Year" : "")}
+              onChange={handleDurationChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.insuranceDuration ? "border-red-500" : "border-gray-300"
+              } ${
+                form.vehicleType === "used" ? "bg-gray-100 cursor-not-allowed" : ""
+              }`}
+              disabled={form.vehicleType === "used"}
+            >
+              <option value="">Select Duration</option>
+              {policyDurationOptions.map((option, index) => (
+                <option key={index} value={option.value}>
+                  {option.label} {form.vehicleType === "used" && option.value === "1 Year" ? '(Used Car Default)' : ''}
+                </option>
+              ))}
+            </select>
+            
+            {/* Auto-fill status - FIXED */}
+            {acceptedQuote && form.insuranceDuration && (
+              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                Auto-filled from accepted quote: {acceptedQuote.policyDuration} Year{acceptedQuote.policyDuration > 1 ? 's' : ''}
+                {form.vehicleType === "new" && (
+                  <span className="text-blue-600 ml-1">
+                    (as {form.insuranceDuration})
+                  </span>
+                )}
+              </p>
+            )}
+            
+            {errors.insuranceDuration && <p className="text-red-500 text-xs mt-1">{errors.insuranceDuration}</p>}
+            
+            {form.vehicleType === "used" && acceptedQuote && (
+              <p className="text-xs text-blue-600 mt-1">
+                Used vehicle default: 1 Year (from accepted quote: {acceptedQuote.policyDuration} Year{acceptedQuote.policyDuration > 1 ? 's' : ''})
+              </p>
+            )}
+          </div>
 
           {/* OD Expiry Date */}
           <div>
@@ -4305,7 +4307,7 @@ useEffect(() => {
                 </option>
               ))}
             </select>
-            {acceptedQuote && form.ncbDiscount === acceptedQuote.ncbDiscount.toString() && (
+            {acceptedQuote && form.ncbDiscount === acceptedQuote.ncbDiscount?.toString() && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
                 From accepted quote: {acceptedQuote.ncbDiscount}%
@@ -4328,7 +4330,7 @@ useEffect(() => {
                 errors.idvAmount ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {acceptedQuote && form.idvAmount === acceptedQuote.idv.toString() && (
+            {acceptedQuote && form.idvAmount === acceptedQuote.idv?.toString() && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
                 From accepted quote: ₹{acceptedQuote.idv?.toLocaleString('en-IN')}
@@ -4351,7 +4353,7 @@ useEffect(() => {
                 errors.totalPremium ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {acceptedQuote && form.totalPremium === acceptedQuote.totalPremium.toString() && (
+            {acceptedQuote && form.totalPremium === acceptedQuote.totalPremium?.toString() && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
                 From accepted quote: ₹{acceptedQuote.totalPremium?.toLocaleString('en-IN')}
@@ -4360,26 +4362,26 @@ useEffect(() => {
             {errors.totalPremium && <p className="text-red-500 text-xs mt-1">{errors.totalPremium}</p>}
           </div>
         </div>
+      </div>
 
-        {/* Real-time Calculation Example */}
-        {/* {form.policyStartDate && form.insuranceDuration && form.odExpiryDate && form.tpExpiryDate && (
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center space-x-2 text-green-700">
-              <FaCalculator className="w-4 h-4" />
-              <span className="font-semibold">Calculation Verified:</span>
-            </div>
-            <p className="text-sm text-green-600 mt-1">
-              {form.policyStartDate} + {selectedDurationOption?.odYears || 0} Year(s) - 1 Day = {form.odExpiryDate} (OD)
-            </p>
-            <p className="text-sm text-green-600">
-              {form.policyStartDate} + {selectedDurationOption?.tpYears || 0} Year(s) - 1 Day = {form.tpExpiryDate} (TP)
-            </p>
-          </div>
-        )} */}
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${
+            isSaving
+              ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+              : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
+          }`}
+        >
+          {isSaving ? 'Saving...' : 'Save Policy Details'}
+        </button>
       </div>
     </div>
   );
 };
+
 // ================== STEP 6: Documents (Updated with Requirements & Tagging) ==================
 const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
   const [uploading, setUploading] = useState(false);
@@ -7675,12 +7677,12 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
 
   // Also populate from total premium if available
   useEffect(() => {
-    if (totalPremium && totalPremium > 0 && !form.netPremium) {
-      console.log("💰 Setting net premium from totalPremium:", totalPremium);
+    if (acceptedQuote.totalPremium && totalPremium > 0 && !form.netPremium) {
+      console.log("💰 Setting net premium from totalPremium:", acceptedQuote.totalPremium);
       handleChange({
         target: {
           name: 'netPremium',
-          value: parseFloat(totalPremium)
+          value: parseFloat(acceptedQuote.totalPremium)
         }
       });
     }
@@ -8250,7 +8252,7 @@ const NewPolicyPage = () => {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     buyer_type: "individual",
-    vehicleType: "", // NEW: Added vehicleType field
+    vehicleType: "used", // NEW: Added vehicleType field
     insurance_category: "motor",
     status: "draft",
     ts: Date.now(),
