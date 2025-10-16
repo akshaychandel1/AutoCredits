@@ -13,7 +13,7 @@ const NewPolicyPage = () => {
     previousClaimTaken: "no",
     // Corporate fields
     companyName: "",
-    employeeName:"",
+    employeeName: "",
     contactPersonName: "",
     companyPanNumber: "",
     gstNumber: "",
@@ -90,7 +90,9 @@ const NewPolicyPage = () => {
     totalPaidAmount: 0,
     // Payout fields
     netPremium: "",
-     odAddonPercentage: 10, // default value
+    odAddonPercentage: 10, // default value
+    odAddonAmount: "", // NEW: Added missing field
+    netAmount: "", // NEW: Added missing field
     odAmount: "",
     ncbAmount: "",
     subVention: "",
@@ -292,6 +294,7 @@ const NewPolicyPage = () => {
         mobile: actualData.customer_details?.mobile || "",
         email: actualData.customer_details?.email || "",
         employeeName: actualData.customer_details?.employeeName || "",
+        age: actualData.customer_details?.age || "", // ADDED: age field
         gender: actualData.customer_details?.gender || "",
         panNumber: actualData.customer_details?.panNumber || "",
         aadhaarNumber: actualData.customer_details?.aadhaarNumber || "",
@@ -301,7 +304,6 @@ const NewPolicyPage = () => {
         alternatePhone: actualData.customer_details?.alternatePhone || "",
         
         // Corporate fields
-        // employeeName: actualData.customer_etails?.employeeName || "",
         companyName: actualData.customer_details?.companyName || "",
         contactPersonName: actualData.customer_details?.contactPersonName || "",
         companyPanNumber: actualData.customer_details?.companyPanNumber || "",
@@ -312,9 +314,9 @@ const NewPolicyPage = () => {
         relation: actualData.nominee?.relation || "",
         nomineeAge: actualData.nominee?.age || "",
         
-        // Reference
-        referenceName: actualData.refrence?.name || "",
-        referencePhone: actualData.refrence?.phone || "",
+        // Reference - FIXED: Corrected spelling from 'refrence' to 'reference'
+        referenceName: actualData.reference?.name || actualData.refrence?.name || "",
+        referencePhone: actualData.reference?.phone || actualData.refrence?.phone || "",
         
         // Vehicle details
         regNo: actualData.vehicle_details?.regNo || "",
@@ -332,9 +334,9 @@ const NewPolicyPage = () => {
         previousPolicyType: actualData.previous_policy?.policyType || "",
         previousIssueDate: actualData.previous_policy?.issueDate || "",
         previousDueDate: actualData.previous_policy?.dueDate || "",
-       previousPolicyStartDate: actualData.previous_policy?.policyStartDate || "", 
-       previousPolicyDuration: actualData.previous_policy?.policyDuration || "",
-       previousPolicyEndDate: actualData.previous_policy?.policyEndDate || "",
+        previousPolicyStartDate: actualData.previous_policy?.policyStartDate || "", 
+        previousPolicyDuration: actualData.previous_policy?.policyDuration || "",
+        previousPolicyEndDate: actualData.previous_policy?.policyEndDate || "",
         previousClaimTaken: actualData.previous_policy?.claimTakenLastYear || "no",
         previousNcbDiscount: actualData.previous_policy?.ncbDiscount || "",
         
@@ -379,6 +381,9 @@ const NewPolicyPage = () => {
         odAmount: actualData.payout?.odAmount || "",
         ncbAmount: actualData.payout?.ncbAmount || "",
         subVention: actualData.payout?.subVention || "",
+        odAddonPercentage: actualData.payout?.odAddonPercentage || 10, // ADDED
+        odAddonAmount: actualData.payout?.odAddonAmount || "", // ADDED
+        netAmount: actualData.payout?.netAmount || "", // ADDED
         
         // Documents as object
         documents: documentsObject,
@@ -436,8 +441,7 @@ const NewPolicyPage = () => {
   // Enhanced handleChange to properly handle all field types including documents object
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    if (errors[name]) {
+   if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
     }
     
@@ -451,7 +455,7 @@ const NewPolicyPage = () => {
       return;
     }
     
-    if (type === "number") {
+    if (type === "number") { 
       setForm((f) => ({ ...f, [name]: value === "" ? "" : Number(value) }));
       return;
     }
@@ -586,7 +590,7 @@ const NewPolicyPage = () => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type
+      // Prepare customer details based on buyer type - UPDATED with all fields
       const customerDetails = {
         name: form.customerName || "",
         mobile: form.mobile || "",
@@ -594,22 +598,17 @@ const NewPolicyPage = () => {
         residenceAddress: form.residenceAddress || "",
         pincode: form.pincode || "",
         city: form.city || "",
-        alternatePhone: form.alternatePhone || ""
+        alternatePhone: form.alternatePhone || "",
+        employeeName: form.employeeName || "",
+        age: form.age || "", // ADDED: age field
+        gender: form.gender || "",
+        panNumber: form.panNumber || "",
+        aadhaarNumber: form.aadhaarNumber || "",
+        companyName: form.companyName || "", // ADDED: corporate fields
+        contactPersonName: form.contactPersonName || "",
+        companyPanNumber: form.companyPanNumber || "",
+        gstNumber: form.gstNumber || ""
       };
-
-      // Add individual or corporate specific fields
-      if (form.buyer_type === "individual") {
-        customerDetails.employeeName = form.employeeName || "";
-        customerDetails.gender = form.gender || "";
-        customerDetails.panNumber = form.panNumber || "";
-        customerDetails.aadhaarNumber = form.aadhaarNumber || "";
-      } else if (form.buyer_type === "corporate") {
-        customerDetails.employeeName = form.employeeName || "";
-        customerDetails.companyName = form.companyName || "";
-        customerDetails.contactPersonName = form.contactPersonName || "";
-        customerDetails.companyPanNumber = form.companyPanNumber || "";
-        customerDetails.gstNumber = form.gstNumber || "";
-      }
 
       const policyData = {
         buyer_type: form.buyer_type || "individual",
@@ -619,7 +618,7 @@ const NewPolicyPage = () => {
           relation: form.relation || "",
           age: form.nomineeAge || ""
         },
-        refrence: {
+        reference: { // FIXED: Corrected spelling from 'refrence' to 'reference'
           name: form.referenceName || "",
           phone: form.referencePhone || ""
         },
@@ -627,7 +626,8 @@ const NewPolicyPage = () => {
         status: form.status || "pending",
         insurance_quotes: form.insuranceQuotes || [],
         ts: Date.now(),
-        created_by: form.created_by || "ADMIN123"
+        created_by: form.created_by || "ADMIN123",
+        policyPrefilled: form.policyPrefilled || false // ADDED: policyPrefilled field
       };
 
       console.log("📝 Creating policy with data:", policyData);
@@ -690,10 +690,10 @@ const NewPolicyPage = () => {
         console.log("🔄 Using override data for update:", overrideData);
         updateData = overrideData;
       } else {
-        // Standard step-based update data
+        // Standard step-based update data - UPDATED with all missing fields
         switch (step) {
           case 1:
-            // Prepare customer details based on buyer type
+            // Prepare customer details based on buyer type - UPDATED with all fields
             const customerDetails = {
               name: form.customerName || "",
               mobile: form.mobile || "",
@@ -702,21 +702,16 @@ const NewPolicyPage = () => {
               pincode: form.pincode || "",
               city: form.city || "",
               alternatePhone: form.alternatePhone || "",
-              employeeName : form.employeeName || "",
+              employeeName: form.employeeName || "",
+              age: form.age || "", // ADDED: age field
+              gender: form.gender || "",
+              panNumber: form.panNumber || "",
+              aadhaarNumber: form.aadhaarNumber || "",
+              companyName: form.companyName || "", // ADDED: corporate fields
+              contactPersonName: form.contactPersonName || "",
+              companyPanNumber: form.companyPanNumber || "",
+              gstNumber: form.gstNumber || ""
             };
-
-            // Add individual or corporate specific fields
-            if (form.buyer_type === "individual") {
-              customerDetails.age = form.age || "";
-              customerDetails.gender = form.gender || "";
-              customerDetails.panNumber = form.panNumber || "";
-              customerDetails.aadhaarNumber = form.aadhaarNumber || "";
-            } else if (form.buyer_type === "corporate") {
-              customerDetails.companyName = form.companyName || "";
-              customerDetails.contactPersonName = form.contactPersonName || "";
-              customerDetails.companyPanNumber = form.companyPanNumber || "";
-              customerDetails.gstNumber = form.gstNumber || "";
-            }
 
             updateData = {
               buyer_type: form.buyer_type,
@@ -726,10 +721,11 @@ const NewPolicyPage = () => {
                 relation: form.relation || "",
                 age: form.nomineeAge || ""
               },
-              refrence: {
+              reference: { // FIXED: Corrected spelling
                 name: form.referenceName || "",
                 phone: form.referencePhone || ""
-              }
+              },
+              policyPrefilled: form.policyPrefilled || false // ADDED
             };
             break;
           case 2:
@@ -753,9 +749,9 @@ const NewPolicyPage = () => {
                 policyNumber: form.previousPolicyNumber || "",
                 policyType: form.previousPolicyType || "",
                 issueDate: form.previousIssueDate || "",
-                policyStartDate: form.previousPolicyStartDate || "", // ADD THIS
-                policyDuration: form.previousPolicyDuration || "", // ADD THIS
-                policyEndDate: form.previousPolicyEndDate || "", // ADD THIS
+                policyStartDate: form.previousPolicyStartDate || "",
+                policyDuration: form.previousPolicyDuration || "",
+                policyEndDate: form.previousPolicyEndDate || "",
                 dueDate: form.previousDueDate || "",
                 claimTakenLastYear: form.previousClaimTaken || "no",
                 ncbDiscount: form.previousNcbDiscount || 0
@@ -777,10 +773,12 @@ const NewPolicyPage = () => {
           case 5:
             updateData = {
               policy_info: {
-                policyStartDate: form.policyStartDate || "",
+                policyIssued: form.policyIssued || "", // ADDED: missing field
                 insuranceCompany: form.insuranceCompany || "",
                 policyNumber: form.policyNumber || "",
+                covernoteNumber: form.covernoteNumber || "", // ADDED: missing field
                 issueDate: form.issueDate || "",
+                policyStartDate: form.policyStartDate || "", // ADDED: missing field
                 dueDate: form.dueDate || "",
                 ncbDiscount: form.ncbDiscount || "",
                 insuranceDuration: form.insuranceDuration || "",
@@ -831,7 +829,9 @@ const NewPolicyPage = () => {
                 odAmount: form.odAmount || 0,
                 ncbAmount: form.ncbAmount || 0,
                 subVention: form.subVention || 0,
-                netAmount: (form.ncbAmount || 0) - (form.subVention || 0),
+                odAddonPercentage: form.odAddonPercentage || 10, // ADDED: missing field
+                odAddonAmount: form.odAddonAmount || 0, // ADDED: missing field
+                netAmount: form.netAmount || 0 // ADDED: missing field
               },
               payment_ledger: paymentLedger,
             };
@@ -851,12 +851,12 @@ const NewPolicyPage = () => {
         updateData.payment_ledger = paymentLedger;
       }
 
-       const totalPaidAmount = paymentLedger.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
-  const currentPaymentAmount = parseFloat(form.paymentAmount) || 0;
-  const remainingAmount = (parseFloat(totalPremium) || 0) - totalPaidAmount;
-  if(remainingAmount==0 && totalPaidAmount>0){
-    updateData.status = 'payment completed';
-  }
+      const totalPaidAmount = paymentLedger.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+      const currentPaymentAmount = parseFloat(form.paymentAmount) || 0;
+      const remainingAmount = (parseFloat(totalPremium) || 0) - totalPaidAmount;
+      if(remainingAmount==0 && totalPaidAmount>0){
+        updateData.status = 'payment completed';
+      }
 
       // DEBUG: Log exactly what's being sent
       console.log("🚀 SENDING TO BACKEND:", {
@@ -958,7 +958,7 @@ const NewPolicyPage = () => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type
+      // Prepare customer details based on buyer type - UPDATED with all fields
       const customerDetails = {
         name: form.customerName,
         mobile: form.mobile,
@@ -966,22 +966,17 @@ const NewPolicyPage = () => {
         residenceAddress: form.residenceAddress,
         pincode: form.pincode,
         city: form.city,
-        alternatePhone: form.alternatePhone || ""
+        alternatePhone: form.alternatePhone || "",
+        employeeName: form.employeeName || "",
+        age: form.age || "", // ADDED: age field
+        gender: form.gender,
+        panNumber: form.panNumber,
+        aadhaarNumber: form.aadhaarNumber,
+        companyName: form.companyName || "", // ADDED: corporate fields
+        contactPersonName: form.contactPersonName || "",
+        companyPanNumber: form.companyPanNumber || "",
+        gstNumber: form.gstNumber || ""
       };
-
-      // Add individual or corporate specific fields
-      if (form.buyer_type === "individual") {
-        customerDetails.employeeName = form.employeeName || "";
-        customerDetails.gender = form.gender;
-        customerDetails.panNumber = form.panNumber;
-        customerDetails.aadhaarNumber = form.aadhaarNumber;
-      } else if (form.buyer_type === "corporate") {
-        customerDetails.employeeName = form.employeeName || '';
-        customerDetails.companyName = form.companyName;
-        customerDetails.contactPersonName = form.contactPersonName;
-        customerDetails.companyPanNumber = form.companyPanNumber;
-        customerDetails.gstNumber = form.gstNumber;
-      }
 
       // Convert documents object to array for final save
       const documentsArray = Object.values(form.documents || {});
@@ -998,7 +993,7 @@ const NewPolicyPage = () => {
           relation: form.relation,
           age: form.nomineeAge
         },
-        refrence: {
+        reference: { // FIXED: Corrected spelling
           name: form.referenceName,
           phone: form.referencePhone
         },
@@ -1017,9 +1012,9 @@ const NewPolicyPage = () => {
           policyNumber: form.previousPolicyNumber || "",
           policyType: form.previousPolicyType || "",
           issueDate: form.previousIssueDate || "",
-          policyStartDate: form.previousPolicyStartDate || "", // ADD THIS
-          policyDuration: form.previousPolicyDuration || "", // ADD THIS
-          policyEndDate: form.previousPolicyEndDate || "", // ADD THIS
+          policyStartDate: form.previousPolicyStartDate || "",
+          policyDuration: form.previousPolicyDuration || "",
+          policyEndDate: form.previousPolicyEndDate || "",
           dueDate: form.previousDueDate || "",
           claimTakenLastYear: form.previousClaimTaken || "no",
           ncbDiscount: form.previousNcbDiscount || 0
@@ -1034,12 +1029,12 @@ const NewPolicyPage = () => {
         },
         insurance_quotes: form.insuranceQuotes || [],
         policy_info: {
-          policyIssued: form.policyIssued,
+          policyIssued: form.policyIssued, // ADDED: missing field
           insuranceCompany: form.insuranceCompany,
           policyNumber: form.policyNumber,
-          covernoteNumber: form.covernoteNumber,
+          covernoteNumber: form.covernoteNumber, // ADDED: missing field
           issueDate: form.issueDate,
-          policyStartDate:form.policyStartDate,          
+          policyStartDate: form.policyStartDate,          
           dueDate: form.dueDate,
           ncbDiscount: form.ncbDiscount,
           insuranceDuration: form.insuranceDuration,
@@ -1065,12 +1060,15 @@ const NewPolicyPage = () => {
           odAmount: form.odAmount || 0,
           ncbAmount: form.ncbAmount || 0,
           subVention: form.subVention || 0,
-          netAmount: (form.ncbAmount || 0) - (form.subVention || 0)
+          odAddonPercentage: form.odAddonPercentage || 10, // ADDED: missing field
+          odAddonAmount: form.odAddonAmount || 0, // ADDED: missing field
+          netAmount: form.netAmount || 0 // ADDED: missing field
         },
         status: "completed",
         completed_at: Date.now(),
         ts: form.ts,
-        created_by: form.created_by
+        created_by: form.created_by,
+        policyPrefilled: form.policyPrefilled || false // ADDED: missing field
       };
 
       console.log(`✅ Finalizing policy with previous claim:`, form.previousClaimTaken);
@@ -1331,3 +1329,4 @@ const NewPolicyPage = () => {
     </div>
   );
 };
+export default NewPolicyPage;

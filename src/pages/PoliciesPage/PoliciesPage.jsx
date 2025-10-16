@@ -1,6 +1,6 @@
 // src/pages/PoliciesPage/PoliciesPage.jsx
 import { useState, useEffect } from "react";
-import { FiSearch, FiPlus, FiFilter, FiDownload, FiRefreshCw } from "react-icons/fi";
+import { FiPlus, FiRefreshCw } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import PolicyTable from "./PolicyTable";
@@ -109,66 +109,6 @@ const PoliciesPage = () => {
     fetchPolicies();
   };
 
-  // Export policies to CSV
-  const handleExport = () => {
-    if (filteredPolicies.length === 0) {
-      alert("No data to export!");
-      return;
-    }
-
-    try {
-      // Prepare data for CSV
-      const exportData = filteredPolicies.map(policy => ({
-        'Policy ID': policy._id || 'N/A',
-        'Customer Name': policy.customer_details?.name || 'N/A',
-        'Customer Mobile': policy.customer_details?.mobile || 'N/A',
-        'Customer Email': policy.customer_details?.email || 'N/A',
-        'Vehicle Make': policy.vehicle_details?.make || 'N/A',
-        'Vehicle Model': policy.vehicle_details?.model || 'N/A',
-        'Vehicle Variant': policy.vehicle_details?.variant || 'N/A',
-        'Make Year': policy.vehicle_details?.makeYear || 'N/A',
-        'Policy Type': policy.insurance_quote?.coverageType || policy.insurance_category || 'N/A',
-        'Premium': policy.policy_info?.totalPremium || policy.insurance_quote?.premium || 'N/A',
-        'Status': policy.status || 'N/A',
-        'Expiry Date': policy.policy_info?.dueDate ? new Date(policy.policy_info.dueDate).toLocaleDateString('en-IN') : 'N/A',
-        'Created Date': policy.ts ? new Date(policy.ts).toLocaleDateString('en-IN') : 'N/A'
-      }));
-
-      // Convert to CSV
-      const headers = Object.keys(exportData[0]);
-      const csvContent = [
-        headers.join(','), // header row
-        ...exportData.map(row => 
-          headers.map(header => {
-            // Escape quotes and wrap in quotes if contains comma
-            const value = String(row[header] || '');
-            return `"${value.replace(/"/g, '""')}"`;
-          }).join(',')
-        )
-      ].join('\n');
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', `policies_export_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Show success message
-      alert(`Successfully exported ${filteredPolicies.length} policies to CSV!`);
-      
-    } catch (err) {
-      console.error('Error exporting data:', err);
-      alert('Failed to export data. Please try again.');
-    }
-  };
-
   // Get unique statuses for filter (excluding 'completed' since it's handled with 'active')
   const uniqueStatuses = [...new Set(policies.map(p => p.status).filter(Boolean))].filter(
     status => status !== 'completed' // Hide 'completed' from dropdown since it's included in 'active'
@@ -230,14 +170,6 @@ const PoliciesPage = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleExport}
-            disabled={loading || filteredPolicies.length === 0}
-            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FiDownload />
-            Export CSV
-          </button>
-          <button
             onClick={handleRefresh}
             disabled={loading}
             className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -253,124 +185,148 @@ const PoliciesPage = () => {
         </div>
       </div>
 
-      {/* Stats Overview - Now Clickable */}
+      {/* Stats Overview - Beautiful Cards */}
       {!loading && policies.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          {/* Total Policies Card */}
-          <button
-            onClick={() => handleStatClick('')}
-            className={`bg-white border rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105 ${
-              !statusFilter 
-                ? 'border-blue-300 ring-2 ring-blue-100 bg-blue-50' 
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-sm text-gray-600 flex items-center justify-between">
-              <span>Total Policies</span>
-              {!statusFilter && (
-                <span className="text-blue-600 text-xs">● Active Filter</span>
-              )}
-            </div>
-          </button>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 className="text-lg font-semibold text-gray-800">Policy Overview</h3>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Total Policies Card */}
+              <button
+                onClick={() => handleStatClick('')}
+                className={`bg-gradient-to-br from-blue-50 to-blue-100 border-2 rounded-xl p-6 shadow-sm transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+                  !statusFilter 
+                    ? 'border-blue-300 ring-4 ring-blue-100' 
+                    : 'border-blue-200 hover:border-blue-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{stats.total}</span>
+                  </div>
+                  {!statusFilter && (
+                    <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-1">Total Policies</h3>
+                <p className="text-sm text-blue-600 font-medium">
+                  {!statusFilter ? 'Viewing all policies' : 'Click to view all'}
+                </p>
+              </button>
 
-          {/* Active Policies Card */}
-          <button
-            onClick={() => handleStatClick('active')}
-            className={`bg-white border rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105 ${
-              statusFilter === 'active' 
-                ? 'border-green-300 ring-2 ring-green-100 bg-green-50' 
-                : 'border-green-200 hover:border-green-300'
-            }`}
-          >
-            <div className={`text-2xl font-bold ${
-              statusFilter === 'active' ? 'text-green-800' : 'text-green-700'
-            }`}>
-              {stats.active}
-            </div>
-            <div className="text-sm flex items-center justify-between">
-              <span className={statusFilter === 'active' ? 'text-green-700' : 'text-green-600'}>
-                Active
-              </span>
-              {statusFilter === 'active' && (
-                <span className="text-green-600 text-xs">● Active Filter</span>
-              )}
-            </div>
-          </button>
+              {/* Active Policies Card */}
+              <button
+                onClick={() => handleStatClick('active')}
+                className={`bg-gradient-to-br from-green-50 to-green-100 border-2 rounded-xl p-6 shadow-sm transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+                  statusFilter === 'active' 
+                    ? 'border-green-300 ring-4 ring-green-100' 
+                    : 'border-green-200 hover:border-green-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{stats.active}</span>
+                  </div>
+                  {statusFilter === 'active' && (
+                    <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-1">Active Policies</h3>
+                <p className="text-sm text-green-600 font-medium">
+                  {stats.total > 0 ? `${((stats.active / stats.total) * 100).toFixed(1)}% of total` : 'No policies'}
+                </p>
+              </button>
 
-          {/* Draft Policies Card */}
-          <button
-            onClick={() => handleStatClick('draft')}
-            className={`bg-white border rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105 ${
-              statusFilter === 'draft' 
-                ? 'border-yellow-300 ring-2 ring-yellow-100 bg-yellow-50' 
-                : 'border-yellow-200 hover:border-yellow-300'
-            }`}
-          >
-            <div className={`text-2xl font-bold ${
-              statusFilter === 'draft' ? 'text-yellow-800' : 'text-yellow-700'
-            }`}>
-              {stats.draft}
-            </div>
-            <div className="text-sm flex items-center justify-between">
-              <span className={statusFilter === 'draft' ? 'text-yellow-700' : 'text-yellow-600'}>
-                Draft
-              </span>
-              {statusFilter === 'draft' && (
-                <span className="text-yellow-600 text-xs">● Active Filter</span>
-              )}
-            </div>
-          </button>
+              {/* Draft Policies Card */}
+              <button
+                onClick={() => handleStatClick('draft')}
+                className={`bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 rounded-xl p-6 shadow-sm transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+                  statusFilter === 'draft' 
+                    ? 'border-yellow-300 ring-4 ring-yellow-100' 
+                    : 'border-yellow-200 hover:border-yellow-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{stats.draft}</span>
+                  </div>
+                  {statusFilter === 'draft' && (
+                    <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-1">Draft Policies</h3>
+                <p className="text-sm text-yellow-600 font-medium">
+                  {stats.total > 0 ? `${((stats.draft / stats.total) * 100).toFixed(1)}% of total` : 'No policies'}
+                </p>
+              </button>
 
-          {/* Pending Policies Card */}
-          <button
-            onClick={() => handleStatClick('pending')}
-            className={`bg-white border rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105 ${
-              statusFilter === 'pending' 
-                ? 'border-blue-300 ring-2 ring-blue-100 bg-blue-50' 
-                : 'border-blue-200 hover:border-blue-300'
-            }`}
-          >
-            <div className={`text-2xl font-bold ${
-              statusFilter === 'pending' ? 'text-blue-800' : 'text-blue-700'
-            }`}>
-              {stats.pending}
+              {/* Pending Policies Card */}
+              <button
+                onClick={() => handleStatClick('pending')}
+                className={`bg-gradient-to-br from-purple-50 to-purple-100 border-2 rounded-xl p-6 shadow-sm transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+                  statusFilter === 'pending' 
+                    ? 'border-purple-300 ring-4 ring-purple-100' 
+                    : 'border-purple-200 hover:border-purple-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{stats.pending}</span>
+                  </div>
+                  {statusFilter === 'pending' && (
+                    <span className="bg-purple-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-1">Pending Policies</h3>
+                <p className="text-sm text-purple-600 font-medium">
+                  {stats.total > 0 ? `${((stats.pending / stats.total) * 100).toFixed(1)}% of total` : 'No policies'}
+                </p>
+              </button>
             </div>
-            <div className="text-sm flex items-center justify-between">
-              <span className={statusFilter === 'pending' ? 'text-blue-700' : 'text-blue-600'}>
-                Pending
-              </span>
-              {statusFilter === 'pending' && (
-                <span className="text-blue-600 text-xs">● Active Filter</span>
-              )}
-            </div>
-          </button>
 
-          {/* Expired Policies Card */}
-          {stats.expired > 0 && (
-            <button
-              onClick={() => handleStatClick('expired')}
-              className={`bg-white border rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105 ${
-                statusFilter === 'expired' 
-                  ? 'border-red-300 ring-2 ring-red-100 bg-red-50' 
-                  : 'border-red-200 hover:border-red-300'
-              }`}
-            >
-              <div className={`text-2xl font-bold ${
-                statusFilter === 'expired' ? 'text-red-800' : 'text-red-700'
-              }`}>
-                {stats.expired}
+            {/* Expired Policies Card - Full width if exists */}
+            {stats.expired > 0 && (
+              <div className="mt-6">
+                <button
+                  onClick={() => handleStatClick('expired')}
+                  className={`bg-gradient-to-br from-red-50 to-red-100 border-2 rounded-xl p-6 shadow-sm transition-all duration-200 hover:shadow-lg hover:scale-105 text-left w-full ${
+                    statusFilter === 'expired' 
+                      ? 'border-red-300 ring-4 ring-red-100' 
+                      : 'border-red-200 hover:border-red-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">{stats.expired}</span>
+                      </div>
+                      <div className="text-left">
+                        <h3 className="text-lg font-bold text-gray-800 mb-1">Expired Policies</h3>
+                        <p className="text-sm text-red-600 font-medium">
+                          {stats.total > 0 ? `${((stats.expired / stats.total) * 100).toFixed(1)}% of total` : 'No policies'}
+                        </p>
+                      </div>
+                    </div>
+                    {statusFilter === 'expired' && (
+                      <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                        ACTIVE FILTER
+                      </span>
+                    )}
+                  </div>
+                </button>
               </div>
-              <div className="text-sm flex items-center justify-between">
-                <span className={statusFilter === 'expired' ? 'text-red-700' : 'text-red-600'}>
-                  Expired
-                </span>
-                {statusFilter === 'expired' && (
-                  <span className="text-red-600 text-xs">● Active Filter</span>
-                )}
-              </div>
-            </button>
-          )}
+            )}
+          </div>
         </div>
       )}
 
@@ -397,19 +353,17 @@ const PoliciesPage = () => {
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           {/* Search */}
           <div className="relative flex-1">
-            <FiSearch className="absolute top-3 left-3 text-gray-400" />
             <input
               type="text"
               placeholder="Search by customer name, policy ID, or vehicle..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none shadow-sm"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none shadow-sm"
             />
           </div>
 
           {/* Status Filter */}
           <div className="flex items-center gap-2">
-            <FiFilter className="text-gray-400" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}

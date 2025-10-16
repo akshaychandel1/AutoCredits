@@ -3,6 +3,8 @@ import { Routes, Route } from "react-router-dom";
 import Sidebar from "../components/Sidebar.jsx";
 import PoliciesPage from "../pages/PoliciesPage/PoliciesPage";
 import NewPolicyPage from "../pages/PoliciesPage/NewPolicyPage";
+import InsuranceCustomers from "../pages/CustomerPage/InsuranceCustomers.jsx";
+// import NewCustomerPage from "../pages/CustomerPage/NewCustomerPage.jsx";
 
 const Layout = () => {
   return (
@@ -19,6 +21,9 @@ const Layout = () => {
             <Route path="/policies" element={<PoliciesPage />} />
             <Route path="/new-policy" element={<NewPolicyPage />} />
             <Route path="/new-policy/:id" element={<NewPolicyPage />} />
+            <Route path="/customers" element={<InsuranceCustomers />} />
+            {/* <Route path="/new-customer" element={<NewCustomerPage />} />
+            <Route path="/edit-customer/:id" element={<NewCustomerPage />} /> */}
             {/* Add other routes later */}
           </Routes>
         </div>

@@ -2,10 +2,11 @@ import React ,{ useState, useEffect, useRef, useCallback } from "react";
 import {jsPDF} from 'jspdf'
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import { z } from 'zod';
 import {
   FaCar, FaInfoCircle,FaPlus,FaArrowRight, FaCalculator,
-  FaMapMarkerAlt,FaCheckCircle,FaExclamationTriangle,FaCloudUploadAlt,FaListAlt,FaExternalLinkAlt, FaTags,FaTag,FaSpinner,FaMoneyBillWave,
-  FaUser,FaReceipt,
+  FaMapMarkerAlt,FaCheckCircle,FaExclamationTriangle,FaCloudUploadAlt,FaListAlt,FaExternalLinkAlt, FaTags,FaTag,FaSpinner,FaMoneyBillWave, FaEdit,FaHistory ,
+  FaUser,FaReceipt,FaEye,FaDownload,FaGift,
   FaPhone,
   FaEnvelope,
   FaSave,
@@ -31,9 +32,6 @@ import {
   CheckCircle, // ADD THIS
   AlertTriangle // ADD THIS
 } from 'lucide-react';
-
-// import { Plus, Download, ChevronUp, ChevronDown, Trash2, FileText, Save,  CheckCircle,
-//   AlertTriangle } from 'lucide-react';
 
 import icici from './logos/ICICI.jpeg'
 import hdfc from './logos/hdfc.jpeg'
@@ -265,41 +263,30 @@ validateStep3: (form, acceptedQuote = null) => {
   if (!acceptedQuote) {
     errors.acceptedQuote = "Please accept a quote to proceed to the next step";
   }
-    // Primary validation: Require at least one insurance quote
-    if (!form.insuranceQuotes || form.insuranceQuotes.length === 0) {
-      errors.insuranceQuotes = "At least one insurance quote is required";
+
+  // Optional: Validate individual quote fields if using old system
+  if ((!form.insuranceQuotes || form.insuranceQuotes.length === 0) && !form.insurer) {
+    if (!form.insurer) errors.insurer = "Insurance company is required";
+    if (!form.coverageType) errors.coverageType = "Coverage type is required";
+    if (!form.premium) {
+      errors.premium = "Premium amount is required";
+    } else if (parseFloat(form.premium) <= 0) {
+      errors.premium = "Premium amount must be greater than 0";
     }
-
-    // CRITICAL: Require an accepted quote to proceed
-    if (!acceptedQuote) {
-      errors.acceptedQuote = "Please accept a quote to proceed to the next step";
+    if (!form.idv) {
+      errors.idv = "IDV amount is required";
+    } else if (parseFloat(form.idv) <= 0) {
+      errors.idv = "IDV amount must be greater than 0";
     }
+  }
 
-    // Optional: Validate individual quote fields if using old system
-    if ((!form.insuranceQuotes || form.insuranceQuotes.length === 0) && !form.insurer) {
-      if (!form.insurer) errors.insurer = "Insurance company is required";
-      if (!form.coverageType) errors.coverageType = "Coverage type is required";
-      if (!form.premium) {
-        errors.premium = "Premium amount is required";
-      } else if (parseFloat(form.premium) <= 0) {
-        errors.premium = "Premium amount must be greater than 0";
-      }
-      if (!form.idv) {
-        errors.idv = "IDV amount is required";
-      } else if (parseFloat(form.idv) <= 0) {
-        errors.idv = "IDV amount must be greater than 0";
-      }
-    }
-    
+  // NCB validation (applies to both systems)
+  if (form.ncb && (parseFloat(form.ncb) < 0 || parseFloat(form.ncb) > 100)) {
+    errors.ncb = "NCB discount must be between 0% and 100%";
+  }
 
-    // NCB validation (applies to both systems)
-    if (form.ncb && (parseFloat(form.ncb) < 0 || parseFloat(form.ncb) > 100)) {
-      errors.ncb = "NCB discount must be between 0% and 100%";
-    }
-
-    return errors;
-  },
-
+  return errors;
+},
 
   // Step 4: New Policy Details validation
   validateStep4: (form) => {
@@ -356,16 +343,6 @@ validateStep3: (form, acceptedQuote = null) => {
   // Check if documents exist and have at least one entry
   if (!form.documents || Object.keys(form.documents).length === 0) {
     errors.documents = "At least one document is required";
-  }
-  
-  // Optional: Check if all documents are properly tagged
-  else if (form.documentTags) {
-    const documentsCount = Object.keys(form.documents).length;
-    const taggedDocumentsCount = Object.values(form.documentTags).filter(tag => tag && tag.trim() !== '').length;
-    
-    if (taggedDocumentsCount < documentsCount) {
-      errors.documents = "Please tag all uploaded documents before proceeding";
-    }
   }
 
   return errors;
@@ -490,6 +467,16 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     setRelationshipSuggestions([]);
   };
 
+  // Handle vehicle type change (New Car / Used Car)
+  const handleVehicleTypeChange = (vehicleType) => {
+    handleChange({
+      target: {
+        name: 'vehicleType',
+        value: vehicleType
+      }
+    });
+  };
+
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start justify-between">
@@ -539,6 +526,64 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
             </label>
           </div>
           {errors.buyer_type && <p className="text-red-500 text-xs mt-1">{errors.buyer_type}</p>}
+        </div>
+
+        {/* Vehicle Type Toggle - Common for both Individual and Corporate */}
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Vehicle Type *
+          </label>
+          <div className="flex items-center gap-4">
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="vehicleType"
+                value="new"
+                checked={form.vehicleType === "new"}
+                onChange={() => handleVehicleTypeChange("new")}
+                className="form-radio"
+              />
+              <span>New Car</span>
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="vehicleType"
+                value="used"
+                checked={form.vehicleType === "used"}
+                onChange={() => handleVehicleTypeChange("used")}
+                className="form-radio"
+              />
+              <span>Used Car</span>
+            </label>
+          </div>
+          {errors.vehicleType && <p className="text-red-500 text-xs mt-1">{errors.vehicleType}</p>}
+          
+          {/* Vehicle Type Tag Display */}
+          {form.vehicleType && (
+            <div className="mt-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                form.vehicleType === "new" 
+                  ? "bg-green-100 text-green-800" 
+                  : "bg-blue-100 text-blue-800"
+              }`}>
+                {form.vehicleType === "new" ? (
+                  <>
+                    <FaCar className="mr-1" /> New Vehicle
+                  </>
+                ) : (
+                  <>
+                    <FaHistory className="mr-1" /> Used Vehicle
+                  </>
+                )}
+              </span>
+              <p className="text-xs text-gray-500 mt-1">
+                {form.vehicleType === "new" 
+                  ? "Step 3 (Previous Policy) will be disabled for new vehicles" 
+                  : "Step 3 (Previous Policy) will be required for used vehicles"}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Individual Fields */}
@@ -599,7 +644,8 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="mobile"
                   value={form.mobile || ""}
-                  onChange={handleChange}
+                  onChange={handleChange} 
+                  maxLength = '10'
                   placeholder="Enter 10-digit mobile number"
                   className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                     errors.mobile ? "border-red-500" : "border-gray-300"
@@ -622,6 +668,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="alternatePhone"
                   value={form.alternatePhone || ""}
+                  maxLength='10'
                   onChange={handleChange}
                   placeholder="Enter alternate number"
                   className="w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -786,6 +833,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   name="mobile"
                   value={form.mobile || ""}
                   onChange={handleChange}
+                  maxLength='10'
                   placeholder="Enter 10-digit mobile number"
                   className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                     errors.mobile ? "border-red-500" : "border-gray-300"
@@ -810,6 +858,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   value={form.alternatePhone || ""}
                   onChange={handleChange}
                   placeholder="Enter alternate number"
+                  maxLength="10"
                   className="w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
               </div>
@@ -1048,6 +1097,39 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
             </div>
           </div>
         </div>
+
+        {/* Vehicle Type Summary */}
+        {form.vehicleType && (
+          <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 className="text-md font-semibold text-gray-700 mb-2">Vehicle Type Summary</h4>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${
+                  form.vehicleType === "new" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
+                }`}>
+                  {form.vehicleType === "new" ? <FaCar /> : <FaHistory />}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-800">
+                    {form.vehicleType === "new" ? "New Vehicle" : "Used Vehicle"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {form.vehicleType === "new" 
+                      ? "Previous policy details will not be required" 
+                      : "Previous policy details will be required in Step 3"}
+                  </p>
+                </div>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                form.vehicleType === "new" 
+                  ? "bg-green-100 text-green-800" 
+                  : "bg-blue-100 text-blue-800"
+              }`}>
+                {form.vehicleType === "new" ? "NEW" : "USED"}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1295,7 +1377,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
   );
 };
 
-// ================== STEP 3.5: Previous Policy Details ==================
+// ================== STEP 3: Previous Policy Details ==================
 const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Insurance companies options with more companies
   const insuranceCompanies = [
@@ -1310,8 +1392,16 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
   // NCB options
   const ncbOptions = [0, 20, 25, 35, 45, 50];
 
-  // Policy duration options
-  const policyDurations = ["1 Year", "2 Years", "3 Years", "4 Years", "5 Years"];
+  // Policy duration options based on vehicle type
+  const getPolicyDurations = (vehicleType) => {
+    if (vehicleType === "new") {
+      return ["1yr OD + 3yr TP", "2yr OD + 2yr TP", "3yr OD + 3yr TP"];
+    } else {
+      return ["1 Year"]; // Used cars get only 1 year option
+    }
+  };
+
+  const policyDurations = getPolicyDurations(form.vehicleType);
 
   // State for auto-suggest
   const [insuranceCompanySuggestions, setInsuranceCompanySuggestions] = useState([]);
@@ -1323,25 +1413,85 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
   const [durationSuggestions, setDurationSuggestions] = useState([]);
   const [showDurationSuggestions, setShowDurationSuggestions] = useState(false);
 
+  // Calculate min date for policy start (cannot be before issue date)
+  const getMinPolicyStartDate = () => {
+    return form.previousIssueDate || ''; // If issue date exists, use it as min
+  };
+
+  // Calculate policy end date: start date + duration - 1 day
+  const calculatePolicyEndDate = (startDate, duration) => {
+    if (!startDate || !duration) return '';
+    
+    const durationYears = parseInt(duration.match(/\d+/)?.[0]) || 1;
+    const start = new Date(startDate);
+    const end = new Date(start);
+    
+    // Add years and subtract 1 day
+    end.setFullYear(start.getFullYear() + durationYears);
+    end.setDate(end.getDate() - 1);
+    
+    return end.toISOString().split('T')[0];
+  };
+
+  // Handle issue date change
+  const handleIssueDateChange = (e) => {
+    const issueDate = e.target.value;
+    handleChange(e);
+    
+    // If policy start date exists and is before the new issue date, reset it
+    if (form.previousPolicyStartDate && issueDate) {
+      const startDate = new Date(form.previousPolicyStartDate);
+      const newIssueDate = new Date(issueDate);
+      
+      if (startDate < newIssueDate) {
+        handleChange({
+          target: {
+            name: 'previousPolicyStartDate',
+            value: issueDate // Set start date to issue date
+          }
+        });
+        
+        // Also recalculate end date if duration exists
+        if (form.previousPolicyDuration) {
+          const newEndDate = calculatePolicyEndDate(issueDate, form.previousPolicyDuration);
+          handleChange({
+            target: {
+              name: 'previousPolicyEndDate',
+              value: newEndDate
+            }
+          });
+        }
+      }
+    }
+  };
+
   // Handle policy start date change and auto-calculate end date
   const handlePolicyStartDateChange = (e) => {
     const startDate = e.target.value;
+    const issueDate = form.previousIssueDate;
+    
+    // Validate: Start date cannot be before issue date
+    if (issueDate && startDate) {
+      const start = new Date(startDate);
+      const issue = new Date(issueDate);
+      
+      if (start < issue) {
+        // Show error and don't update
+        alert("Policy start date cannot be before issue date!");
+        return;
+      }
+    }
+    
     handleChange(e);
     
     // If duration is selected, auto-calculate end date
     if (startDate && form.previousPolicyDuration) {
-      const durationYears = parseInt(form.previousPolicyDuration);
-      const start = new Date(startDate);
-      const end = new Date(start);
-      end.setFullYear(start.getFullYear() + durationYears);
-      
-      // Format end date as YYYY-MM-DD
-      const endDateString = end.toISOString().split('T')[0];
+      const endDate = calculatePolicyEndDate(startDate, form.previousPolicyDuration);
       
       handleChange({
         target: {
           name: 'previousPolicyEndDate',
-          value: endDateString
+          value: endDate
         }
       });
     }
@@ -1358,18 +1508,12 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
 
     // If start date exists, auto-calculate end date
     if (form.previousPolicyStartDate) {
-      const durationYears = parseInt(duration);
-      const start = new Date(form.previousPolicyStartDate);
-      const end = new Date(start);
-      end.setFullYear(start.getFullYear() + durationYears);
-      
-      // Format end date as YYYY-MM-DD
-      const endDateString = end.toISOString().split('T')[0];
+      const endDate = calculatePolicyEndDate(form.previousPolicyStartDate, duration);
       
       handleChange({
         target: {
           name: 'previousPolicyEndDate',
-          value: endDateString
+          value: endDate
         }
       });
     }
@@ -1448,6 +1592,20 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     setShowDurationSuggestions(false);
   };
 
+  // Example calculation display
+  const getExampleText = () => {
+    if (form.previousPolicyStartDate && form.previousPolicyDuration) {
+      const durationYears = parseInt(form.previousPolicyDuration.match(/\d+/)?.[0]) || 1;
+      const startDate = new Date(form.previousPolicyStartDate);
+      const endDate = new Date(startDate);
+      endDate.setFullYear(startDate.getFullYear() + durationYears);
+      endDate.setDate(endDate.getDate() - 1);
+      
+      return `Example: ${startDate.toLocaleDateString()} + ${durationYears} Year(s) - 1 Day = ${endDate.toLocaleDateString()}`;
+    }
+    return "Policy end date is calculated as: Start Date + Duration - 1 Day";
+  };
+
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start justify-between mb-6">
@@ -1465,6 +1623,59 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
           </div>
         </div>
       </div>
+
+      {/* Vehicle Type Info Banner */}
+      {form.vehicleType && (
+        <div className={`mb-6 p-4 rounded-lg border ${
+          form.vehicleType === "new" 
+            ? "bg-green-50 border-green-200" 
+            : "bg-blue-50 border-blue-200"
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {form.vehicleType === "new" ? (
+                <FaCar className="w-5 h-5 text-green-600" />
+              ) : (
+                <FaHistory className="w-5 h-5 text-blue-600" />
+              )}
+              <div>
+                <h4 className="font-semibold text-gray-800">
+                  {form.vehicleType === "new" ? "New Vehicle" : "Used Vehicle"}
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {form.vehicleType === "new" 
+                    ? "Available policy durations: 1yr OD + 3yr TP, 2yr OD + 2yr TP, 3yr OD + 3yr TP"
+                    : "Policy duration: 1 Year (default for used vehicles)"
+                  }
+                </p>
+              </div>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              form.vehicleType === "new" 
+                ? "bg-green-100 text-green-800" 
+                : "bg-blue-100 text-blue-800"
+            }`}>
+              {form.vehicleType === "new" ? "NEW" : "USED"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Date Calculation Info */}
+      {/* <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+        <div className="flex items-start space-x-3">
+          <FaInfoCircle className="w-5 h-5 text-purple-600 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-purple-800 mb-2">Date Calculation Rules</h4>
+            <ul className="text-sm text-purple-700 space-y-1">
+              <li>• <strong>Issue Date</strong>: Can be any date (past or future)</li>
+              <li>• <strong>Policy Start Date</strong>: Cannot be before Issue Date</li>
+              <li>• <strong>Policy End Date</strong>: Start Date + Duration - 1 Day</li>
+              <li className="text-xs text-purple-600 mt-2">{getExampleText()}</li>
+            </ul>
+          </div>
+        </div>
+      </div> */}
 
       <div className="border rounded-xl p-5 mb-6">
         <h4 className="text-md font-semibold text-gray-700 mb-4">
@@ -1567,12 +1778,16 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
               type="date"
               name="previousIssueDate"
               value={form.previousIssueDate || ""}
-              onChange={handleChange}
+              onChange={handleIssueDateChange}
+              // No max restriction - can be future date
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.previousIssueDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.previousIssueDate && <p className="text-red-500 text-xs mt-1">{errors.previousIssueDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              The date when policy was issued (can be past or future date)
+            </p>
           </div>
 
           {/* Policy Start Date */}
@@ -1585,11 +1800,18 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
               name="previousPolicyStartDate"
               value={form.previousPolicyStartDate || ""}
               onChange={handlePolicyStartDateChange}
+              min={getMinPolicyStartDate()} // Cannot be before issue date
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.previousPolicyStartDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.previousPolicyStartDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyStartDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              {form.previousIssueDate 
+                ? `Cannot be before ${new Date(form.previousIssueDate).toLocaleDateString()}`
+                : "Policy coverage start date"
+              }
+            </p>
           </div>
 
           {/* Policy Duration - Auto-suggest */}
@@ -1610,10 +1832,15 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
                 onBlur={() => {
                   setTimeout(() => setShowDurationSuggestions(false), 200);
                 }}
-                placeholder="Type duration (e.g., 1 Year)"
+                placeholder={
+                  form.vehicleType === "new" 
+                    ? "Type duration (e.g., 1yr OD + 3yr TP)" 
+                    : "1 Year (default for used vehicles)"
+                }
                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                   errors.previousPolicyDuration ? "border-red-500" : "border-gray-300"
                 }`}
+                readOnly={form.vehicleType === "used"} // Read-only for used cars
               />
               
               {showDurationSuggestions && durationSuggestions.length > 0 && (
@@ -1631,6 +1858,17 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
               )}
             </div>
             {errors.previousPolicyDuration && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyDuration}</p>}
+            
+            {/* Auto-set duration for used cars */}
+            {form.vehicleType === "used" && !form.previousPolicyDuration && (
+              <button
+                type="button"
+                onClick={() => handleDurationChange("1 Year")}
+                className="mt-2 px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200 transition-colors"
+              >
+                Set to 1 Year (Used Car Default)
+              </button>
+            )}
           </div>
 
           {/* Policy End Date (Auto-calculated) */}
@@ -1650,7 +1888,12 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
             />
             {errors.previousPolicyEndDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyEndDate}</p>}
             <p className="text-xs text-gray-500 mt-1">
-              Auto-calculated based on start date and duration
+              Auto-calculated: Start Date + Duration - 1 Day
+              {form.previousPolicyStartDate && form.previousPolicyDuration && (
+                <span className="text-green-600 font-medium">
+                  {" "}✓ Calculated
+                </span>
+              )}
             </p>
           </div>
 
@@ -1727,6 +1970,19 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
             {errors.previousNcbDiscount && <p className="text-red-500 text-xs mt-1">{errors.previousNcbDiscount}</p>}
           </div>
         </div>
+
+        {/* Real-time Calculation Example */}
+        {/* {form.previousPolicyStartDate && form.previousPolicyDuration && form.previousPolicyEndDate && (
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-2 text-green-700">
+              <FaCalculator className="w-4 h-4" />
+              <span className="font-semibold">Calculation Verified:</span>
+            </div>
+            <p className="text-sm text-green-600 mt-1">
+              {form.previousPolicyStartDate} + {form.previousPolicyDuration} - 1 Day = {form.previousPolicyEndDate}
+            </p>
+          </div>
+        )} */}
       </div>
     </div>
   );
@@ -1814,27 +2070,142 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     return "25"; // 25% default if no claim
   };
 
+  // Policy duration options based on vehicle type - FIXED TO SHOW CORRECT LABELS
+  const getPolicyDurationOptions = (vehicleType) => {
+    if (vehicleType === "new") {
+      return [
+        { value: "1yr OD + 3yr TP", label: "1yr OD + 3yr TP" },
+        { value: "2yr OD + 3yr TP", label: "2yr OD + 3yr TP" },
+        { value: "3yr OD + 3yr TP", label: "3yr OD + 3yr TP" },
+      ];
+    } else {
+      return [
+        { value: "1", label: "1 Year" }
+      ]; // Only 1 year for used cars
+    }
+  };
+
+  const policyDurationOptions = getPolicyDurationOptions(form.vehicleType);
+
+  // Set default policy duration based on vehicle type
+  const getDefaultPolicyDuration = () => {
+    return form.vehicleType === "new" ? "1yr OD + 3yr TP" : "1";
+  };
+
   const [manualQuote, setManualQuote] = useState({
     insuranceCompany: '',
     coverageType: 'comprehensive',
     idv: '',
-    policyDuration: '1',
+    policyDuration: getDefaultPolicyDuration(),
     ncbDiscount: getDefaultNcb(),
-    odAmount: '',
-    thirdPartyAmount: '',
+    odAmount: '0', // Default to 0
+    thirdPartyAmount: '0', // Default to 0
+    addOnsAmount: '0', // Default to 0
     premium: '',
     addOns: {
-      zeroDep: { selected: false, amount: '', rate: '' },
-      consumables: { selected: false, amount: '', rate: '' },
-      roadSideAssist: { selected: false, amount: '', rate: '' },
-      keyReplacement: { selected: false, amount: '', rate: '' },
-      engineProtect: { selected: false, amount: '', rate: '' },
-      returnToInvoice: { selected: false, amount: '', rate: '' },
-      personalAccident: { selected: false, amount: '', rate: '' },
-      tyreProtection: { selected: false, amount: '', rate: '' },
-      emergencyMedical: { selected: false, amount: '', rate: '' }
+      zeroDep: { selected: false, amount: '0', rate: '0' },
+      consumables: { selected: false, amount: '0', rate: '0' },
+      roadSideAssist: { selected: false, amount: '0', rate: '0' },
+      keyReplacement: { selected: false, amount: '0', rate: '0' },
+      engineProtect: { selected: false, amount: '0', rate: '0' },
+      returnToInvoice: { selected: false, amount: '0', rate: '0' },
+      personalAccident: { selected: false, amount: '0', rate: '0' },
+      tyreProtection: { selected: false, amount: '0', rate: '0' },
+      emergencyMedical: { selected: false, amount: '0', rate: '0' }
     }
   });
+
+  // Update policy duration options when vehicle type changes
+  useEffect(() => {
+    const newOptions = getPolicyDurationOptions(form.vehicleType);
+    
+    // If current policy duration is not available for the new vehicle type, reset to default
+    if (!newOptions.find(option => option.value === manualQuote.policyDuration)) {
+      setManualQuote(prev => ({
+        ...prev,
+        policyDuration: getDefaultPolicyDuration()
+      }));
+    }
+  }, [form.vehicleType]);
+
+  // ============ CALCULATION FUNCTIONS ============
+
+  // Calculate NCB discount amount (on OD amount only)
+  const calculateNcbDiscount = () => {
+    const odAmount = parseFloat(manualQuote.odAmount || 0) || 0;
+    const ncbDiscount = parseFloat(manualQuote.ncbDiscount || 0) || 0;
+    return Math.round(odAmount * (ncbDiscount / 100));
+  };
+
+  // Calculate OD amount after NCB discount
+  const calculateOdAfterNcb = () => {
+    const odAmount = parseFloat(manualQuote.odAmount || 0) || 0;
+    const ncbDiscountAmount = calculateNcbDiscount();
+    return odAmount - ncbDiscountAmount;
+  };
+
+  // Calculate add-ons total - Only includes add-ons with amount > 0 in calculation
+  const calculateAddOnsTotal = () => {
+    const individualAddOnsTotal = Object.entries(manualQuote.addOns).reduce((total, [key, addOn]) => {
+      if (addOn.selected && parseFloat(addOn.amount || 0) > 0) {
+        const amount = parseFloat(addOn.amount || 0) || 0;
+        return total + amount;
+      }
+      return total;
+    }, 0);
+    
+    const singleAddOnsAmount = parseFloat(manualQuote.addOnsAmount || 0) || 0;
+    
+    return individualAddOnsTotal + singleAddOnsAmount;
+  };
+
+  // Get included add-ons (selected but with 0 amount) for display
+  const getIncludedAddOns = () => {
+    return Object.entries(manualQuote.addOns)
+      .filter(([key, addOn]) => addOn.selected && parseFloat(addOn.amount || 0) === 0)
+      .map(([key, addOn]) => addOnDescriptions[key]);
+  };
+
+  // Calculate total premium with GST as (odAmountAfterNcb + thirdPartyAmount + addOnsTotal) + 18% GST
+  const calculateTotalPremium = () => {
+    const odAmountAfterNcb = calculateOdAfterNcb();
+    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
+    const addOnsTotal = calculateAddOnsTotal();
+    
+    const baseAmount = odAmountAfterNcb + thirdPartyAmount + addOnsTotal;
+    const gstAmount = baseAmount * 0.18;
+    const totalWithGst = baseAmount + gstAmount;
+    
+    return Math.round(totalWithGst);
+  };
+
+  // Calculate base premium without GST for display
+  const calculateBasePremium = () => {
+    const odAmount = parseFloat(manualQuote.odAmount || 0) || 0;
+    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
+    const addOnsTotal = calculateAddOnsTotal();
+    
+    return odAmount + thirdPartyAmount + addOnsTotal;
+  };
+
+  // Calculate GST amount for display
+  const calculateGstAmount = () => {
+    const odAmountAfterNcb = calculateOdAfterNcb();
+    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
+    const addOnsTotal = calculateAddOnsTotal();
+    const taxableAmount = odAmountAfterNcb + thirdPartyAmount + addOnsTotal;
+    return taxableAmount * 0.18;
+  };
+
+  // Calculate current totals for display
+  const currentBasePremium = calculateBasePremium();
+  const currentGstAmount = calculateGstAmount();
+  const currentTotalPremium = calculateTotalPremium();
+  const currentAddOnsTotal = calculateAddOnsTotal();
+  const currentNcbDiscountAmount = calculateNcbDiscount();
+  const currentOdAfterNcb = calculateOdAfterNcb();
+
+  // ============ END CALCULATION FUNCTIONS ============
 
   // Load accepted quote in edit mode
   useEffect(() => {
@@ -1920,45 +2291,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       setQuotes(form.insuranceQuotes);
     }
   }, [form.insuranceQuotes]);
-
-  // Calculate add-ons total
-  const calculateAddOnsTotal = () => {
-    return Object.entries(manualQuote.addOns).reduce((total, [key, addOn]) => {
-      if (addOn.selected) {
-        const amount = parseFloat(addOn.amount) || 0;
-        return total + amount;
-      }
-      return total;
-    }, 0);
-  };
-
-  // Calculate total premium with GST as (odAmount + thirdPartyAmount + addOnsTotal) + 18% GST
-  const calculateTotalPremium = () => {
-    const odAmount = parseFloat(manualQuote.odAmount) || 0;
-    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount) || 0;
-    const addOnsTotal = calculateAddOnsTotal();
-    
-    const baseAmount = odAmount + thirdPartyAmount + addOnsTotal;
-    const gstAmount = baseAmount * 0.18;
-    const totalWithGst = baseAmount + gstAmount;
-    
-    return Math.round(totalWithGst);
-  };
-
-  // Calculate base premium without GST for display
-  const calculateBasePremium = () => {
-    const odAmount = parseFloat(manualQuote.odAmount) || 0;
-    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount) || 0;
-    const addOnsTotal = calculateAddOnsTotal();
-    
-    return odAmount + thirdPartyAmount + addOnsTotal;
-  };
-
-  // Calculate GST amount for display
-  const calculateGstAmount = () => {
-    const baseAmount = calculateBasePremium();
-    return baseAmount * 0.18;
-  };
 
   // Insurance companies with real image paths and colors
   const insuranceCompanies = [
@@ -2050,7 +2382,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
   // NCB options
   const ncbOptions = [0, 20, 25, 35, 45, 50];
 
-  // Handle manual quote input changes
+  // Handle manual quote input changes - PROPERLY HANDLES EMPTY VALUES
   const handleManualQuoteChange = (e) => {
     const { name, value } = e.target;
     
@@ -2059,9 +2391,15 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       return;
     }
     
+    // Handle empty values for numeric fields - convert empty to "0"
+    let processedValue = value;
+    if (['odAmount', 'thirdPartyAmount', 'addOnsAmount', 'idv'].includes(name)) {
+      processedValue = value === '' ? '0' : value;
+    }
+    
     setManualQuote(prev => ({
       ...prev,
-      [name]: value
+      [name]: processedValue
     }));
   };
 
@@ -2074,29 +2412,16 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         updatedAddOns[addOnKey] = {
           ...updatedAddOns[addOnKey],
           selected: value,
-          amount: '',
-          rate: ''
-        };
-      } else if (field === 'rate' && value && prev.idv) {
-        // Calculate amount when rate changes and IDV is available
-        const calculatedAmount = Math.round((parseFloat(prev.idv) || 0) * (parseFloat(value) / 100));
-        updatedAddOns[addOnKey] = {
-          ...updatedAddOns[addOnKey],
-          [field]: value,
-          amount: calculatedAmount.toString()
-        };
-      } else if (field === 'amount' && value && prev.idv) {
-        // Calculate rate when amount changes and IDV is available
-        const calculatedRate = ((parseFloat(value) || 0) / (parseFloat(prev.idv) || 1) * 100).toFixed(2);
-        updatedAddOns[addOnKey] = {
-          ...updatedAddOns[addOnKey],
-          [field]: value,
-          rate: calculatedRate
+          // Keep existing amount and rate when toggling selection
+          amount: updatedAddOns[addOnKey].amount || '0',
+          rate: updatedAddOns[addOnKey].rate || '0'
         };
       } else {
+        // For amount/rate changes, ensure we have a value (default to '0' if empty)
+        const safeValue = value === '' ? '0' : value;
         updatedAddOns[addOnKey] = {
           ...updatedAddOns[addOnKey],
-          [field]: value
+          [field]: safeValue
         };
       }
 
@@ -2107,37 +2432,56 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     });
   };
 
-  // Auto-calculate add-ons when IDV changes
-  React.useEffect(() => {
-    if (manualQuote.idv) {
-      const updatedAddOns = { ...manualQuote.addOns };
-      let needsUpdate = false;
-
+  // Select all add-ons with 0 amount
+  const selectAllAddOns = () => {
+    setManualQuote(prev => {
+      const updatedAddOns = { ...prev.addOns };
       Object.keys(updatedAddOns).forEach(key => {
-        const addOn = updatedAddOns[key];
-        if (addOn.selected && addOn.rate) {
-          const calculatedAmount = Math.round((parseFloat(manualQuote.idv) || 0) * (parseFloat(addOn.rate) / 100));
-          if (calculatedAmount !== parseFloat(addOn.amount || 0)) {
-            updatedAddOns[key] = {
-              ...addOn,
-              amount: calculatedAmount.toString()
-            };
-            needsUpdate = true;
-          }
-        }
+        updatedAddOns[key] = {
+          ...updatedAddOns[key],
+          selected: true,
+          amount: '0' // Set all to 0 amount when selecting all
+        };
       });
+      return {
+        ...prev,
+        addOns: updatedAddOns
+      };
+    });
+  };
 
-      if (needsUpdate) {
-        setManualQuote(prev => ({
-          ...prev,
-          addOns: updatedAddOns
-        }));
-      }
-    }
-  }, [manualQuote.idv]);
+  // Deselect all add-ons
+  const deselectAllAddOns = () => {
+    setManualQuote(prev => {
+      const updatedAddOns = { ...prev.addOns };
+      Object.keys(updatedAddOns).forEach(key => {
+        updatedAddOns[key] = {
+          ...updatedAddOns[key],
+          selected: false,
+          amount: '0'
+        };
+      });
+      return {
+        ...prev,
+        addOns: updatedAddOns
+      };
+    });
+  };
 
-  // Add manual quote
+  // Add manual quote - HANDLES EMPTY VALUES PROPERLY
   const addManualQuote = () => {
+    console.log("🔍 Add Quote Button Clicked - Current Values:", {
+      insuranceCompany: manualQuote.insuranceCompany,
+      coverageType: manualQuote.coverageType,
+      idv: manualQuote.idv,
+      odAmount: manualQuote.odAmount,
+      thirdPartyAmount: manualQuote.thirdPartyAmount,
+      isInsuranceCompanyValid: !!manualQuote.insuranceCompany,
+      isCoverageTypeValid: !!manualQuote.coverageType,
+      isIdvValid: !!manualQuote.idv,
+      isButtonEnabled: !!(manualQuote.insuranceCompany && manualQuote.coverageType && manualQuote.idv)
+    });
+
     if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv) {
       alert("Please fill all required fields: Insurance Company, Coverage Type, and IDV");
       return;
@@ -2145,9 +2489,27 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
     const company = insuranceCompanies.find(c => c.name === manualQuote.insuranceCompany);
     const addOnsPremium = calculateAddOnsTotal();
+    const ncbDiscountAmount = calculateNcbDiscount();
+    const odAmountAfterNcb = calculateOdAfterNcb();
     const totalPremium = calculateTotalPremium();
     const basePremium = calculateBasePremium();
     const gstAmount = calculateGstAmount();
+
+    // Get the policy duration label - FIXED: Use the actual value as label for new vehicles
+    const policyDurationLabel = manualQuote.policyDuration;
+
+    // Prepare selected add-ons - include ALL selected add-ons (both with 0 and >0 amount)
+    const selectedAddOns = Object.entries(manualQuote.addOns)
+      .filter(([_, addOn]) => addOn.selected)
+      .reduce((acc, [key, addOn]) => {
+        acc[key] = {
+          description: addOnDescriptions[key],
+          amount: parseFloat(addOn.amount || 0) || 0,
+          rate: parseFloat(addOn.rate || 0) || 0,
+          included: parseFloat(addOn.amount || 0) === 0 // Flag to indicate included (0 amount)
+        };
+        return acc;
+      }, {});
 
     const newQuote = {
       id: Date.now().toString(),
@@ -2157,25 +2519,21 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       companyColor: company?.color || '#000',
       companyBgColor: company?.bgColor || '#fff',
       coverageType: manualQuote.coverageType,
-      idv: parseFloat(manualQuote.idv),
-      policyDuration: parseInt(manualQuote.policyDuration),
+      idv: parseFloat(manualQuote.idv || 0) || 0,
+      policyDuration: manualQuote.policyDuration,
+      policyDurationLabel: policyDurationLabel, // Use the descriptive label directly
       ncbDiscount: parseInt(manualQuote.ncbDiscount),
-      odAmount: manualQuote.odAmount ? parseFloat(manualQuote.odAmount) : 0,
-      thirdPartyAmount: manualQuote.thirdPartyAmount ? parseFloat(manualQuote.thirdPartyAmount) : 0,
+      ncbDiscountAmount: ncbDiscountAmount,
+      odAmount: parseFloat(manualQuote.odAmount || 0) || 0,
+      odAmountAfterNcb: odAmountAfterNcb,
+      thirdPartyAmount: parseFloat(manualQuote.thirdPartyAmount || 0) || 0,
+      addOnsAmount: parseFloat(manualQuote.addOnsAmount || 0) || 0,
       premium: basePremium,
       gstAmount: gstAmount,
       totalPremium: totalPremium,
       addOnsPremium: addOnsPremium,
-      selectedAddOns: Object.entries(manualQuote.addOns)
-        .filter(([_, addOn]) => addOn.selected)
-        .reduce((acc, [key, addOn]) => {
-          acc[key] = {
-            description: addOnDescriptions[key],
-            amount: parseFloat(addOn.amount) || 0,
-            rate: parseFloat(addOn.rate) || 0
-          };
-          return acc;
-        }, {}),
+      selectedAddOns: selectedAddOns,
+      includedAddOns: getIncludedAddOns(), // Store included add-ons separately
       createdAt: new Date().toISOString(),
       accepted: false // Initialize as not accepted
     };
@@ -2189,21 +2547,22 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       insuranceCompany: '',
       coverageType: 'comprehensive',
       idv: '',
-      policyDuration: '1',
+      policyDuration: getDefaultPolicyDuration(),
       ncbDiscount: getDefaultNcb(),
-      odAmount: '',
-      thirdPartyAmount: '',
+      odAmount: '0', // Reset to 0
+      thirdPartyAmount: '0', // Reset to 0
+      addOnsAmount: '0', // Reset to 0
       premium: '',
       addOns: {
-        zeroDep: { selected: false, amount: '', rate: '' },
-        consumables: { selected: false, amount: '', rate: '' },
-        roadSideAssist: { selected: false, amount: '', rate: '' },
-        keyReplacement: { selected: false, amount: '', rate: '' },
-        engineProtect: { selected: false, amount: '', rate: '' },
-        returnToInvoice: { selected: false, amount: '', rate: '' },
-        personalAccident: { selected: false, amount: '', rate: '' },
-        tyreProtection: { selected: false, amount: '', rate: '' },
-        emergencyMedical: { selected: false, amount: '', rate: '' }
+        zeroDep: { selected: false, amount: '0', rate: '0' },
+        consumables: { selected: false, amount: '0', rate: '0' },
+        roadSideAssist: { selected: false, amount: '0', rate: '0' },
+        keyReplacement: { selected: false, amount: '0', rate: '0' },
+        engineProtect: { selected: false, amount: '0', rate: '0' },
+        returnToInvoice: { selected: false, amount: '0', rate: '0' },
+        personalAccident: { selected: false, amount: '0', rate: '0' },
+        tyreProtection: { selected: false, amount: '0', rate: '0' },
+        emergencyMedical: { selected: false, amount: '0', rate: '0' }
       }
     });
   };
@@ -2384,20 +2743,20 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     // Enhanced column structure for better comparison
     const colWidths = [
       tableWidth * 0.16, // Company
-      tableWidth * 0.10, // Coverage
+      tableWidth * 0.12, // Coverage
       tableWidth * 0.12, // IDV
       tableWidth * 0.10, // Base Premium
       tableWidth * 0.08, // Add-ons
       tableWidth * 0.08, // NCB
       tableWidth * 0.12, // Total Premium
-      tableWidth * 0.08, // Duration
-      tableWidth * 0.16  // Key Features
+      tableWidth * 0.12, // Duration
+      tableWidth * 0.10  // Key Features
     ];
     
     let yPosition = startY;
     
     // Table headers
-    const headers = ['Insurance Company', 'Coverage', 'IDV (₹)', 'Base Premium', 'Add-ons', 'NCB %', 'Total Premium', 'Term', 'Key Features'];
+    const headers = ['Insurance Company', 'Coverage', 'IDV (₹)', 'Base Premium', 'Add-ons', 'NCB %', 'Total Premium', 'Policy Term', 'Key Features'];
     
     // Draw professional table header
     pdf.setFillColor(52, 152, 219);
@@ -2488,11 +2847,10 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       xPosition += colWidths[4];
       
       // NCB with discount amount
-      const ncbDiscountAmount = Math.round((quote.premium || 0) * (quote.ncbDiscount / 100));
       pdf.text(`${quote.ncbDiscount}%`, xPosition + 2, yPosition + 8);
       pdf.setFontSize(7);
       pdf.setTextColor(0, 128, 0);
-      pdf.text(`(₹${ncbDiscountAmount.toLocaleString('en-IN')})`, xPosition + 2, yPosition + 13);
+      pdf.text(`(₹${(quote.ncbDiscountAmount || 0).toLocaleString('en-IN')})`, xPosition + 2, yPosition + 13);
       pdf.setFontSize(8);
       pdf.setTextColor(0, 0, 0);
       xPosition += colWidths[5];
@@ -2509,8 +2867,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       pdf.setFont('helvetica', 'normal');
       xPosition += colWidths[6];
       
-      // Duration
-      pdf.text(`${quote.policyDuration}Y`, xPosition + 2, yPosition + 8);
+      // Policy Duration - Use the descriptive label directly
+      const durationText = quote.policyDurationLabel || quote.policyDuration;
+      pdf.text(durationText, xPosition + 2, yPosition + 8);
       xPosition += colWidths[7];
       
       // Key Features (first 2-3 add-ons or main features)
@@ -2529,7 +2888,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       // Additional info in second line
       pdf.setFontSize(7);
       pdf.setTextColor(100, 100, 100);
-      const savedAmount = ncbDiscountAmount > 0 ? `Save: ₹${ncbDiscountAmount.toLocaleString('en-IN')}` : '';
+      const savedAmount = quote.ncbDiscountAmount > 0 ? `Save: ₹${quote.ncbDiscountAmount.toLocaleString('en-IN')}` : '';
       pdf.text(savedAmount, margin + 2, yPosition + 18);
       
       // Reset for next row
@@ -2551,12 +2910,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
     return yPosition;
   };
-
-  // Calculate current totals for display
-  const currentBasePremium = calculateBasePremium();
-  const currentGstAmount = calculateGstAmount();
-  const currentTotalPremium = calculateTotalPremium();
-  const currentAddOnsTotal = calculateAddOnsTotal();
 
   // Component for company logo with fallback
   const CompanyLogo = ({ company, className = "w-8 h-8" }) => {
@@ -2602,24 +2955,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           </button>
         )}
       </div>
-      
-      {/* Edit Mode Banner */}
-      {isEditMode && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center space-x-3">
-            <FaInfoCircle className="w-5 h-5 text-blue-600" />
-            <div>
-              <h4 className="font-semibold text-blue-800">Edit Mode</h4>
-              <p className="text-sm text-blue-600">
-                {acceptedQuote 
-                  ? `Accepted quote loaded: ${acceptedQuote.insuranceCompany} - ₹${acceptedQuote.totalPremium?.toLocaleString('en-IN')}`
-                  : 'Loading your previously saved quotes...'
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Validation Error Display */}
       {errors.insuranceQuotes && (
@@ -2731,124 +3066,123 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {/* Insurance Company */}
           <div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Insurance Company *
-  </label>
-  <div className="relative">
-    <input
-      type="text"
-      name="insuranceCompany"
-      value={manualQuote.insuranceCompany}
-      onChange={handleManualQuoteChange}
-      onFocus={() => setIsSuggestionsOpen(true)}
-      onBlur={() => setTimeout(() => setIsSuggestionsOpen(false), 200)}
-      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-      placeholder="Insurance Company"
-    />
-    
-    {/* Dropdown suggestions */}
-    {isSuggestionsOpen && (
-      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-        {insuranceCompanies
-          .filter(company => 
-            company.name.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
-          )
-          .map((company, index) => (
-            <div
-              key={index}
-              onClick={() => {
-                setManualQuote(prev => ({
-                  ...prev,
-                  insuranceCompany: company.name
-                }));
-                setIsSuggestionsOpen(false);
-              }}
-              className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors border-b border-gray-100 last:border-b-0"
-            >
-              <div className="flex items-center space-x-2">
-  {company.logo ? (
-    <img
-      src={company.logo}
-      alt={`${company.name} logo`}
-      className="w-6 h-6 rounded-full object-cover"
-    />
-  ) : (
-    <div 
-      className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
-      style={{ backgroundColor: company.bgColor, color: company.color }}
-    >
-      {company.fallbackLogo}
-    </div>
-  )}
-  <span>{company.name}</span>
-</div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Insurance Company *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="insuranceCompany"
+                value={manualQuote.insuranceCompany}
+                onChange={handleManualQuoteChange}
+                onFocus={() => setIsSuggestionsOpen(true)}
+                onBlur={() => setTimeout(() => setIsSuggestionsOpen(false), 200)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Insurance Company"
+              />
+              
+              {/* Dropdown suggestions */}
+              {isSuggestionsOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {insuranceCompanies
+                    .filter(company => 
+                      company.name.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
+                    )
+                    .map((company, index) => (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          setManualQuote(prev => ({
+                            ...prev,
+                            insuranceCompany: company.name
+                          }));
+                          setIsSuggestionsOpen(false);
+                        }}
+                        className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="flex items-center space-x-2">
+                          {company.logo ? (
+                            <img
+                              src={company.logo}
+                              alt={`${company.name} logo`}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div 
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
+                              style={{ backgroundColor: company.bgColor, color: company.color }}
+                            >
+                              {company.fallbackLogo}
+                            </div>
+                          )}
+                          <span>{company.name}</span>
+                        </div>
+                      </div>
+                    ))
+                  }
+                  
+                  {/* No results message */}
+                  {insuranceCompanies.filter(company => 
+                    company.name.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
+                  ).length === 0 && (
+                    <div className="px-3 py-2 text-gray-500 text-sm">
+                      No insurance companies found
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          ))
-        }
-        
-        {/* No results message */}
-        {insuranceCompanies.filter(company => 
-          company.name.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
-        ).length === 0 && (
-          <div className="px-3 py-2 text-gray-500 text-sm">
-            No insurance companies found
           </div>
-        )}
-      </div>
-    )}
-  </div>
-</div>
-
 
           {/* Coverage Type */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Coverage Type *
-  </label>
-  <div className="relative">
-    <input
-      type="text"
-      name="coverageType"
-      value={manualQuote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party'}
-      onChange={(e) => {
-        const value = e.target.value.toLowerCase();
-        if (value.includes('comp') || value.includes('comp')) {
-          setManualQuote(prev => ({ ...prev, coverageType: 'comprehensive' }));
-        } else if (value.includes('third') || value.includes('3rd')) {
-          setManualQuote(prev => ({ ...prev, coverageType: 'thirdParty' }));
-        }
-      }}
-      onFocus={() => setIsCoverageSuggestionsOpen(true)}
-      onBlur={() => setTimeout(() => setIsCoverageSuggestionsOpen(false), 200)}
-      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-      placeholder="Type Comprehensive or Third Party"
-    />
-    
-    {/* Dropdown suggestions */}
-    {isCoverageSuggestionsOpen && (
-      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-        <div
-          onClick={() => {
-            setManualQuote(prev => ({ ...prev, coverageType: 'comprehensive' }));
-            setIsCoverageSuggestionsOpen(false);
-          }}
-          className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors border-b border-gray-100"
-        >
-          Comprehensive
-        </div>
-        <div
-          onClick={() => {
-            setManualQuote(prev => ({ ...prev, coverageType: 'thirdParty' }));
-            setIsCoverageSuggestionsOpen(false);
-          }}
-          className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors"
-        >
-          Third Party
-        </div>
-      </div>
-    )}
-  </div>
-</div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Coverage Type *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="coverageType"
+                value={manualQuote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party'}
+                onChange={(e) => {
+                  const value = e.target.value.toLowerCase();
+                  if (value.includes('comp') || value.includes('comp')) {
+                    setManualQuote(prev => ({ ...prev, coverageType: 'comprehensive' }));
+                  } else if (value.includes('third') || value.includes('3rd')) {
+                    setManualQuote(prev => ({ ...prev, coverageType: 'thirdParty' }));
+                  }
+                }}
+                onFocus={() => setIsCoverageSuggestionsOpen(true)}
+                onBlur={() => setTimeout(() => setIsCoverageSuggestionsOpen(false), 200)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Type Comprehensive or Third Party"
+              />
+              
+              {/* Dropdown suggestions */}
+              {isCoverageSuggestionsOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                  <div
+                    onClick={() => {
+                      setManualQuote(prev => ({ ...prev, coverageType: 'comprehensive' }));
+                      setIsCoverageSuggestionsOpen(false);
+                    }}
+                    className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors border-b border-gray-100"
+                  >
+                    Comprehensive
+                  </div>
+                  <div
+                    onClick={() => {
+                      setManualQuote(prev => ({ ...prev, coverageType: 'thirdParty' }));
+                      setIsCoverageSuggestionsOpen(false);
+                    }}
+                    className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                  >
+                    Third Party
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* IDV */}
           <div>
@@ -2868,20 +3202,30 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           {/* Policy Duration */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Policy Duration (Years)
+              Policy Duration *
             </label>
             <select
               name="policyDuration"
               value={manualQuote.policyDuration}
               onChange={handleManualQuoteChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                form.vehicleType === "used" 
+                  ? "bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed" 
+                  : "border-gray-300"
+              }`}
+              disabled={form.vehicleType === "used"}
             >
-              <option value="1">1 Year</option>
-              <option value="2">2 Years</option>
-              <option value="3">3 Years</option>
-              <option value="4">4 Years</option>
-              <option value="5">5 Years</option>
+              {policyDurationOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label} {form.vehicleType === "used" && option.value === "1" ? '(Used Car Default)' : ''}
+                </option>
+              ))}
             </select>
+            {form.vehicleType === "used" && (
+              <p className="text-xs text-gray-500 mt-1">
+                Used vehicles are limited to 1 Year policy duration
+              </p>
+            )}
           </div>
 
           {/* NCB Discount */}
@@ -2916,7 +3260,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           {/* OD Amount */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              OD Amount (₹) *
+              OD Amount (₹) <span className="text-gray-500 text-xs">(Optional)</span>
             </label>
             <INRCurrencyInput
               type="number"
@@ -2924,15 +3268,14 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               value={manualQuote.odAmount}
               onChange={handleManualQuoteChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter OD amount"
-              required
+              placeholder="Enter OD amount (optional)"
             />
           </div>
 
           {/* Third Party Amount */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              3rd Party Amount (₹) *
+              3rd Party Amount (₹) <span className="text-gray-500 text-xs">(Optional)</span>
             </label>
             <INRCurrencyInput
               type="number"
@@ -2940,14 +3283,102 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               value={manualQuote.thirdPartyAmount}
               onChange={handleManualQuoteChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter 3rd party amount"
-              required
+              placeholder="Enter 3rd party amount (optional)"
             />
           </div>
 
+          {/* Add Ons Amount Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Add Ons (₹) <span className="text-gray-500 text-xs">(Optional)</span>
+            </label>
+            <INRCurrencyInput
+              type="number"
+              name="addOnsAmount"
+              value={manualQuote.addOnsAmount}
+              onChange={handleManualQuoteChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter add-ons amount (optional)"
+            />
+          </div>
+
+          {/* Add-ons Input Fields (Optional checkboxes) */}
+          <div className="col-span-full">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-md font-semibold text-gray-800">Additional Add-ons (Optional)</h4>
+              <div className="flex gap-2">
+                <button
+                  onClick={selectAllAddOns}
+                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                >
+                  Select All (₹0)
+                </button>
+                <button
+                  onClick={deselectAllAddOns}
+                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                >
+                  Deselect All
+                </button>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Select add-ons with ₹0 amount to include them without charges, or enter custom amounts for premium calculation.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Object.entries(addOnDescriptions).map(([key, description]) => (
+                <div key={key} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg bg-white hover:border-purple-300 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={manualQuote.addOns[key].selected}
+                    onChange={(e) => handleAddOnChange(key, 'selected', e.target.checked)}
+                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                  />
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-gray-700 block mb-2">
+                      {description}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">Amount (₹)</label>
+                        <input
+                          type="number"
+                          value={manualQuote.addOns[key].amount}
+                          onChange={(e) => handleAddOnChange(key, 'amount', e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                          placeholder="0"
+                          disabled={!manualQuote.addOns[key].selected}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Included Add-ons Display */}
+          {getIncludedAddOns().length > 0 && (
+            <div className="col-span-full bg-green-50 p-4 rounded-lg border border-green-200">
+              <h5 className="font-semibold text-green-800 mb-2 flex items-center">
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Included Add-ons (₹0)
+              </h5>
+              <div className="flex flex-wrap gap-2">
+                {getIncludedAddOns().map((addOn, index) => (
+                  <span key={index} className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full font-medium">
+                    ✓ {addOn}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-green-600 mt-2">
+                These add-ons are included in the quote at no extra cost and will be displayed to customers.
+              </p>
+            </div>
+          )}
+
           {/* Premium Summary */}
           <div className="col-span-full bg-purple-50 p-4 rounded-lg border border-purple-200">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Base Premium:</span>
                 <div className="font-semibold text-lg">₹{currentBasePremium.toLocaleString('en-IN')}</div>
@@ -2956,6 +3387,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               <div>
                 <span className="text-gray-600">Add-ons Total:</span>
                 <div className="font-semibold text-lg text-purple-600">₹{currentAddOnsTotal.toLocaleString('en-IN')}</div>
+                <div className="text-xs text-gray-500">(Only add-ons with amount &gt; 0)</div>
+              </div>
+              <div>
+                <span className="text-gray-600">NCB Discount:</span>
+                <div className="font-semibold text-lg text-green-600">-₹{currentNcbDiscountAmount.toLocaleString('en-IN')}</div>
+                <div className="text-xs text-gray-500">(On OD Amount only)</div>
               </div>
               <div>
                 <span className="text-gray-600">GST (18%):</span>
@@ -2966,66 +3403,42 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                 <div className="font-semibold text-lg text-green-600">₹{currentTotalPremium.toLocaleString('en-IN')}</div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Add-ons Section */}
-        <div className="mb-6">
-          <h4 className="text-md font-semibold text-gray-800 mb-3">Add-ons (Optional)</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {Object.entries(addOnDescriptions).map(([key, description]) => (
-              <div key={key} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg bg-white hover:border-purple-300 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={manualQuote.addOns[key].selected}
-                  onChange={(e) => handleAddOnChange(key, 'selected', e.target.checked)}
-                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                />
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 block mb-2">
-                    {description}
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Rate (%)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={manualQuote.addOns[key].rate}
-                        onChange={(e) => handleAddOnChange(key, 'rate', e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        placeholder="0.00%"
-                        disabled={!manualQuote.addOns[key].selected}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Amount (₹)</label>
-                      <input
-                        type="number"
-                        value={manualQuote.addOns[key].amount}
-                        onChange={(e) => handleAddOnChange(key, 'amount', e.target.value)}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        placeholder="0"
-                        disabled={!manualQuote.addOns[key].selected}
-                      />
-                    </div>
-                  </div>
-                  {manualQuote.addOns[key].selected && manualQuote.idv && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      Based on IDV: ₹{manualQuote.idv}
-                    </div>
-                  )}
+            
+            {/* Detailed Breakdown */}
+            <div className="mt-4 pt-4 border-t border-purple-200">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span className="text-gray-500">OD Amount:</span>
+                  <div>₹{(parseFloat(manualQuote.odAmount || 0) || 0).toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <span className="text-gray-500">OD After NCB:</span>
+                  <div>₹{currentOdAfterNcb.toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <span className="text-gray-500">3rd Party Amount:</span>
+                  <div>₹{(parseFloat(manualQuote.thirdPartyAmount || 0) || 0).toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <span className="text-gray-500">Taxable Amount:</span>
+                  <div>₹{(currentOdAfterNcb + (parseFloat(manualQuote.thirdPartyAmount || 0) || 0) + currentAddOnsTotal).toLocaleString('en-IN')}</div>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
         {/* Add Quote Button */}
         <button
           onClick={addManualQuote}
-          disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || !manualQuote.odAmount || !manualQuote.thirdPartyAmount}
+          disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv}
           className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
+          title={
+            !manualQuote.insuranceCompany ? "Insurance Company is required" :
+            !manualQuote.coverageType ? "Coverage Type is required" :
+            !manualQuote.idv ? "IDV is required" :
+            "Add Quote"
+          }
         >
           <Plus className="w-5 h-5 mr-2" />
           Add Quote
@@ -3070,6 +3483,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               const isExpanded = expandedQuotes.includes(index);
               const isAccepted = acceptedQuote && acceptedQuote.id === quote.id;
               
+              // Separate included add-ons (amount = 0) from premium add-ons (amount > 0)
+              const premiumAddOns = Object.entries(quote.selectedAddOns || {})
+                .filter(([_, addOn]) => addOn.amount > 0);
+              const includedAddOns = Object.entries(quote.selectedAddOns || {})
+                .filter(([_, addOn]) => addOn.amount === 0);
+              
               return (
                 <div key={index} className={`border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white ${
                   isAccepted ? 'ring-2 ring-green-500 ring-opacity-50' : ''
@@ -3101,7 +3520,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                           <div className="flex items-center space-x-2 text-sm opacity-90">
                             <span>IDV: ₹{quote.idv?.toLocaleString('en-IN')}</span>
                             <span>•</span>
-                            <span>{quote.policyDuration} Year{quote.policyDuration > 1 ? 's' : ''}</span>
+                            {/* FIXED: Use policyDurationLabel directly */}
+                            <span>{quote.policyDurationLabel}</span>
                             <span>•</span>
                             <span>NCB: {quote.ncbDiscount}%</span>
                             {!isNcbEligible && (
@@ -3113,9 +3533,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <span className="bg-white text-gray-800 px-3 py-1 rounded-full text-sm font-semibold">
-                          {quote.coverageType === 'comprehensive' ? 'COMPREHENSIVE' : 'THIRD PARTY'}
-                        </span>
+                        <div className="text-right">
+                          <div className="text-xl font-bold">₹{quote.totalPremium?.toLocaleString('en-IN')}</div>
+                          <div className="text-sm opacity-90">
+                            Total Premium
+                          </div>
+                        </div>
                         {!isAccepted && (
                           <button
                             onClick={() => acceptQuote(quote)}
@@ -3154,19 +3577,35 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                               <span className="font-semibold">₹{quote.odAmount?.toLocaleString('en-IN')}</span>
                             </div>
                             
+                            <div className="flex justify-between items-center text-green-600">
+                              <span>NCB Discount {quote.ncbDiscount}% (on OD)</span>
+                              <span>-₹{(quote.ncbDiscountAmount || 0).toLocaleString('en-IN')}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center border-b pb-2">
+                              <span className="text-gray-600">OD After NCB</span>
+                              <span className="font-semibold">₹{(quote.odAmountAfterNcb || 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            
                             <div className="flex justify-between items-center">
                               <span className="text-gray-600">3rd Party Amount</span>
                               <span className="font-semibold">₹{quote.thirdPartyAmount?.toLocaleString('en-IN')}</span>
                             </div>
 
-                            {Object.keys(quote.selectedAddOns || {}).length > 0 && (
+                            {/* Premium Add-ons (with amount > 0) */}
+                            {premiumAddOns.length > 0 && (
                               <div className="pt-2 border-t">
-                                <div className="text-gray-600 mb-2">Add Ons</div>
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-gray-600">Premium Add-ons</span>
+                                  <span className="font-semibold text-purple-600">+₹{quote.addOnsPremium?.toLocaleString('en-IN')}</span>
+                                </div>
                                 <div className="space-y-2">
-                                  {Object.entries(quote.selectedAddOns).map(([key, addOn]) => (
+                                  {premiumAddOns.map(([key, addOn]) => (
                                     <div key={key} className="flex justify-between items-center text-sm">
                                       <span className="text-gray-500">{addOn.description}</span>
-                                      <span className="text-green-600 font-semibold">+₹{addOn.amount?.toLocaleString('en-IN')}</span>
+                                      <span className="font-semibold text-green-600">
+                                        +₹{addOn.amount?.toLocaleString('en-IN')}
+                                      </span>
                                     </div>
                                   ))}
                                 </div>
@@ -3174,15 +3613,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                             )}
                             
                             <div className="flex justify-between items-center pt-2 border-t">
-                              <span className="text-gray-600">Base Premium</span>
-                              <span className="font-semibold">₹{quote.premium?.toLocaleString('en-IN')}</span>
-                            </div>
-
-                            <div className={`flex justify-between items-center ${
-                              quote.ncbDiscount > 0 ? 'text-green-600' : 'text-gray-500'
-                            }`}>
-                              <span>NCB Discount {quote.ncbDiscount}%</span>
-                              <span>-₹{Math.round((quote.premium || 0) * (quote.ncbDiscount / 100)).toLocaleString('en-IN')}</span>
+                              <span className="text-gray-600">Taxable Amount</span>
+                              <span className="font-semibold">₹{((quote.odAmountAfterNcb || 0) + (quote.thirdPartyAmount || 0) + (quote.addOnsPremium || 0)).toLocaleString('en-IN')}</span>
                             </div>
 
                             <div className="flex justify-between items-center">
@@ -3206,7 +3638,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                           <div className="space-y-3">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Policy Term</span>
-                              <span className="font-semibold">{quote.policyDuration} Year{quote.policyDuration > 1 ? 's' : ''}</span>
+                              {/* FIXED: Use policyDurationLabel directly */}
+                              <span className="font-semibold">{quote.policyDurationLabel}</span>
                             </div>
                             
                             <div className="flex justify-between">
@@ -3219,24 +3652,49 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                               <span className="font-semibold">₹{quote.idv?.toLocaleString('en-IN')}</span>
                             </div>
 
-                            <div className="pt-2">
-                              <div className="text-gray-600 mb-2">Included Add-ons</div>
-                              <div className="flex flex-wrap gap-2">
-                                {Object.keys(quote.selectedAddOns || {}).length > 0 ? (
-                                  Object.entries(quote.selectedAddOns).map(([key, addOn]) => (
+                            {/* Included Add-ons Section */}
+                            {includedAddOns.length > 0 && (
+                              <div className="pt-2">
+                                <div className="text-green-600 font-medium mb-2 flex items-center">
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Included Add-ons (₹0)
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {includedAddOns.map(([key, addOn]) => (
+                                    <span 
+                                      key={key} 
+                                      className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium"
+                                    >
+                                      ✓ {addOn.description}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Premium Add-ons Section */}
+                            {premiumAddOns.length > 0 && (
+                              <div className="pt-2">
+                                <div className="text-purple-600 font-medium mb-2">Premium Add-ons</div>
+                                <div className="flex flex-wrap gap-2">
+                                  {premiumAddOns.map(([key, addOn]) => (
                                     <span 
                                       key={key} 
                                       className="px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium"
                                       style={{ backgroundColor: company?.bgColor, color: company?.color }}
                                     >
-                                      {addOn.description}
+                                      {addOn.description} (₹{addOn.amount.toLocaleString('en-IN')})
                                     </span>
-                                  ))
-                                ) : (
-                                  <span className="text-gray-400 text-sm">No add-ons selected</span>
-                                )}
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            )}
+
+                            {Object.keys(quote.selectedAddOns || {}).length === 0 && (
+                              <div className="pt-2">
+                                <span className="text-gray-400 text-sm">No add-ons selected</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -3284,116 +3742,213 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
   // NCB options dropdown (same as InsuranceQuotes)
   const ncbOptions = [0, 20, 25, 35, 45, 50];
 
-  // Policy duration options (same as InsuranceQuotes)
-  const policyDurationOptions = [
-    { value: "1 Year", label: "1 Year" },
-    { value: "2 Years", label: "2 Years" },
-    { value: "3 Years", label: "3 Years" },
-    { value: "4 Years", label: "4 Years" },
-    { value: "5 Years", label: "5 Years" }
-  ];
+  // Policy duration options based on vehicle type (same as InsuranceQuotes)
+  const getPolicyDurationOptions = (vehicleType) => {
+    if (vehicleType === "new") {
+      return [
+        { value: "1yr OD + 3yr TP", label: "1yr OD + 3yr TP", odYears: 1, tpYears: 3 },
+        { value: "2yr OD + 3yr TP", label: "2yr OD + 3yr TP", odYears: 2, tpYears: 3 },
+        { value: "3yr OD + 3yr TP", label: "3yr OD + 3yr TP", odYears: 3, tpYears: 3 }
+      ];
+    } else {
+      return [
+        { value: "1 Year", label: "1 Year", odYears: 1, tpYears: 1 }
+      ]; // Only 1 year for used cars
+    }
+  };
+
+  const policyDurationOptions = getPolicyDurationOptions(form.vehicleType);
 
   // Track the last accepted quote to detect changes
   const [lastAcceptedQuoteId, setLastAcceptedQuoteId] = useState(null);
 
-  // Function to calculate expiry date based on policy start date and duration
-  const calculateExpiryDate = (policyStartDate, duration) => {
-    if (!policyStartDate || !duration) return '';
+  // Function to calculate expiry date based on policy start date and duration (with -1 day)
+  const calculateExpiryDate = (policyStartDate, years) => {
+    if (!policyStartDate || !years) return '';
     
     const startDate = new Date(policyStartDate);
-    const years = parseInt(duration);
-    
-    if (isNaN(years)) return '';
-    
     const expiry = new Date(startDate);
-    expiry.setFullYear(expiry.getFullYear() + years);
     
-    // Subtract one day to get the day before the anniversary
+    // Add years and subtract 1 day
+    expiry.setFullYear(expiry.getFullYear() + parseInt(years));
     expiry.setDate(expiry.getDate() - 1);
     
     return expiry.toISOString().split('T')[0];
   };
 
-  // Handle policy start date change - auto-calculate expiry date
-  const handlePolicyStartDateChange = (e) => {
-    const newPolicyStartDate = e.target.value;
+  // Calculate separate OD and TP expiry dates
+  const calculateSeparateExpiryDates = (policyStartDate, durationOption) => {
+    if (!policyStartDate || !durationOption) return { odExpiry: '', tpExpiry: '' };
+    
+    const selectedOption = policyDurationOptions.find(opt => opt.value === durationOption);
+    if (!selectedOption) return { odExpiry: '', tpExpiry: '' };
+    
+    const odExpiry = calculateExpiryDate(policyStartDate, selectedOption.odYears);
+    const tpExpiry = calculateExpiryDate(policyStartDate, selectedOption.tpYears);
+    
+    return { odExpiry, tpExpiry };
+  };
+
+  // Handle issue date change
+  const handleIssueDateChange = (e) => {
+    const issueDate = e.target.value;
     handleChange(e);
     
-    // Auto-calculate expiry date if duration exists
-    if (newPolicyStartDate && form.insuranceDuration) {
-      const expiryDate = calculateExpiryDate(newPolicyStartDate, form.insuranceDuration);
-      if (expiryDate) {
+    // If policy start date exists and is before the new issue date, reset it
+    if (form.policyStartDate && issueDate) {
+      const startDate = new Date(form.policyStartDate);
+      const newIssueDate = new Date(issueDate);
+      
+      if (startDate < newIssueDate) {
         handleChange({
-          target: { name: 'dueDate', value: expiryDate }
+          target: {
+            name: 'policyStartDate',
+            value: issueDate // Set start date to issue date
+          }
         });
+        
+        // Also recalculate expiry dates if duration exists
+        if (form.insuranceDuration) {
+          const { odExpiry, tpExpiry } = calculateSeparateExpiryDates(issueDate, form.insuranceDuration);
+          handleChange({
+            target: { name: 'odExpiryDate', value: odExpiry }
+          });
+          handleChange({
+            target: { name: 'tpExpiryDate', value: tpExpiry }
+          });
+        }
       }
     }
   };
 
-  // Handle insurance duration change - auto-calculate expiry date
+  // Handle policy start date change - auto-calculate expiry dates
+  const handlePolicyStartDateChange = (e) => {
+    const startDate = e.target.value;
+    const issueDate = form.issueDate;
+    
+    // Validate: Start date cannot be before issue date
+    if (issueDate && startDate) {
+      const start = new Date(startDate);
+      const issue = new Date(issueDate);
+      
+      if (start < issue) {
+        // Show error and don't update
+        alert("Policy start date cannot be before issue date!");
+        return;
+      }
+    }
+    
+    handleChange(e);
+    
+    // Auto-calculate expiry dates if duration exists
+    if (startDate && form.insuranceDuration) {
+      const { odExpiry, tpExpiry } = calculateSeparateExpiryDates(startDate, form.insuranceDuration);
+      
+      handleChange({
+        target: { name: 'odExpiryDate', value: odExpiry }
+      });
+      handleChange({
+        target: { name: 'tpExpiryDate', value: tpExpiry }
+      });
+    }
+  };
+
+  // Handle insurance duration change - auto-calculate expiry dates
   const handleDurationChange = (e) => {
     const newDuration = e.target.value;
     handleChange(e);
     
-    // Auto-calculate expiry date if policy start date exists
+    // Auto-calculate expiry dates if policy start date exists
     if (form.policyStartDate && newDuration) {
-      const expiryDate = calculateExpiryDate(form.policyStartDate, newDuration);
-      if (expiryDate) {
-        handleChange({
-          target: { name: 'dueDate', value: expiryDate }
-        });
-      }
+      const { odExpiry, tpExpiry } = calculateSeparateExpiryDates(form.policyStartDate, newDuration);
+      
+      handleChange({
+        target: { name: 'odExpiryDate', value: odExpiry }
+      });
+      handleChange({
+        target: { name: 'tpExpiryDate', value: tpExpiry }
+      });
     }
   };
 
   // Effect to auto-fill when acceptedQuote changes (including when editing)
-  useEffect(() => {
-    if (acceptedQuote) {
-      console.log("🔄 Processing accepted quote:", acceptedQuote.insuranceCompany, "ID:", acceptedQuote.id);
-      
-      // Check if this is a different quote than the last one we processed
-      const isDifferentQuote = acceptedQuote.id !== lastAcceptedQuoteId;
-      
-      if (isDifferentQuote) {
-        console.log("🔄 New/different quote accepted, auto-filling policy details...");
-        
-        // Auto-fill policy details from accepted quote
-        handleChange({
-          target: { name: 'insuranceCompany', value: acceptedQuote.insuranceCompany }
-        });
-        handleChange({
-          target: { name: 'idvAmount', value: acceptedQuote.idv.toString() }
-        });
-        handleChange({
-          target: { name: 'totalPremium', value: acceptedQuote.totalPremium.toString() }
-        });
-        handleChange({
-          target: { name: 'ncbDiscount', value: acceptedQuote.ncbDiscount.toString() }
-        });
-        handleChange({
-          target: { name: 'insuranceDuration', value: `${acceptedQuote.policyDuration} Year${acceptedQuote.policyDuration > 1 ? 's' : ''}` }
-        });
-        
-        // DO NOT auto-fill issue date - user will fill manually
-        // DO NOT auto-fill policy start date - user will fill manually
-        
-        // Calculate expiry date based on policy duration (will be applied when user fills policy start date)
-        // We don't auto-calculate expiry here since policy start date is not auto-filled
-        
-        // Update the last processed quote ID
-        setLastAcceptedQuoteId(acceptedQuote.id);
-        
-        console.log("✅ Policy details updated with new accepted quote (except dates)");
-      } else {
-        console.log("ℹ️ Same quote as before, no need to re-fill");
-      }
+ // Function to get duration value from accepted quote
+const getDurationValueFromQuote = (quote, vehicleType) => {
+  if (vehicleType === "new") {
+    // For new cars, map the policyDuration to the appropriate option
+    if (quote.policyDuration === 1) {
+      return "1yr OD + 3yr TP";
+    } else if (quote.policyDuration === 3) {
+      return "3yr OD + 3yr TP";
+    } else if (quote.policyDuration === 2) {
+      return "2yr OD + 2yr TP"; // If you have this option
     } else {
-      console.log("❌ No accepted quote available");
-      // Reset the tracker if no quote is accepted
-      setLastAcceptedQuoteId(null);
+      // Fallback: convert number to years format
+      return `${quote.policyDuration} Year${quote.policyDuration > 1 ? 's' : ''}`;
     }
-  }, [acceptedQuote, lastAcceptedQuoteId, handleChange]);
+  } else {
+    // For used cars, always use "1 Year"
+    return "1 Year";
+  }
+};
 
+// Enhanced debug function to log what's happening
+const logAutoFillDetails = (quote, durationValue) => {
+  console.log("📋 Auto-fill Details:", {
+    quoteId: quote.id,
+    insuranceCompany: quote.insuranceCompany,
+    originalDuration: quote.policyDuration,
+    vehicleType: form.vehicleType,
+    mappedDuration: durationValue,
+    availableOptions: policyDurationOptions.map(opt => opt.value)
+  });
+};
+
+// Effect to auto-fill when acceptedQuote changes (including when editing)
+useEffect(() => {
+  if (acceptedQuote) {
+    console.log("🔄 Processing accepted quote:", acceptedQuote.insuranceCompany, "ID:", acceptedQuote.id);
+    
+    // Check if this is a different quote than the last one we processed
+    const isDifferentQuote = acceptedQuote.id !== lastAcceptedQuoteId;
+    
+    if (isDifferentQuote) {
+      console.log("🔄 New/different quote accepted, auto-filling policy details...");
+      
+      // Auto-fill policy details from accepted quote
+      handleChange({
+        target: { name: 'insuranceCompany', value: acceptedQuote.insuranceCompany }
+      });
+      handleChange({
+        target: { name: 'idvAmount', value: acceptedQuote.idv.toString() }
+      });
+      handleChange({
+        target: { name: 'totalPremium', value: acceptedQuote.totalPremium.toString() }
+      });
+      handleChange({
+        target: { name: 'ncbDiscount', value: acceptedQuote.ncbDiscount.toString() }
+      });
+      
+      // Auto-fill insurance duration from accepted quote
+      const durationValue = getDurationValueFromQuote(acceptedQuote, form.vehicleType);
+      handleChange({
+        target: { name: 'insuranceDuration', value: durationValue }
+      });
+      
+      logAutoFillDetails(acceptedQuote, durationValue);
+      console.log("✅ Policy details updated with accepted quote including duration:", durationValue);
+      
+      // Update the last processed quote ID
+      setLastAcceptedQuoteId(acceptedQuote.id);
+    } else {
+      console.log("ℹ️ Same quote as before, no need to re-fill");
+    }
+  } else {
+    console.log("❌ No accepted quote available");
+    // Reset the tracker if no quote is accepted
+    setLastAcceptedQuoteId(null);
+  }
+}, [acceptedQuote, lastAcceptedQuoteId, handleChange, form.vehicleType]);
   // Reset form when accepted quote is removed
   useEffect(() => {
     if (!acceptedQuote && lastAcceptedQuoteId) {
@@ -3401,6 +3956,9 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
       setLastAcceptedQuoteId(null);
     }
   }, [acceptedQuote, lastAcceptedQuoteId, handleChange]);
+
+  // Get selected duration option details
+  const selectedDurationOption = policyDurationOptions.find(opt => opt.value === form.insuranceDuration);
 
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
@@ -3424,6 +3982,64 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
                 )}
               </p>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Vehicle Type Info Banner */}
+      {form.vehicleType && (
+        <div className={`mb-4 p-4 rounded-lg border ${
+          form.vehicleType === "new" 
+            ? "bg-green-50 border-green-200" 
+            : "bg-blue-50 border-blue-200"
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {form.vehicleType === "new" ? (
+                <FaCar className="w-5 h-5 text-green-600" />
+              ) : (
+                <FaHistory className="w-5 h-5 text-blue-600" />
+              )}
+              <div>
+                <h4 className="font-semibold text-gray-800">
+                  {form.vehicleType === "new" ? "New Vehicle" : "Used Vehicle"}
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {form.vehicleType === "new" 
+                    ? "Available policy durations: 1yr OD + 3yr TP, 3yr OD + 3yr TP"
+                    : "Policy duration: 1 Year (default for used vehicles)"
+                  }
+                </p>
+              </div>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              form.vehicleType === "new" 
+                ? "bg-green-100 text-green-800" 
+                : "bg-blue-100 text-blue-800"
+            }`}>
+              {form.vehicleType === "new" ? "NEW" : "USED"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Date Calculation Info */}
+      <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+        <div className="flex items-start space-x-3">
+          <FaInfoCircle className="w-5 h-5 text-purple-600 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-purple-800 mb-2">Date Calculation Rules</h4>
+            <ul className="text-sm text-purple-700 space-y-1">
+              <li>• <strong>Issue Date</strong>: Can be any date (past or future)</li>
+              <li>• <strong>Policy Start Date</strong>: Cannot be before Issue Date</li>
+              <li>• <strong>OD & TP Expiry Dates</strong>: Start Date + Duration - 1 Day</li>
+              <li className="text-xs text-purple-600 mt-2">
+                {selectedDurationOption && form.policyStartDate ? 
+                  `Example: ${form.policyStartDate} + ${selectedDurationOption.odYears} Year(s) - 1 Day = OD Expiry, + ${selectedDurationOption.tpYears} Year(s) - 1 Day = TP Expiry` : 
+                  "Expiry dates are calculated as: Start Date + Duration - 1 Day"
+                }
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -3529,15 +4145,14 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
               type="date"
               name="issueDate"
               value={form.issueDate || ""}
-              onChange={handleChange}
-              placeholder="dd-mm-yyyy"
+              onChange={handleIssueDateChange}
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.issueDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.issueDate && <p className="text-red-500 text-xs mt-1">{errors.issueDate}</p>}
             <p className="text-xs text-gray-500 mt-1">
-              Enter the policy issuance date
+              Policy issuance date (can be past or future)
             </p>
           </div>
 
@@ -3551,65 +4166,122 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
               name="policyStartDate"
               value={form.policyStartDate || ""}
               onChange={handlePolicyStartDateChange}
+              min={form.issueDate || ''} // Cannot be before issue date
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.policyStartDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.policyStartDate && <p className="text-red-500 text-xs mt-1">{errors.policyStartDate}</p>}
             <p className="text-xs text-gray-500 mt-1">
-              Changing this will auto-update expiry date
+              {form.issueDate 
+                ? `Cannot be before ${new Date(form.issueDate).toLocaleDateString()}`
+                : "Policy coverage start date"
+              }
             </p>
           </div>
 
           {/* Insurance Duration - Dropdown */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Insurance Duration *
-            </label>
-            <select
-              name="insuranceDuration"
-              value={form.insuranceDuration || ""}
-              onChange={handleDurationChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.insuranceDuration ? "border-red-500" : "border-gray-300"
-              }`}
-            >
-              <option value="">Select Duration</option>
-              {policyDurationOptions.map((option, index) => (
-                <option key={index} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {acceptedQuote && form.insuranceDuration === `${acceptedQuote.policyDuration} Year${acceptedQuote.policyDuration > 1 ? 's' : ''}` && (
-              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
-                From accepted quote
-              </p>
-            )}
-            {errors.insuranceDuration && <p className="text-red-500 text-xs mt-1">{errors.insuranceDuration}</p>}
-            <p className="text-xs text-gray-500 mt-1">
-              Changing this will auto-update expiry date
-            </p>
-          </div>
+          {/* Insurance Duration - Dropdown */}
+<div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Insurance Duration *
+  </label>
+  <select
+    name="insuranceDuration"
+    value={form.insuranceDuration || ""}
+    onChange={handleDurationChange}
+    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+      errors.insuranceDuration ? "border-red-500" : "border-gray-300"
+    } ${
+      form.vehicleType === "used" ? "bg-gray-100 cursor-not-allowed" : ""
+    }`}
+    disabled={form.vehicleType === "used"} // Disabled for used cars
+  >
+    <option value="">Select Duration</option>
+    {policyDurationOptions.map((option, index) => (
+      <option key={index} value={option.value}>
+        {option.label} {form.vehicleType === "used" && option.value === "1 Year" ? '(Used Car Default)' : ''}
+      </option>
+    ))}
+  </select>
+  
+  {/* Auto-fill status */}
+  {acceptedQuote && form.insuranceDuration && (
+    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+      <CheckCircle className="w-3 h-3" />
+      Auto-filled from accepted quote: {acceptedQuote.policyDuration} Year{acceptedQuote.policyDuration > 1 ? 's' : ''}
+      {form.vehicleType === "new" && (
+        <span className="text-blue-600">
+          ({form.insuranceDuration})
+        </span>
+      )}
+    </p>
+  )}
+  
+  {errors.insuranceDuration && <p className="text-red-500 text-xs mt-1">{errors.insuranceDuration}</p>}
+  
+  {form.vehicleType === "used" && (
+    <p className="text-xs text-gray-500 mt-1">
+      Used vehicles are limited to 1 Year policy duration (auto-filled from accepted quote)
+    </p>
+  )}
+  
+  {form.vehicleType === "new" && acceptedQuote && (
+    <p className="text-xs text-blue-600 mt-1">
+      Duration taken from accepted quote: {acceptedQuote.policyDuration} Year{acceptedQuote.policyDuration > 1 ? 's' : ''}
+    </p>
+  )}
+</div>
 
-          {/* Policy Expiry Date */}
+          {/* OD Expiry Date */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              Policy Expiry Date *
+              OD Expiry Date *
             </label>
             <input
               type="date"
-              name="dueDate"
-              value={form.dueDate || ""}
+              name="odExpiryDate"
+              value={form.odExpiryDate || ""}
               onChange={handleChange}
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.dueDate ? "border-red-500" : "border-gray-300"
+                errors.odExpiryDate ? "border-red-500" : "border-gray-300"
               }`}
+              readOnly
             />
-            {errors.dueDate && <p className="text-red-500 text-xs mt-1">{errors.dueDate}</p>}
+            {errors.odExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.odExpiryDate}</p>}
             <p className="text-xs text-gray-500 mt-1">
-              Auto-calculated from policy start date + duration, but can be manually adjusted
+              Auto-calculated: Start Date + OD Duration - 1 Day
+              {form.policyStartDate && form.insuranceDuration && (
+                <span className="text-green-600 font-medium">
+                  {" "}✓ Calculated
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* TP Expiry Date */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              TP Expiry Date *
+            </label>
+            <input
+              type="date"
+              name="tpExpiryDate"
+              value={form.tpExpiryDate || ""}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.tpExpiryDate ? "border-red-500" : "border-gray-300"
+              }`}
+              readOnly
+            />
+            {errors.tpExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.tpExpiryDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              Auto-calculated: Start Date + TP Duration - 1 Day
+              {form.policyStartDate && form.insuranceDuration && (
+                <span className="text-green-600 font-medium">
+                  {" "}✓ Calculated
+                </span>
+              )}
             </p>
           </div>
 
@@ -3688,6 +4360,22 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             {errors.totalPremium && <p className="text-red-500 text-xs mt-1">{errors.totalPremium}</p>}
           </div>
         </div>
+
+        {/* Real-time Calculation Example */}
+        {/* {form.policyStartDate && form.insuranceDuration && form.odExpiryDate && form.tpExpiryDate && (
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-2 text-green-700">
+              <FaCalculator className="w-4 h-4" />
+              <span className="font-semibold">Calculation Verified:</span>
+            </div>
+            <p className="text-sm text-green-600 mt-1">
+              {form.policyStartDate} + {selectedDurationOption?.odYears || 0} Year(s) - 1 Day = {form.odExpiryDate} (OD)
+            </p>
+            <p className="text-sm text-green-600">
+              {form.policyStartDate} + {selectedDurationOption?.tpYears || 0} Year(s) - 1 Day = {form.tpExpiryDate} (TP)
+            </p>
+          </div>
+        )} */}
       </div>
     </div>
   );
@@ -3706,7 +4394,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
         optional: []
       },
       usedCar: {
-        mandatory: ["RC", "Form 29", "Form 30 page 1", "Form 30 page 2"],
+        mandatory: ["RC", "Form 29", "Form 30 page 1", "Form 30 page 2", "Pan Number", "GST/Adhaar Card"],
         optional: []
       },
       usedCarRenewal: {
@@ -3719,18 +4407,63 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
       }
     };
 
-    return requirements.usedCar; // Default to used car, you can make this dynamic
+    return requirements.usedCar;
   };
 
   const documentRequirements = getDocumentRequirements();
 
-  // Handle document tagging - SIMPLIFIED
+  // Enhanced file extension detection
+  const getFileExtensionFromFile = (file) => {
+    if (!file) return '';
+
+    // Priority 1: From file name
+    if (file.name) {
+      const nameParts = file.name.split('.');
+      if (nameParts.length > 1) {
+        const ext = nameParts.pop().toLowerCase();
+        // Map common extensions to ensure consistency
+        const extensionMap = {
+          'jpeg': 'jpg',
+          'jpe': 'jpg',
+          'jfif': 'jpg',
+          'jif': 'jpg'
+        };
+        return extensionMap[ext] || ext;
+      }
+    }
+
+    // Priority 2: From MIME type
+    if (file.type) {
+      const mimeToExt = {
+        'application/pdf': 'pdf',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/pjpeg': 'jpg',
+        'image/jfif': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'image/bmp': 'bmp',
+        'application/msword': 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+        'application/vnd.ms-excel': 'xls',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'text/plain': 'txt',
+        'application/zip': 'zip',
+        'application/x-rar-compressed': 'rar'
+      };
+      return mimeToExt[file.type] || '';
+    }
+
+    return '';
+  };
+
+  // Handle document tagging
   const handleDocumentTag = (docId, tag) => {
     const currentTags = form.documentTags || {};
     const updatedTags = { ...currentTags };
     
     if (tag === "other") {
-      // When selecting "other", show the custom input
       updatedTags[docId] = "";
       setShowCustomInputs(prev => ({
         ...prev,
@@ -3742,7 +4475,6 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
       }));
     } else {
       updatedTags[docId] = tag;
-      // Hide custom input when selecting a predefined option
       setShowCustomInputs(prev => ({
         ...prev,
         [docId]: false
@@ -3759,13 +4491,11 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
 
   // Handle custom tag input
   const handleCustomTagInput = (docId, value) => {
-    // Update custom inputs state
     setCustomTagInputs(prev => ({
       ...prev,
       [docId]: value
     }));
 
-    // Update the documentTags with custom value
     const currentTags = form.documentTags || {};
     const updatedTags = {
       ...currentTags,
@@ -3780,34 +4510,33 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     });
   };
 
-  // Handle file selection - IMPROVED MULTIPLE FILE UPLOAD
+  // Handle file selection
   const handleFiles = async (e) => {
     const files = Array.from(e.target.files);
     
     if (files.length === 0) return;
 
-    console.log("🔄 Selected files:", files.length, "files:", files.map(f => f.name));
+    console.log("🔄 Selected files:", files.length, "files:", files.map(f => ({ 
+      name: f.name, 
+      type: f.type, 
+      size: f.size,
+      detectedExtension: getFileExtensionFromFile(f)
+    })));
 
     setUploading(true);
 
     try {
-      // Upload files and get URLs
       const uploadedFiles = await uploadFiles(files);
-      
-      // Combine existing documents with new ones
       const existingDocuments = form.documents || {};
       const newDocuments = { ...existingDocuments };
       
-      // Add new documents with unique keys
       uploadedFiles.forEach((uploadedFile, index) => {
         const docId = `doc_${Date.now()}_${index}`;
         newDocuments[docId] = uploadedFile;
       });
       
       console.log("📄 Updated documents object:", newDocuments);
-      console.log("📊 Total documents after upload:", Object.keys(newDocuments).length);
       
-      // Update form with the new documents object
       handleChange({
         target: {
           name: 'documents',
@@ -3820,12 +4549,11 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
       alert(`Error uploading files: ${error.message}`);
     } finally {
       setUploading(false);
-      // Clear the file input
       e.target.value = '';
     }
   };
 
-  // Upload multiple files and return file objects
+  // Upload multiple files
   const uploadFiles = async (files) => {
     console.log(`📤 Starting upload for ${files.length} files...`);
     
@@ -3843,25 +4571,37 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
       failedUploads.forEach((result, index) => {
         console.error(`Failed upload ${index + 1}:`, result.reason);
       });
+      
+      if (successfulUploads.length === 0) {
+        throw new Error('All files failed to upload');
+      }
     }
     
     console.log(`✅ Successfully uploaded ${successfulUploads.length} files`);
     return successfulUploads;
   };
 
-  // Upload single file
+  // Upload single file with enhanced metadata
   const uploadFile = async (file) => {
-    console.log(`🚀 Starting upload for: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+    const fileExtension = getFileExtensionFromFile(file);
+    
+    console.log(`🚀 Starting upload for: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB, type: ${file.type}, detected extension: ${fileExtension})`);
     
     try {
-      const fileUrl = await uploadSingleFile(file);    
+      const fileUrl = await uploadSingleFile(file, fileExtension);
+      
       console.log(`✅ Upload completed: ${file.name} -> ${fileUrl}`);
+      
       return {
         url: fileUrl,
         name: file.name,
+        originalName: file.name,
+        extension: fileExtension,
         type: file.type,
         size: file.size,
-        uploadedAt: new Date().toISOString()
+        uploadedAt: new Date().toISOString(),
+        mimeType: file.type,
+        lastModified: file.lastModified
       };
       
     } catch (error) {
@@ -3870,10 +4610,17 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     }
   };
 
-  const uploadSingleFile = async (fileObj) => {
+  const uploadSingleFile = async (fileObj, detectedExtension) => {
     try {
       const formData = new FormData();
       formData.append('file', fileObj);
+
+      // Add comprehensive file metadata
+      formData.append('fileName', fileObj.name);
+      formData.append('fileType', fileObj.type);
+      formData.append('originalExtension', detectedExtension);
+      formData.append('preserveExtension', 'true');
+      formData.append('timestamp', Date.now().toString());
 
       let config = {
         method: 'post',
@@ -3882,25 +4629,30 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
         headers: { 
           'Content-Type': 'multipart/form-data',
         },
-        data: formData
+        data: formData,
+        timeout: 60000 // 60 seconds timeout
       };
 
       const response = await axios.request(config);
       console.log(`📡 Upload response for ${fileObj.name}:`, response.data);
+      
+      if (!response.data.path) {
+        throw new Error('No file path returned from server');
+      }
+      
       return response.data.path;
     } catch (error) {
       console.error(`Error uploading file ${fileObj.name}:`, error);
-      throw error;
+      throw new Error(`Upload failed: ${error.message}`);
     }
   }
 
-  // Remove document from form.documents
+  // Remove document
   const removeDocument = (docId) => {
     const currentDocuments = form.documents || {};
     const updatedDocuments = { ...currentDocuments };
     delete updatedDocuments[docId];
     
-    // Also remove from tags
     const currentTags = form.documentTags || {};
     const updatedTags = { ...currentTags };
     delete updatedTags[docId];
@@ -3919,7 +4671,6 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
       }
     });
 
-    // Remove from custom inputs
     setCustomTagInputs(prev => {
       const newInputs = { ...prev };
       delete newInputs[docId];
@@ -3955,12 +4706,19 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     }
   };
 
-  // Format file name from URL
+  // Format file name from URL - ENHANCED
   const getFileNameFromUrl = (fileObj) => {
     if (typeof fileObj === 'string') {
-      return fileObj.split('/').pop() || 'Document';
+      const url = fileObj;
+      const fileName = url.split('/').pop() || 'Document';
+      // Try to extract extension from URL
+      const urlExt = getFileExtension(fileObj);
+      if (urlExt && !fileName.includes('.')) {
+        return `${fileName}.${urlExt}`;
+      }
+      return fileName;
     }
-    return fileObj?.name || 'Document';
+    return fileObj?.originalName || fileObj?.name || 'Document';
   };
 
   // Get file URL
@@ -3971,15 +4729,74 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     return fileObj?.url || '';
   };
 
+  // Get correct file extension for display and download
+  const getFileExtension = (fileObj) => {
+    if (!fileObj) return 'file';
+    
+    // If it's a file object with extension property
+    if (fileObj.extension && fileObj.extension !== '') {
+      return fileObj.extension;
+    }
+    
+    // If it's a file object with name
+    if (fileObj.name) {
+      const nameParts = fileObj.name.split('.');
+      if (nameParts.length > 1) {
+        return nameParts.pop().toLowerCase();
+      }
+    }
+    
+    // If it's a string URL
+    if (typeof fileObj === 'string') {
+      const urlParts = fileObj.split('.');
+      if (urlParts.length > 1) {
+        const ext = urlParts.pop().toLowerCase();
+        return ext.split('?')[0]; // Remove query parameters
+      }
+    }
+    
+    // Fallback to type-based detection
+    if (fileObj.type) {
+      const typeMap = {
+        'application/pdf': 'pdf',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/pjpeg': 'jpg',
+        'image/jfif': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'image/bmp': 'bmp',
+        'application/msword': 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+        'application/vnd.ms-excel': 'xls',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'text/plain': 'txt'
+      };
+      return typeMap[fileObj.type] || 'file';
+    }
+    
+    return 'file';
+  };
+
   // Get file icon based on file extension
   const getFileIcon = (fileObj) => {
-    const fileName = typeof fileObj === 'string' ? fileObj : fileObj?.name || fileObj?.url || '';
-    const fileUrl = fileName.toLowerCase();
-    if (fileUrl.includes('.pdf')) return '📄';
-    if (fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/)) return '🖼️';
-    if (fileUrl.match(/\.(doc|docx)$/)) return '📝';
-    if (fileUrl.match(/\.(xls|xlsx)$/)) return '📊';
-    return '📎';
+    const extension = getFileExtension(fileObj);
+    const fileIcons = {
+      pdf: '📄',
+      jpg: '🖼️',
+      jpeg: '🖼️',
+      png: '🖼️',
+      gif: '🖼️',
+      webp: '🖼️',
+      bmp: '🖼️',
+      doc: '📝',
+      docx: '📝',
+      xls: '📊',
+      xlsx: '📊',
+      txt: '📃'
+    };
+    return fileIcons[extension] || '📎';
   };
 
   // Format file size
@@ -3990,12 +4807,124 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  // ENHANCED download function with proper extension handling
+  const downloadFile = async (fileObj) => {
+    try {
+      const fileUrl = getFileUrl(fileObj);
+      const originalFileName = getFileNameFromUrl(fileObj);
+      const fileExtension = getFileExtension(fileObj);
+      
+      // Ensure the file name has the correct extension
+      let downloadFileName = originalFileName;
+      const currentExt = downloadFileName.toLowerCase().split('.').pop();
+      const correctExt = fileExtension.toLowerCase();
+      
+      // Fix common extension issues
+      const extensionFixes = {
+        'jffif': 'jpg',
+        'jfif': 'jpg',
+        'jpe': 'jpg',
+        'jif': 'jpg'
+      };
+      
+      const finalExtension = extensionFixes[correctExt] || correctExt;
+      
+      if (!downloadFileName.toLowerCase().endsWith(`.${finalExtension}`)) {
+        // Remove any existing extension and add the correct one
+        downloadFileName = downloadFileName.replace(/\.[^/.]+$/, "") + '.' + finalExtension;
+      }
+      
+      console.log(`📥 Downloading: ${downloadFileName} (corrected extension: ${finalExtension}) from ${fileUrl}`);
+
+      // Method 1: Fetch with proper MIME type handling
+      const response = await fetch(fileUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      
+      // Determine correct MIME type based on extension
+      const extensionToMime = {
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'bmp': 'image/bmp',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls': 'application/vnd.ms-excel',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'txt': 'text/plain'
+      };
+      
+      const mimeType = extensionToMime[finalExtension] || blob.type || 'application/octet-stream';
+      
+      // Create blob with correct MIME type
+      const correctedBlob = new Blob([blob], { type: mimeType });
+      const blobUrl = window.URL.createObjectURL(correctedBlob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = downloadFileName;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up blob URL
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
+      console.log(`✅ Download initiated: ${downloadFileName} with MIME type: ${mimeType}`);
+      
+    } catch (error) {
+      console.error('❌ Error downloading file with blob method:', error);
+      
+      // Fallback method: Direct link with correct extension
+      console.log('🔄 Trying fallback download method...');
+      const fileUrl = getFileUrl(fileObj);
+      const originalFileName = getFileNameFromUrl(fileObj);
+      const fileExtension = getFileExtension(fileObj);
+      
+      const extensionFixes = {
+        'jffif': 'jpg',
+        'jfif': 'jpg',
+        'jpe': 'jpg',
+        'jif': 'jpg'
+      };
+      
+      const finalExtension = extensionFixes[fileExtension] || fileExtension;
+      let downloadFileName = originalFileName;
+      
+      if (!downloadFileName.toLowerCase().endsWith(`.${finalExtension}`)) {
+        downloadFileName = downloadFileName.replace(/\.[^/.]+$/, "") + '.' + finalExtension;
+      }
+      
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = downloadFileName;
+      link.target = '_blank';
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log(`✅ Fallback download initiated: ${downloadFileName}`);
+    }
+  };
+
   // Get current documents count
   const currentDocuments = form.documents || {};
   const documentsCount = Object.keys(currentDocuments).length;
   const taggedDocumentsCount = Object.values(form.documentTags || {}).filter(tag => tag && tag !== '').length;
 
-  // SIMPLIFIED: Check if we should show custom input
+  // Check if we should show custom input
   const shouldShowCustomInput = (docId) => {
     return showCustomInputs[docId] === true;
   };
@@ -4005,12 +4934,10 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     const currentTag = form.documentTags?.[docId];
     if (!currentTag) return "";
     
-    // If tag is in predefined lists, show it
     if ([...documentRequirements.mandatory, ...documentRequirements.optional].includes(currentTag)) {
       return currentTag;
     }
     
-    // Otherwise show "other"
     return "other";
   };
 
@@ -4060,7 +4987,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
           <div>
             <h5 className="font-medium text-green-700 mb-2 flex items-center gap-2">
               <FaCheckCircle className="text-green-600" />
-              Mandatory Documents
+              Documents
             </h5>
             <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
               {documentRequirements.mandatory.map((doc, index) => (
@@ -4142,7 +5069,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
             onChange={handleFiles}
             className="hidden"
             id="file-upload"
-            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt"
+            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
             disabled={uploading}
           />
           <label
@@ -4167,7 +5094,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
           </label>
           
           <p className="text-gray-400 text-xs mt-4">
-            Supported: PDF, JPG, PNG, DOC, DOCX, XLS, XLSX, TXT • Max file size: 10MB each
+            Supported: PDF, JPG, PNG, GIF, WEBP, BMP, DOC, DOCX, XLS, XLSX, TXT • Max file size: 10MB each
           </p>
         </div>
 
@@ -4211,25 +5138,35 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
                         <span>{formatFileSize(fileObj.size)}</span>
                         <span>•</span>
-                        <span className="truncate flex-1">{getFileUrl(fileObj)}</span>
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                          {getFileExtension(fileObj).toUpperCase()}
+                        </span>
+                        {fileObj.type && (
+                          <>
+                            <span>•</span>
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                              {fileObj.type}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <a
-                      href={getFileUrl(fileObj)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    {/* Download Button */}
+                    <button
+                      onClick={() => downloadFile(fileObj)}
                       className="p-2 text-green-600 hover:text-green-800 transition-colors"
-                      title="View document"
+                      title="Download document"
                     >
-                      <FaExternalLinkAlt />
-                    </a>
+                      <FaDownload />
+                    </button>
                     
+                    {/* Delete Button */}
                     <button
                       onClick={() => removeDocument(docId)}
                       disabled={uploading}
@@ -4257,7 +5194,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
           </div>
         )}
 
-        {/* Tagging Section - FIXED: Now properly shows input for "other" */}
+        {/* Tagging Section */}
         {documentsCount > 0 && (
           <div className="border rounded-xl p-5 mt-6">
             <h4 className="text-md font-semibold text-gray-700 mb-4 flex items-center gap-2">
@@ -4279,9 +5216,14 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
                       <p className="font-medium text-sm truncate">
                         {getFileNameFromUrl(fileObj)}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {formatFileSize(fileObj.size)}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-gray-500">
+                          {formatFileSize(fileObj.size)}
+                        </p>
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                          {getFileExtension(fileObj).toUpperCase()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
@@ -4293,7 +5235,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
                         className="border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none w-full md:w-48"
                       >
                         <option value="">Select document type</option>
-                        <optgroup label="Mandatory">
+                        <optgroup label="Documents">
                           {documentRequirements.mandatory.map((docType) => (
                             <option key={docType} value={docType}>{docType}</option>
                           ))}
@@ -4308,7 +5250,6 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
                         <option value="other">Other (Custom)</option>
                       </select>
                       
-                      {/* FIXED: Simple condition to show input */}
                       {shouldShowCustomInput(docId) && (
                         <input
                           type="text"
@@ -4350,7 +5291,6 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
   );
 };
 // ================== STEP 7: Payment ==================
-
 const Payment = ({ 
   form, 
   handleChange, 
@@ -4361,7 +5301,8 @@ const Payment = ({
   totalPremium, 
   onNextStep, 
   paymentLedger: propPaymentLedger, 
-  onPaymentLedgerUpdate 
+  onPaymentLedgerUpdate,
+  acceptedQuote
 }) => {
   // Format number in Indian digit format (e.g., 10,00,000)
   const formatIndianNumber = (number) => {
@@ -4460,38 +5401,67 @@ const Payment = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeBankIndex, setActiveBankIndex] = useState(-1);
 
+  // State for editing payment
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+
+  // State for subvention/discount
+  const [showSubventionForm, setShowSubventionForm] = useState(false);
+  const [subventionAmount, setSubventionAmount] = useState('');
+  const [subventionReason, setSubventionReason] = useState('');
+  const [subventionEntries, setSubventionEntries] = useState([]);
+
+  // Use the final premium amount directly from acceptedQuote
+  const finalPremiumAmount = acceptedQuote?.totalPremium || 0;
+
   // Calculate total customer payments (both direct and via in house)
   const calculateTotalCustomerPayments = () => {
     return paymentLedger
-      .filter(payment => payment.paymentMadeBy === "Customer")
+      .filter(payment => payment.paymentMadeBy === "Customer" && payment.type !== "subvention_refund")
       .reduce((sum, payment) => sum + payment.amount, 0);
   };
 
   // Calculate remaining amount that customer can pay
   const calculateCustomerRemainingAmount = () => {
     const totalCustomerPayments = calculateTotalCustomerPayments();
-    return Math.max((parseFloat(totalPremium) || 0) - totalCustomerPayments, 0);
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netAmount = finalPremiumAmount - totalSubventionRefund;
+    return Math.max(netAmount - totalCustomerPayments, 0);
   };
 
   // Calculate payment progress percentage (based only on customer payments)
   const calculatePaymentProgress = () => {
     const totalCustomerPayments = calculateTotalCustomerPayments();
-    return Math.min((totalCustomerPayments / totalPremium) * 100, 100);
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
+    
+    return netPremium > 0 ? Math.min((totalCustomerPayments / netPremium) * 100, 100) : 100;
   };
 
   // Calculate overall payment status (based only on customer payments)
   const calculateOverallPaymentStatus = () => {
     const totalCustomerPayments = calculateTotalCustomerPayments();
-    return totalCustomerPayments >= totalPremium ? 'Fully Paid' : 'Payment Pending';
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
+    
+    return totalCustomerPayments >= netPremium ? 'Fully Paid' : 'Payment Pending';
   };
   
-  // Payment modes including subvention options
-  const paymentModeOptions = [
+  // Payment modes for Customer (includes subvention)
+  const customerPaymentModeOptions = [
     "Online Transfer/UPI",
     "Cash",
     "Cheque",
     "Credit/Debit Card",
     "Subvention"
+  ];
+
+  // Payment modes for In House (excludes subvention)
+  const inHousePaymentModeOptions = [
+    "Online Transfer/UPI",
+    "Cash",
+    "Cheque",
+    "Credit/Debit Card"
   ];
 
   // Payment made by options
@@ -4503,8 +5473,131 @@ const Payment = ({
   // State for payment ledger - use prop if provided, otherwise local state
   const [paymentLedger, setPaymentLedger] = useState(propPaymentLedger || paymentHistory || []);
   
-  // State for auto credit amount (for In House payments) - always equal to total premium
-  const [autoCreditAmount, setAutoCreditAmount] = useState(totalPremium || "");
+  // State for auto credit amount - equals final premium minus subvention refunds
+  const [autoCreditAmount, setAutoCreditAmount] = useState(finalPremiumAmount || "");
+
+  // Calculate total subvention refund amount
+  const calculateTotalSubventionRefund = () => {
+    return paymentLedger
+      .filter(payment => payment.type === "subvention_refund")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  };
+
+  // NEW: Handle adding individual subvention amounts one by one
+  const handleAddSubventionEntry = () => {
+    if (!subventionAmount || subventionAmount <= 0) {
+      alert("Please enter a valid subvention amount");
+      return;
+    }
+
+    const amount = parseFloat(subventionAmount);
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const remainingSubventionCapacity = finalPremiumAmount - totalSubventionRefund;
+
+    if (amount > remainingSubventionCapacity) {
+      alert(`Subvention amount cannot exceed remaining capacity of ₹${formatIndianNumber(remainingSubventionCapacity)}`);
+      return;
+    }
+
+    const newEntry = {
+      id: Date.now().toString(),
+      amount: amount,
+      reason: subventionReason || "Subvention discount"
+    };
+
+    setSubventionEntries(prev => [...prev, newEntry]);
+    setSubventionAmount('');
+    setSubventionReason('');
+  };
+
+  // NEW: Handle final subvention submission
+  const handleSubventionRefund = async () => {
+    if (subventionEntries.length === 0) {
+      alert("Please add at least one subvention entry");
+      return;
+    }
+
+    const totalSubventionAmount = subventionEntries.reduce((sum, entry) => sum + entry.amount, 0);
+    const totalExistingSubvention = calculateTotalSubventionRefund();
+    
+    if (totalSubventionAmount > finalPremiumAmount) {
+      alert("Total subvention amount cannot exceed final premium amount");
+      return;
+    }
+
+    try {
+      // Create subvention refund entries for each subvention entry
+      const subventionRefunds = subventionEntries.map(entry => ({
+        id: Date.now().toString() + '_subvention_refund_' + entry.id,
+        date: new Date().toISOString().split('T')[0],
+        description: `Subvention Refund - ${entry.reason}`,
+        amount: entry.amount,
+        mode: "Subvention Refund",
+        status: 'Completed',
+        transactionId: 'N/A',
+        bankName: 'N/A',
+        paymentMadeBy: "In House",
+        receiptDate: new Date().toISOString().split('T')[0],
+        payoutBy: "Customer",
+        type: "subvention_refund"
+      }));
+
+      const updatedLedger = [...paymentLedger, ...subventionRefunds];
+      
+      // Update auto credit status if needed
+      const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
+      
+      setPaymentLedger(updatedLedgerWithAutoCreditStatus);
+      
+      // Notify parent component about ledger update
+      if (onPaymentLedgerUpdate) {
+        onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
+      }
+      
+      // Update payment status and totals
+      const totalCustomerPayments = calculateTotalCustomerPayments();
+      const paymentStatus = calculateOverallPaymentStatus();
+
+      const paymentData = {
+        payment_info: {
+          paymentMadeBy: form.paymentMadeBy,
+          paymentMode: form.paymentMode || "",
+          paymentAmount: parseFloat(form.paymentAmount) || 0,
+          paymentDate: form.paymentDate || '',
+          transactionId: form.transactionId || '',
+          receiptDate: form.receiptDate || '',
+          bankName: form.bankName || '',
+          subvention_payment: "Subvention Refund Applied",
+          paymentStatus: paymentStatus,
+          totalPaidAmount: totalCustomerPayments,
+          totalSubventionRefund: totalSubventionAmount + totalExistingSubvention
+        },
+        payment_ledger: updatedLedgerWithAutoCreditStatus
+      };
+
+      console.log("💰 Adding subvention refunds:", paymentData);
+
+      // Save to backend
+      await handleSave(paymentData);
+      
+      // Clear subvention form and entries
+      setSubventionEntries([]);
+      setSubventionAmount('');
+      setSubventionReason('');
+      setShowSubventionForm(false);
+      
+      alert(`Subvention refunds totaling ₹${formatIndianNumber(totalSubventionAmount)} added successfully!`);
+      
+    } catch (error) {
+      console.error('Error saving subvention refund:', error);
+      alert('Error saving subvention refund. Please try again.');
+    }
+  };
+
+  // NEW: Remove individual subvention entry
+  const handleRemoveSubventionEntry = (entryId) => {
+    setSubventionEntries(prev => prev.filter(entry => entry.id !== entryId));
+  };
 
   // Check if auto credit entry exists and get its status
   const getAutoCreditEntry = () => {
@@ -4514,11 +5607,14 @@ const Payment = ({
   // Calculate auto credit status based on customer payments
   const calculateAutoCreditStatus = () => {
     const totalCustomerPayments = calculateTotalCustomerPayments();
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
+    
     const autoCreditEntry = getAutoCreditEntry();
     
     if (!autoCreditEntry) return 'Not Created';
     
-    if (totalCustomerPayments >= totalPremium) {
+    if (totalCustomerPayments >= netPremium) {
       return 'Completed';
     } else {
       return 'Pending';
@@ -4537,10 +5633,17 @@ const Payment = ({
           value: value
         }
       });
-    } else {
+    } else if (bankType === 'inHouse') {
       handleChange({
         target: {
           name: 'inHouseBankName',
+          value: value
+        }
+      });
+    } else if (bankType === 'autoCredit') {
+      handleChange({
+        target: {
+          name: 'autoCreditBankName',
           value: value
         }
       });
@@ -4569,10 +5672,17 @@ const Payment = ({
           value: bankName
         }
       });
-    } else {
+    } else if (bankType === 'inHouse') {
       handleChange({
         target: {
           name: 'inHouseBankName',
+          value: bankName
+        }
+      });
+    } else if (bankType === 'autoCredit') {
+      handleChange({
+        target: {
+          name: 'autoCreditBankName',
           value: bankName
         }
       });
@@ -4586,7 +5696,14 @@ const Payment = ({
   const handleBankKeyDown = (e, bankType = 'customer') => {
     if (!showSuggestions) return;
 
-    const bankFieldValue = bankType === 'customer' ? form.customerBankName : form.inHouseBankName;
+    let bankFieldValue;
+    if (bankType === 'customer') {
+      bankFieldValue = form.customerBankName;
+    } else if (bankType === 'inHouse') {
+      bankFieldValue = form.inHouseBankName;
+    } else if (bankType === 'autoCredit') {
+      bankFieldValue = form.autoCreditBankName;
+    }
 
     switch (e.key) {
       case 'ArrowDown':
@@ -4651,6 +5768,114 @@ const Payment = ({
     });
   };
 
+  // EDIT PAYMENT FUNCTIONS - FIXED TO ALLOW PROPER TEXT INPUT
+  const handleEditPayment = (payment) => {
+    console.log("Editing payment:", payment);
+    setEditingPayment(payment.id);
+    setEditFormData({
+      date: payment.date,
+      description: payment.description,
+      amount: payment.amount,
+      mode: payment.mode,
+      status: payment.status,
+      transactionId: payment.transactionId || '',
+      bankName: payment.bankName || '',
+      paymentMadeBy: payment.paymentMadeBy,
+      receiptDate: payment.receiptDate || payment.date,
+      payoutBy: payment.payoutBy
+    });
+  };
+
+  const handleEditFormChange = (e) => {
+    const { name, value, type } = e.target;
+    
+    // Handle different input types appropriately
+    if (type === 'number') {
+      setEditFormData(prev => ({
+        ...prev,
+        [name]: value === '' ? '' : parseFloat(value)
+      }));
+    } else {
+      setEditFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    console.log("Saving edited payment:", editFormData);
+    
+    if (!editFormData.amount || !editFormData.date || !editFormData.mode) {
+      alert("Please fill all required fields (Amount, Date, and Payment Mode)");
+      return;
+    }
+
+    try {
+      const updatedLedger = paymentLedger.map(payment => 
+        payment.id === editingPayment 
+          ? { 
+              ...payment, 
+              ...editFormData,
+              amount: typeof editFormData.amount === 'string' ? parseFloat(editFormData.amount) || 0 : editFormData.amount
+            }
+          : payment
+      );
+
+      console.log("Updated ledger after edit:", updatedLedger);
+
+      // Update auto credit status if needed
+      const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
+      
+      setPaymentLedger(updatedLedgerWithAutoCreditStatus);
+      
+      // Notify parent component about ledger update
+      if (onPaymentLedgerUpdate) {
+        onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
+      }
+      
+      // Update payment status and totals
+      const totalCustomerPayments = calculateTotalCustomerPayments();
+      const paymentStatus = calculateOverallPaymentStatus();
+
+      const paymentData = {
+        payment_info: {
+          paymentMadeBy: form.paymentMadeBy || "Customer",
+          paymentMode: form.paymentMode || "",
+          paymentAmount: parseFloat(form.paymentAmount) || 0,
+          paymentDate: form.paymentDate || '',
+          transactionId: form.transactionId || '',
+          receiptDate: form.receiptDate || '',
+          bankName: form.bankName || '',
+          subvention_payment: form.paymentMode?.includes('Subvention') ? form.paymentMode : "No Subvention",
+          paymentStatus: paymentStatus,
+          totalPaidAmount: totalCustomerPayments
+        },
+        payment_ledger: updatedLedgerWithAutoCreditStatus
+      };
+
+      console.log("Saving payment data after edit:", paymentData);
+
+      // Save to backend
+      await handleSave(paymentData);
+      
+      // Close edit form
+      setEditingPayment(null);
+      setEditFormData({});
+      
+      alert("Payment updated successfully!");
+      
+    } catch (error) {
+      console.error('Error saving edited payment:', error);
+      alert('Error saving edited payment. Please try again.');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPayment(null);
+    setEditFormData({});
+  };
+
   // Add payment to ledger function for Customer
   const addCustomerPaymentToLedger = async () => {
     if (!form.customerPaymentAmount || !form.customerPaymentDate || !form.customerPaymentMode) {
@@ -4696,7 +5921,7 @@ const Payment = ({
     
     // Update payment status and totals
     const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = totalCustomerPayments >= totalPremium ? 'Fully Paid' : 'Payment Pending';
+    const paymentStatus = calculateOverallPaymentStatus();
 
     const paymentData = {
       payment_info: {
@@ -4735,7 +5960,8 @@ const Payment = ({
 
   // Add payment to ledger function for In House
   const addInHousePaymentToLedger = async () => {
-    if (!form.inHousePaymentAmount || !form.inHousePaymentDate || !form.inHousePaymentMode) {
+    if (!form.inHousePaymentAmount || !form.inHousePaymentDate || !form.inHousePaymentMode || 
+        !form.autoCreditPaymentMode || !form.autoCreditPaymentDate) {
       alert("Please fill all required payment fields for In House payment");
       return;
     }
@@ -4756,17 +5982,20 @@ const Payment = ({
 
     // Add auto credit entry only if it doesn't exist
     if (!existingAutoCredit) {
+      const totalSubventionRefund = calculateTotalSubventionRefund();
+      const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
+      
       const autoCreditPayment = {
         id: Date.now().toString() + '_auto_credit',
-        date: form.inHousePaymentDate,
-        description: `Auto Credit to Insurance Company`,
-        amount: parseFloat(totalPremium),
-        mode: "Auto Credit",
+        date: form.autoCreditPaymentDate,
+        description: `Auto Credit to Insurance Company - ${form.autoCreditPaymentMode}`,
+        amount: netPremium,
+        mode: form.autoCreditPaymentMode,
         status: 'Pending', // Initially pending until customer pays full amount
-        transactionId: 'N/A',
-        bankName: 'N/A',
+        transactionId: form.autoCreditTransactionId || 'N/A',
+        bankName: form.autoCreditBankName || 'N/A',
         paymentMadeBy: "In House",
-        receiptDate: form.inHousePaymentDate,
+        receiptDate: form.autoCreditPaymentDate,
         payoutBy: "Auto Credit to Insurance Company",
         type: "auto_credit"
       };
@@ -4803,19 +6032,23 @@ const Payment = ({
     
     // Update payment status and totals
     const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = totalCustomerPayments >= totalPremium ? 'Fully Paid' : 'Payment Pending';
+    const paymentStatus = calculateOverallPaymentStatus();
 
     const paymentData = {
       payment_info: {
         paymentMadeBy: "In House",
-        autoCreditAmount: parseFloat(totalPremium),
+        autoCreditAmount: finalPremiumAmount,
+        autoCreditPaymentMode: form.autoCreditPaymentMode,
+        autoCreditPaymentDate: form.autoCreditPaymentDate,
+        autoCreditTransactionId: form.autoCreditTransactionId || '',
+        autoCreditBankName: form.autoCreditBankName || '',
         paymentMode: form.inHousePaymentMode,
         paymentAmount: paymentAmount,
         paymentDate: form.inHousePaymentDate,
         transactionId: form.inHouseTransactionId || '',
         receiptDate: form.inHouseReceiptDate || form.inHousePaymentDate,
         bankName: form.inHouseBankName || '',
-        subvention_payment: form.inHousePaymentMode.includes('Subvention') ? form.inHousePaymentMode : "No Subvention",
+        subvention_payment: "No Subvention", // In House payments don't have subvention
         paymentStatus: paymentStatus,
         totalPaidAmount: totalCustomerPayments
       },
@@ -4844,13 +6077,16 @@ const Payment = ({
   // Update auto credit status based on total customer payments
   const updateAutoCreditStatus = (ledger) => {
     const totalCustomerPayments = ledger
-      .filter(payment => payment.paymentMadeBy === "Customer")
+      .filter(payment => payment.paymentMadeBy === "Customer" && payment.type !== "subvention_refund")
       .reduce((sum, payment) => sum + payment.amount, 0);
+    
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
     
     const autoCreditEntry = ledger.find(payment => payment.type === "auto_credit");
     
     if (autoCreditEntry) {
-      const newStatus = totalCustomerPayments >= totalPremium ? 'Completed' : 'Pending';
+      const newStatus = totalCustomerPayments >= netPremium ? 'Completed' : 'Pending';
       
       return ledger.map(payment => 
         payment.type === "auto_credit" 
@@ -4883,7 +6119,7 @@ const Payment = ({
     
     // Update payment status and totals
     const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = totalCustomerPayments >= totalPremium ? 'Fully Paid' : 'Payment Pending';
+    const paymentStatus = calculateOverallPaymentStatus();
 
     const paymentData = {
       payment_info: {
@@ -4931,7 +6167,7 @@ const Payment = ({
   // Handle next step
   const handleNextStep = async () => {
     const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = totalCustomerPayments >= totalPremium ? 'Fully Paid' : 'Payment Pending';
+    const paymentStatus = calculateOverallPaymentStatus();
     
     const finalPaymentData = {
       payment_info: {
@@ -4989,11 +6225,17 @@ const Payment = ({
       "Bank Subvention", 
       "Dealer Subvention",
       "Manufacturer Subvention",
-      "Special Offer Subvention"
+      "Special Offer Subvention",
+      "Subvention" // Generic subvention
     ];
     
     return paymentLedger
-      .filter(payment => subventionModes.includes(payment.mode))
+      .filter(payment => 
+        subventionModes.some(mode => 
+          payment.mode?.toLowerCase().includes(mode.toLowerCase()) ||
+          payment.description?.toLowerCase().includes('subvention')
+        ) && payment.paymentMadeBy === "Customer"
+      )
       .reduce((sum, payment) => sum + payment.amount, 0);
   };
 
@@ -5020,9 +6262,14 @@ const Payment = ({
   const autoCreditExists = paymentLedger.some(payment => payment.type === "auto_credit");
   const autoCreditStatus = calculateAutoCreditStatus();
   const totalCustomerPayments = calculateTotalCustomerPayments();
+  const totalSubventionRefund = calculateTotalSubventionRefund();
   const customerRemainingAmount = calculateCustomerRemainingAmount();
   const paymentProgress = calculatePaymentProgress();
   const overallPaymentStatus = calculateOverallPaymentStatus();
+  const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
+
+  // NEW: Check if payout should be disabled
+  const isPayoutDisabled = customerRemainingAmount > 0;
 
   // Ensure form fields are properly initialized
   useEffect(() => {
@@ -5040,7 +6287,11 @@ const Payment = ({
       inHouseTransactionId: form.inHouseTransactionId || "",
       inHouseReceiptDate: form.inHouseReceiptDate || "",
       inHouseBankName: form.inHouseBankName || "",
-      autoCreditAmount: form.autoCreditAmount || totalPremium,
+      autoCreditPaymentMode: form.autoCreditPaymentMode || "",
+      autoCreditPaymentDate: form.autoCreditPaymentDate || "",
+      autoCreditTransactionId: form.autoCreditTransactionId || "",
+      autoCreditBankName: form.autoCreditBankName || "",
+      autoCreditAmount: form.autoCreditAmount || netPremium,
       subvention_payment: form.subvention_payment || "No Subvention"
     };
     
@@ -5055,10 +6306,10 @@ const Payment = ({
       }
     });
     
-    if (totalPremium) {
-      setAutoCreditAmount(totalPremium);
+    if (netPremium) {
+      setAutoCreditAmount(netPremium);
     }
-  }, [totalPremium]);
+  }, [finalPremiumAmount, totalSubventionRefund]);
 
   // Update ledger when propPaymentLedger changes
   useEffect(() => {
@@ -5096,6 +6347,511 @@ const Payment = ({
     );
   };
 
+  // UPDATED: Subvention Form Component with one-by-one entry
+  const SubventionForm = ({ 
+    setShowSubventionForm, 
+    calculateTotalSubventionRefund,
+    finalPremiumAmount,
+    formatIndianNumber 
+  }) => {
+    const [localSubventionEntries, setLocalSubventionEntries] = useState([]);
+    const [localSubventionAmount, setLocalSubventionAmount] = useState('');
+    const [localSubventionReason, setLocalSubventionReason] = useState('');
+
+    const totalSubventionAmount = localSubventionEntries.reduce((sum, entry) => sum + entry.amount, 0);
+    const totalExistingSubvention = calculateTotalSubventionRefund();
+    const remainingCapacity = finalPremiumAmount - totalExistingSubvention - totalSubventionAmount;
+
+    const handleAmountChange = (e) => {
+      const value = e.target.value;
+      setLocalSubventionAmount(value);
+    };
+
+    const handleAddSubventionEntry = () => {
+      const amount = parseFloat(localSubventionAmount);
+      if (!amount || amount <= 0) {
+        alert("Please enter a valid subvention amount");
+        return;
+      }
+
+      if (amount > remainingCapacity) {
+        alert(`Subvention amount cannot exceed remaining capacity of ₹${formatIndianNumber(remainingCapacity)}`);
+        return;
+      }
+
+      const newEntry = {
+        id: Date.now(),
+        amount: amount,
+        reason: localSubventionReason || 'No reason provided'
+      };
+      setLocalSubventionEntries([...localSubventionEntries, newEntry]);
+      setLocalSubventionAmount('');
+      setLocalSubventionReason('');
+    };
+
+    const handleRemoveSubventionEntry = (id) => {
+      setLocalSubventionEntries(localSubventionEntries.filter(entry => entry.id !== id));
+    };
+
+    const handleSubventionRefund = async () => {
+      if (localSubventionEntries.length === 0) {
+        alert("Please add at least one subvention entry");
+        return;
+      }
+
+      const totalSubventionAmount = localSubventionEntries.reduce((sum, entry) => sum + entry.amount, 0);
+      const totalExistingSubvention = calculateTotalSubventionRefund();
+      
+      if (totalSubventionAmount > finalPremiumAmount) {
+        alert("Total subvention amount cannot exceed final premium amount");
+        return;
+      }
+
+      try {
+        // Create subvention refund entries for each subvention entry
+        const subventionRefunds = localSubventionEntries.map(entry => ({
+          id: Date.now().toString() + '_subvention_refund_' + entry.id,
+          date: new Date().toISOString().split('T')[0],
+          description: `Subvention Refund - ${entry.reason}`,
+          amount: entry.amount,
+          mode: "Subvention Refund",
+          status: 'Completed',
+          transactionId: 'N/A',
+          bankName: 'N/A',
+          paymentMadeBy: "In House",
+          receiptDate: new Date().toISOString().split('T')[0],
+          payoutBy: "Customer",
+          type: "subvention_refund"
+        }));
+
+        const updatedLedger = [...paymentLedger, ...subventionRefunds];
+        
+        // Update auto credit status if needed
+        const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
+        
+        setPaymentLedger(updatedLedgerWithAutoCreditStatus);
+        
+        // Notify parent component about ledger update
+        if (onPaymentLedgerUpdate) {
+          onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
+        }
+        
+        // Update payment status and totals
+        const totalCustomerPayments = calculateTotalCustomerPayments();
+        const paymentStatus = calculateOverallPaymentStatus();
+
+        const paymentData = {
+          payment_info: {
+            paymentMadeBy: form.paymentMadeBy,
+            paymentMode: form.paymentMode || "",
+            paymentAmount: parseFloat(form.paymentAmount) || 0,
+            paymentDate: form.paymentDate || '',
+            transactionId: form.transactionId || '',
+            receiptDate: form.receiptDate || '',
+            bankName: form.bankName || '',
+            subvention_payment: "Subvention Refund Applied",
+            paymentStatus: paymentStatus,
+            totalPaidAmount: totalCustomerPayments,
+            totalSubventionRefund: totalSubventionAmount + totalExistingSubvention
+          },
+          payment_ledger: updatedLedgerWithAutoCreditStatus
+        };
+
+        console.log("💰 Adding subvention refunds:", paymentData);
+
+        // Save to backend
+        await handleSave(paymentData);
+        
+        // Clear subvention form and entries
+        setLocalSubventionEntries([]);
+        setLocalSubventionAmount('');
+        setLocalSubventionReason('');
+        setShowSubventionForm(false);
+        
+        alert(`Subvention refunds totaling ₹${formatIndianNumber(totalSubventionAmount)} added successfully!`);
+        
+      } catch (error) {
+        console.error('Error saving subvention refund:', error);
+        alert('Error saving subvention refund. Please try again.');
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <FaGift className="text-green-600" />
+            Add Subvention Refund (One by One)
+          </h3>
+          
+          <div className="space-y-4">
+            {/* Current Subvention Summary */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600">Existing Subvention:</p>
+                  <p className="font-semibold">₹{formatIndianNumber(totalExistingSubvention)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">New Subvention:</p>
+                  <p className="font-semibold text-green-600">₹{formatIndianNumber(totalSubventionAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Remaining Capacity:</p>
+                  <p className="font-semibold">₹{formatIndianNumber(remainingCapacity)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Add Subvention Entry Form */}
+            <div className="border rounded-lg p-4">
+              <h4 className="text-md font-semibold mb-3">Add Subvention Entry</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Subvention Amount (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    value={localSubventionAmount}
+                    onChange={handleAmountChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    placeholder="Enter amount"
+                    min="0"
+                    max={remainingCapacity}
+                    step="0.01"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Maximum: ₹{formatIndianNumber(remainingCapacity)}
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Reason for Subvention
+                  </label>
+                  <input
+                    type="text"
+                    value={localSubventionReason}
+                    onChange={(e) => setLocalSubventionReason(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    placeholder="e.g., Customer discount, Special offer, etc."
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleAddSubventionEntry}
+                  disabled={!localSubventionAmount || parseFloat(localSubventionAmount) <= 0 || parseFloat(localSubventionAmount) > remainingCapacity}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <FaPlus /> Add to List
+                </button>
+              </div>
+            </div>
+
+            {/* Subvention Entries List */}
+            {localSubventionEntries.length > 0 && (
+              <div className="border rounded-lg p-4">
+                <h4 className="text-md font-semibold mb-3">Subvention Entries ({localSubventionEntries.length})</h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {localSubventionEntries.map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                      <div>
+                        <p className="font-medium">₹{formatIndianNumber(entry.amount)}</p>
+                        <p className="text-sm text-gray-600">{entry.reason}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveSubventionEntry(entry.id)}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Remove entry"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Total New Subvention:</span>
+                    <span className="font-bold text-green-600">₹{formatIndianNumber(totalSubventionAmount)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Note:</strong> Subvention reduces the amount customer needs to pay. 
+                The auto credit amount will be adjusted automatically. Payout will be enabled only when customer fully pays the remaining amount.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center mt-6">
+            <div>
+              {localSubventionEntries.length > 0 && (
+                <p className="text-sm text-gray-600">
+                  Total: ₹{formatIndianNumber(totalSubventionAmount)} across {localSubventionEntries.length} entries
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSubventionForm(false);
+                  setLocalSubventionEntries([]);
+                  setLocalSubventionAmount('');
+                  setLocalSubventionReason('');
+                }}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubventionRefund}
+                disabled={localSubventionEntries.length === 0}
+                className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Apply Subvention Refunds
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // FIXED: Edit Form Component with proper text input handling
+  // FIXED: Edit Form Component with proper text input handling
+const EditPaymentForm = ({ payment, onSave, onCancel }) => {
+  const [localEditForm, setLocalEditForm] = useState(editFormData);
+
+  const handleLocalChange = (e) => {
+    const { name, value, type } = e.target;
+    
+    // Handle different input types appropriately
+    if (type === 'number') {
+      // For number inputs, store as string while typing, parse only on save
+      setLocalEditForm(prev => ({
+        ...prev,
+        [name]: value // Keep as string for free typing
+      }));
+    } else {
+      setLocalEditForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+    
+    // Also update the main editFormData for consistency
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? value : value // Keep numbers as strings for now
+    }));
+  };
+
+  const handleLocalSave = () => {
+    // Validate required fields
+    if (!localEditForm.amount || !localEditForm.date || !localEditForm.mode) {
+      alert("Please fill all required fields (Amount, Date, and Payment Mode)");
+      return;
+    }
+
+    // Parse amount to number only when saving
+    const amountToSave = parseFloat(localEditForm.amount);
+    if (isNaN(amountToSave) || amountToSave <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    const formDataToSave = {
+      ...localEditForm,
+      amount: amountToSave
+    };
+    
+    console.log("Saving local form:", formDataToSave);
+    onSave(formDataToSave);
+  };
+
+  // Get appropriate payment mode options based on who made the payment
+  const getPaymentModeOptions = () => {
+    return localEditForm.paymentMadeBy === "Customer" 
+      ? customerPaymentModeOptions 
+      : inHousePaymentModeOptions;
+  };
+
+  return (
+    <div className="fixed inset-0  bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg font-semibold mb-4">Edit Payment</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Date *</label>
+            <input
+              type="date"
+              name="date"
+              value={localEditForm.date}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Amount (₹) *</label>
+            <input
+              type="number"
+              name="amount"
+              value={localEditForm.amount}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+              min="0"
+              step="0.01"
+              placeholder="Enter amount"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Payment Mode *</label>
+            <select
+              name="mode"
+              value={localEditForm.mode}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            >
+              <option value="">Select payment mode</option>
+              {getPaymentModeOptions().map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+            <select
+              name="status"
+              value={localEditForm.status}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Transaction ID</label>
+            <input
+              type="text"
+              name="transactionId"
+              value={localEditForm.transactionId}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter transaction ID"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
+            <input
+              type="text"
+              name="bankName"
+              value={localEditForm.bankName}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter bank name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
+            <input
+              type="text"
+              name="description"
+              value={localEditForm.description}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter description"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Receipt Date</label>
+            <input
+              type="date"
+              name="receiptDate"
+              value={localEditForm.receiptDate}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Payment Made By</label>
+            <select
+              name="paymentMadeBy"
+              value={localEditForm.paymentMadeBy}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              disabled // Keep this disabled as we shouldn't change who made the payment
+            >
+              <option value="Customer">Customer</option>
+              <option value="In House">In House</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Payout By</label>
+            <select
+              name="payoutBy"
+              value={localEditForm.payoutBy}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="Customer">Customer</option>
+              <option value="In House">In House</option>
+              <option value="Auto Credit to Insurance Company">Auto Credit to Insurance Company</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Show current values for reference */}
+        <div className="mb-4 p-3 bg-gray-50 rounded-md">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Current Values:</h4>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div><span className="text-gray-600">Amount:</span> ₹{formatIndianNumber(payment.amount)}</div>
+            <div><span className="text-gray-600">Date:</span> {payment.date}</div>
+            <div><span className="text-gray-600">Mode:</span> {payment.mode}</div>
+            <div><span className="text-gray-600">Status:</span> {payment.status}</div>
+          </div>
+        </div>
+        
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleLocalSave}
+            className="px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start justify-between mb-6">
@@ -5107,8 +6863,16 @@ const Payment = ({
             7: Payment
           </h3>
         </div>
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${paymentStatusColor}`}>
-          {overallPaymentStatus}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowSubventionForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          >
+            <FaGift /> Add Subvention
+          </button>
+          <div className={`px-3 py-1 rounded-full text-sm font-medium ${paymentStatusColor}`}>
+            {overallPaymentStatus}
+          </div>
         </div>
       </div>
 
@@ -5116,31 +6880,52 @@ const Payment = ({
       <div className="bg-purple-50 border rounded-xl p-5 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <p className="text-sm text-gray-500">Total Premium:</p>
-            <p className="font-semibold text-lg">₹{formatIndianNumber(totalPremium || 0)}</p>
-            <p className="text-xs text-gray-500 mt-1">From accepted quote</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Total Customer Paid:</p>
-            <p className="font-semibold text-lg text-green-600">
-              ₹{formatIndianNumber(totalCustomerPayments)}
+            <p className="text-sm text-gray-500">Final Premium:</p>
+            <p className="font-semibold text-lg text-blue-600">₹{formatIndianNumber(finalPremiumAmount)}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {acceptedQuote ? `From ${acceptedQuote.insuranceCompany}` : 'From accepted quote'}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Subvention Amount:</p>
-            <p className="font-semibold text-lg text-blue-600">₹{formatIndianNumber(totalSubvention)}</p>
-            <p className="text-xs text-gray-500 mt-1">For payout calculation</p>
+            <p className="text-sm text-gray-500">Subvention:</p>
+            <p className="font-semibold text-lg text-green-600">₹{formatIndianNumber(totalSubventionRefund)}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Remaining Amount:</p>
-            <p className={`font-semibold text-lg ${customerRemainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-              ₹{formatIndianNumber(customerRemainingAmount)}
-            </p>
+            <p className="text-sm text-gray-500">Net Premium:</p>
+            <p className="font-semibold text-lg text-purple-600">₹{formatIndianNumber(netPremium)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Customer Paid:</p>
+            <p className="font-semibold text-lg text-blue-600">₹{formatIndianNumber(totalCustomerPayments)}</p>
           </div>
         </div>
         
+        {/* Subvention Breakdown */}
+        {totalSubventionRefund > 0 && (
+          <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-sm font-semibold text-green-800 mb-2">Subvention Applied</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Total Subvention:</span>
+                <span className="font-semibold text-green-600 ml-2">₹{formatIndianNumber(totalSubventionRefund)}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Original Premium:</span>
+                <span className="font-semibold ml-2">₹{formatIndianNumber(finalPremiumAmount)}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Customer Pays:</span>
+                <span className="font-semibold text-green-600 ml-2">₹{formatIndianNumber(netPremium)}</span>
+              </div>
+            </div>
+            <p className="text-xs text-green-600 mt-2">
+              ✅ Customer gets ₹{formatIndianNumber(totalSubventionRefund)} discount
+            </p>
+          </div>
+        )}
+        
         {/* Payout Distribution */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 p-3 bg-white rounded-lg border">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 p-3 bg-white rounded-lg border">
           <div className="text-center">
             <p className="text-sm text-gray-500">Auto Credit to Insurance Co.</p>
             <p className="font-semibold text-green-600">₹{formatIndianNumber(autoCreditTotal)}</p>
@@ -5148,7 +6933,7 @@ const Payment = ({
               <p className={`text-xs mt-1 ${
                 autoCreditStatus === 'Completed' ? 'text-green-600' : 'text-yellow-600'
               }`}>
-                {autoCreditStatus === 'Completed' ? '✓ Completed' : '⏳ Pending - Customer paid ₹' + formatIndianNumber(totalCustomerPayments) + '/' + formatIndianNumber(totalPremium)}
+                {autoCreditStatus === 'Completed' ? '✓ Completed' : '⏳ Pending - Customer paid ₹' + formatIndianNumber(totalCustomerPayments) + '/' + formatIndianNumber(netPremium)}
               </p>
             )}
           </div>
@@ -5158,15 +6943,21 @@ const Payment = ({
             <p className="text-xs text-gray-500 mt-1">All payments from customer</p>
           </div>
           <div className="text-center">
+            <p className="text-sm text-gray-500">Subvention Amount</p>
+            <p className="font-semibold text-purple-600">₹{formatIndianNumber(totalSubvention)}</p>
+            <p className="text-xs text-gray-500 mt-1">Paid by third parties</p>
+          </div>
+          <div className="text-center">
             <p className="text-sm text-gray-500">Received by In House</p>
-            <p className="font-semibold text-purple-600">₹{formatIndianNumber(inHouseReceived)}</p>
+            <p className="font-semibold text-orange-600">₹{formatIndianNumber(inHouseReceived)}</p>
+            <p className="text-xs text-gray-500 mt-1">Handled by in-house team</p>
           </div>
         </div>
         
-        {/* Progress Bar - Only considers customer payments */}
+        {/* Progress Bar - Adjusted for subvention */}
         <div className="mt-4">
           <div className="flex justify-between text-sm text-gray-600 mb-1">
-            <span>Payment Progress (Customer Payments Only)</span>
+            <span>Payment Progress (After Subvention)</span>
             <span>{Math.round(paymentProgress)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -5180,7 +6971,8 @@ const Payment = ({
             ></div>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Progress based only on customer payments: ₹{formatIndianNumber(totalCustomerPayments)} / ₹{formatIndianNumber(totalPremium)}
+            Progress: ₹{formatIndianNumber(totalCustomerPayments)} / ₹{formatIndianNumber(netPremium)} 
+            {totalSubventionRefund > 0 && ` (After ₹${formatIndianNumber(totalSubventionRefund)} subvention)`}
           </p>
         </div>
       </div>
@@ -5229,7 +7021,7 @@ const Payment = ({
                 }`}
               >
                 <option value="">Select payment mode</option>
-                {paymentModeOptions.map((option) => (
+                {customerPaymentModeOptions.map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -5242,7 +7034,7 @@ const Payment = ({
               <label className="block text-sm font-medium text-gray-600 mb-1">
                 Payment Amount (₹) *
               </label>
-              <INRCurrencyInput
+              <input
                 type="number"
                 name="customerPaymentAmount"
                 value={form.customerPaymentAmount || ""}
@@ -5252,10 +7044,11 @@ const Payment = ({
                 }`}
                 placeholder="0"
                 max={customerRemainingAmount}
+                step="0.01"
               />
               {errors.customerPaymentAmount && <p className="text-red-500 text-xs mt-1">{errors.customerPaymentAmount}</p>}
               <p className="text-xs text-gray-500 mt-1">
-                Maximum: ₹{formatIndianNumber(customerRemainingAmount)} (Customer can pay up to ₹{formatIndianNumber(totalPremium)} total)
+                Maximum: ₹{formatIndianNumber(customerRemainingAmount)} (Customer can pay up to ₹{formatIndianNumber(netPremium)} total)
               </p>
             </div>
 
@@ -5307,6 +7100,20 @@ const Payment = ({
               <BankSuggestions bankType="customer" />
               <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Receipt Date
+              </label>
+              <input
+                type="date"
+                name="customerReceiptDate"
+                value={form.customerReceiptDate || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+              <p className="text-xs text-gray-500 mt-1">Date when receipt was issued</p>
+            </div>
           </div>
 
           {/* Add Payment Button */}
@@ -5338,7 +7145,7 @@ const Payment = ({
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Amount (₹) *
                 </label>
-                <INRCurrencyInput
+                <input
                   type="number"
                   name="autoCreditAmount"
                   value={autoCreditAmount || ""}
@@ -5347,16 +7154,90 @@ const Payment = ({
                   placeholder="Enter auto credit amount"
                   readOnly
                 />
-                <p className="text-xs text-gray-500 mt-1">Auto credit amount equals total premium: ₹{formatIndianNumber(totalPremium)}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto credit amount: ₹{formatIndianNumber(netPremium)} 
+                  {totalSubventionRefund > 0 && ` (After ₹${formatIndianNumber(totalSubventionRefund)} subvention)`}
+                </p>
                 {autoCreditExists && (
                   <p className={`text-xs mt-1 ${
                     autoCreditStatus === 'Completed' ? 'text-green-600' : 'text-yellow-600'
                   }`}>
                     {autoCreditStatus === 'Completed' 
                       ? '✓ Auto credit completed - Customer paid full amount' 
-                      : `⏳ Auto credit pending - Customer paid ₹${formatIndianNumber(totalCustomerPayments)}/${formatIndianNumber(totalPremium)}`}
+                      : `⏳ Auto credit pending - Customer paid ₹${formatIndianNumber(totalCustomerPayments)}/${formatIndianNumber(netPremium)}`}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Payment Mode *
+                </label>
+                <select
+                  name="autoCreditPaymentMode"
+                  value={form.autoCreditPaymentMode || ""}
+                  onChange={handleChange}
+                  className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    errors.autoCreditPaymentMode ? "border-red-500" : "border-gray-300"
+                  }`}
+                >
+                  <option value="">Select payment mode</option>
+                  {inHousePaymentModeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                {errors.autoCreditPaymentMode && <p className="text-red-500 text-xs mt-1">{errors.autoCreditPaymentMode}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Payment Date *
+                </label>
+                <input
+                  type="date"
+                  name="autoCreditPaymentDate"
+                  value={form.autoCreditPaymentDate || ""}
+                  onChange={handleChange}
+                  className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    errors.autoCreditPaymentDate ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {errors.autoCreditPaymentDate && <p className="text-red-500 text-xs mt-1">{errors.autoCreditPaymentDate}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Transaction ID
+                </label>
+                <input
+                  type="text"
+                  name="autoCreditTransactionId"
+                  value={form.autoCreditTransactionId || ""}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Enter transaction ID (optional)"
+                />
+                <p className="text-xs text-gray-500 mt-1">Optional for cash payments</p>
+              </div>
+
+              <div className="bank-suggestions-container relative">
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Bank Name
+                </label>
+                <input
+                  type="text"
+                  name="autoCreditBankName"
+                  value={form.autoCreditBankName || ""}
+                  onChange={(e) => handleBankNameChange(e, 'autoCredit')}
+                  onKeyDown={(e) => handleBankKeyDown(e, 'autoCredit')}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Start typing bank name..."
+                  autoComplete="off"
+                />
+                <BankSuggestions bankType="autoCredit" />
+                <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
               </div>
             </div>
           </div>
@@ -5378,7 +7259,7 @@ const Payment = ({
                   }`}
                 >
                   <option value="">Select payment mode</option>
-                  {paymentModeOptions.map((option) => (
+                  {customerPaymentModeOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>
@@ -5391,7 +7272,7 @@ const Payment = ({
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Payment Amount (₹) *
                 </label>
-                <INRCurrencyInput
+                <input
                   type="number"
                   name="inHousePaymentAmount"
                   value={form.inHousePaymentAmount || ""}
@@ -5401,10 +7282,11 @@ const Payment = ({
                   }`}
                   placeholder="0"
                   max={customerRemainingAmount}
+                  step="0.01"
                 />
                 {errors.inHousePaymentAmount && <p className="text-red-500 text-xs mt-1">{errors.inHousePaymentAmount}</p>}
                 <p className="text-xs text-gray-500 mt-1">
-                  Maximum: ₹{formatIndianNumber(customerRemainingAmount)} (Customer can pay up to ₹{formatIndianNumber(totalPremium)} total)
+                  Maximum: ₹{formatIndianNumber(customerRemainingAmount)} (Customer can pay up to ₹{formatIndianNumber(netPremium)} total)
                 </p>
               </div>
 
@@ -5456,6 +7338,20 @@ const Payment = ({
                 <BankSuggestions bankType="inHouse" />
                 <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Receipt Date
+                </label>
+                <input
+                  type="date"
+                  name="inHouseReceiptDate"
+                  value={form.inHouseReceiptDate || ""}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">Date when receipt was issued</p>
+              </div>
             </div>
           </div>
 
@@ -5464,7 +7360,8 @@ const Payment = ({
             <button
               type="button"
               onClick={addInHousePaymentToLedger}
-              disabled={!form.inHousePaymentAmount || !form.inHousePaymentDate || !form.inHousePaymentMode}
+              disabled={!form.inHousePaymentAmount || !form.inHousePaymentDate || !form.inHousePaymentMode || 
+                       !form.autoCreditPaymentMode || !form.autoCreditPaymentDate}
               className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <FaPlus /> Add Customer Payment via In House
@@ -5508,10 +7405,15 @@ const Payment = ({
                 {paymentLedger.map((payment) => (
                   <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="p-3 text-gray-700">{payment.date}</td>
-                    <td className="p-3 text-gray-700">{payment.description}</td>
+                    <td className="p-3 text-gray-700">
+                      {payment.description}
+                      {payment.type === "subvention_refund" && (
+                        <span className="ml-2 px-1 bg-green-100 text-green-800 text-xs rounded">Subvention</span>
+                      )}
+                    </td>
                     <td className="p-3 text-gray-700">
                       {payment.mode}
-                      {payment.mode.includes('Subvention') && (
+                      {payment.mode.includes('Subvention') && !payment.type === "subvention_refund" && (
                         <span className="ml-2 px-1 bg-blue-100 text-blue-800 text-xs rounded">Subvention</span>
                       )}
                     </td>
@@ -5527,7 +7429,11 @@ const Payment = ({
                         {payment.payoutBy}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-green-600 font-medium">₹{formatIndianNumber(payment.amount)}</td>
+                    <td className={`p-3 text-right font-medium ${
+                      payment.type === "subvention_refund" ? "text-green-600" : "text-blue-600"
+                    }`}>
+                      {payment.type === "subvention_refund" ? '-' : ''}₹{formatIndianNumber(payment.amount)}
+                    </td>
                     <td className="p-3">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
                         payment.status === 'Completed' 
@@ -5538,13 +7444,22 @@ const Payment = ({
                       </span>
                     </td>
                     <td className="p-3 text-center">
-                      <button
-                        onClick={() => deletePaymentFromLedger(payment.id)}
-                        className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
-                        title="Delete payment"
-                      >
-                        <FaTrash /> Delete
-                      </button>
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => handleEditPayment(payment)}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                          title="Edit payment"
+                        >
+                          <FaEdit /> Edit
+                        </button>
+                        <button
+                          onClick={() => deletePaymentFromLedger(payment.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                          title="Delete payment"
+                        >
+                          <FaTrash /> Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -5574,6 +7489,25 @@ const Payment = ({
         )}
       </div>
 
+      {/* Subvention Form Modal */}
+      {showSubventionForm && (
+        <SubventionForm
+          setShowSubventionForm={setShowSubventionForm}
+          calculateTotalSubventionRefund={calculateTotalSubventionRefund}
+          finalPremiumAmount={finalPremiumAmount}
+          formatIndianNumber={formatIndianNumber}
+        />
+      )}
+
+      {/* Edit Payment Modal */}
+      {editingPayment && (
+        <EditPaymentForm
+          payment={paymentLedger.find(p => p.id === editingPayment)}
+          onSave={handleSaveEdit}
+          onCancel={handleCancelEdit}
+        />
+      )}
+
       {/* Next Step Button */}
       <div className="mt-6 flex justify-between items-center">
         <div className="text-sm text-gray-600">
@@ -5590,7 +7524,7 @@ const Payment = ({
         
         <button
           onClick={handleNextStep}
-          disabled={paymentLedger.length === 0 || isSaving}
+          disabled={isPayoutDisabled || paymentLedger.length === 0 || isSaving}
           className="inline-flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSaving ? "Saving..." : "Proceed to Payout"} 
@@ -5600,6 +7534,7 @@ const Payment = ({
     </div>
   );
 };
+
 // ================== STEP 8: Payout Details ==================
 const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, acceptedQuote, totalPremium, paymentLedger = [] }) => {
   const [showLossWarning, setShowLossWarning] = useState(false);
@@ -6265,11 +8200,11 @@ const payoutValidation = (form, acceptedQuote) => {
   }
 
   // Subvention validation
-  if (!form.subVention) {
-    errors.subVention = "Subvention amount is required";
-  } else if (parseFloat(form.subVention) < 0) {
-    errors.subVention = "Subvention cannot be negative";
-  }
+  // if (!form.subVention) {
+  //   errors.subVention = "Subvention amount is required";
+  // } else if (parseFloat(form.subVention) < 0) {
+  //   errors.subVention = "Subvention cannot be negative";
+  // }
 
   // Net Amount calculation validation - REMOVED non-negative constraint
   if (form.odAddonAmount && form.odAddonPercentage && form.subVention) {
@@ -6308,7 +8243,6 @@ const payoutValidation = (form, acceptedQuote) => {
   return errors;
 };
 // ================== MAIN COMPONENT ==================
-
 const NewPolicyPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -6316,6 +8250,7 @@ const NewPolicyPage = () => {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     buyer_type: "individual",
+    vehicleType: "", // NEW: Added vehicleType field
     insurance_category: "motor",
     status: "draft",
     ts: Date.now(),
@@ -6431,6 +8366,57 @@ const NewPolicyPage = () => {
     "Payout"
   ];
 
+  // NEW: Function to get actual steps based on vehicle type
+  const getSteps = () => {
+    if (form.vehicleType === "new") {
+      return steps.filter(step => step !== "Previous Policy");
+    }
+    return steps;
+  };
+
+  // NEW: Function to get actual step number for navigation
+  const getActualStep = (displayStep) => {
+    if (form.vehicleType === "new" && displayStep >= 3) {
+      return displayStep + 1;
+    }
+    return displayStep;
+  };
+
+  // NEW: Function to get display step number
+  const getDisplayStep = (actualStep) => {
+    if (form.vehicleType === "new" && actualStep >= 3) {
+      return actualStep - 1;
+    }
+    return actualStep;
+  };
+
+  // NEW: Function to handle step click
+  const handleStepClick = (clickedStep) => {
+    if (isSaving || isCompleted) return;
+    
+    const actualStep = getActualStep(clickedStep);
+    
+    // Validate if we can navigate to this step
+    if (clickedStep < getDisplayStep(step)) {
+      // Going back - always allowed
+      setStep(actualStep);
+      setErrors({});
+      setSaveMessage("");
+    } else if (clickedStep === getDisplayStep(step)) {
+      // Current step - do nothing
+      return;
+    } else {
+      // Going forward - validate current step first
+      if (validateCurrentStep()) {
+        setStep(actualStep);
+        setErrors({});
+        setSaveMessage("");
+      } else {
+        setSaveMessage("❌ Please fix the validation errors before proceeding");
+      }
+    }
+  };
+
   // Enhanced function to calculate total premium
   const getTotalPremium = () => {
     console.log("🔍 Calculating total premium...");
@@ -6477,7 +8463,8 @@ const NewPolicyPage = () => {
     console.log("   - form.totalPremium:", form.totalPremium);
     console.log("   - form.insuranceQuotes:", form.insuranceQuotes);
     console.log("   - Calculated totalPremium:", totalPremium);
-  }, [acceptedQuote, form.premium, form.totalPremium, form.insuranceQuotes, totalPremium]);
+    console.log("   - Vehicle Type:", form.vehicleType);
+  }, [acceptedQuote, form.premium, form.totalPremium, form.insuranceQuotes, totalPremium, form.vehicleType]);
 
   // Debug effect for payment ledger
   useEffect(() => {
@@ -6534,7 +8521,8 @@ const NewPolicyPage = () => {
         ncb: "",
         duration: "",
         insuranceQuotes: [],
-        previousClaimTaken: "no"
+        previousClaimTaken: "no",
+        vehicleType: "" // Reset vehicle type for new case
       }));
       
       setAcceptedQuote(null);
@@ -6554,7 +8542,7 @@ const NewPolicyPage = () => {
     }
   }, [id]);
 
-  // Enhanced function to fetch policy data for editing with proper mapping
+  // Enhanced function to fetch policy data for editing with proper mapping including vehicleType
   const fetchPolicyData = async (policyId) => {
     setLoadingPolicy(true);
     try {
@@ -6577,10 +8565,10 @@ const NewPolicyPage = () => {
       const documentsObject = {};
       const documentTagsObject = {};
       if (actualData.documents && Array.isArray(actualData.documents)) {
-        actualData.documents.forEach((docUrl, index) => {
+        actualData.documents.forEach((doc, index) => {
           const docId = `doc_${index}`;
-          documentsObject[docId] = docUrl;
-          documentTagsObject[docId] = docUrl.tag||""; // Initialize tags as empty
+          documentsObject[docId] = doc;
+          documentTagsObject[docId] = doc.tag || ""; // Initialize tags as empty
         });
       }
 
@@ -6593,10 +8581,11 @@ const NewPolicyPage = () => {
         }
       }
 
-      // Create a clean transformed data object with ALL fields properly mapped
+      // Create a clean transformed data object with ALL fields properly mapped including vehicleType
       const transformedData = {
         // Basic info
         buyer_type: actualData.buyer_type || "individual",
+        vehicleType: actualData.vehicleType || "used", // NEW: Default to used for backward compatibility
         insurance_category: actualData.insurance_category || "motor",
         status: actualData.status || "draft",
         
@@ -6708,6 +8697,7 @@ const NewPolicyPage = () => {
       
       console.log("✅ Transformed Form Data:", transformedData);
       console.log("📋 Previous Claim Taken:", transformedData.previousClaimTaken);
+      console.log("🚗 Vehicle Type:", transformedData.vehicleType);
       console.log("💰 Insurance Quotes after transformation:", transformedData.insuranceQuotes);
       console.log("📄 Documents as object:", transformedData.documents);
       console.log("💳 Payment Info:", {
@@ -6749,10 +8739,10 @@ const NewPolicyPage = () => {
     }
   };
 
-  // Enhanced handleChange to properly handle all field types including documents object
+  // Enhanced handleChange to properly handle all field types including vehicleType
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-   if (errors[name]) {
+    if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
     }
     
@@ -6812,6 +8802,12 @@ const NewPolicyPage = () => {
       return;
     }
     
+    // Handle vehicleType change - special logic
+    if (name === "vehicleType") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
     setForm((f) => ({ ...f, [name]: value }));
   };
 
@@ -6855,7 +8851,7 @@ const NewPolicyPage = () => {
     }));
   };
 
-  // Validation functions
+  // Validation functions - UPDATED to handle vehicle type
   const validateCurrentStep = () => {
     let stepErrors = {};
     
@@ -6867,7 +8863,10 @@ const NewPolicyPage = () => {
         stepErrors = validationRules.validateStep2(form);
         break;
       case 3:
-        stepErrors = previousPolicyValidation(form);
+        // Only validate previous policy for used cars
+        if (form.vehicleType === "used") {
+          stepErrors = previousPolicyValidation(form);
+        }
         break;
       case 4:
         stepErrors = validationRules.validateStep3(form, acceptedQuote);
@@ -6897,6 +8896,88 @@ const NewPolicyPage = () => {
     return Object.keys(stepErrors).length === 0;
   };
 
+  // ============ FIXED DATA SANITIZATION FUNCTIONS ============
+  const sanitizeDataForAPI = (data) => {
+    const sanitized = JSON.parse(JSON.stringify(data, (key, value) => {
+      // Remove undefined, null, and empty strings
+      if (value === undefined || value === null || value === '') {
+        return undefined;
+      }
+      // Ensure numbers are properly formatted
+      if (typeof value === 'number' && isNaN(value)) {
+        return 0;
+      }
+      return value;
+    }));
+
+    // Clean up insurance quotes to remove any circular references or React components
+    if (sanitized.insurance_quotes && Array.isArray(sanitized.insurance_quotes)) {
+      sanitized.insurance_quotes = sanitized.insurance_quotes.map(quote => ({
+        id: quote.id || `quote_${Date.now()}`,
+        insuranceCompany: quote.insuranceCompany || '',
+        coverageType: quote.coverageType || 'comprehensive',
+        idv: parseFloat(quote.idv) || 0,
+        policyDuration: parseInt(quote.policyDuration) || 1,
+        ncbDiscount: parseInt(quote.ncbDiscount) || 0,
+        odAmount: parseFloat(quote.odAmount) || 0,
+        thirdPartyAmount: parseFloat(quote.thirdPartyAmount) || 0,
+        addOnsAmount: parseFloat(quote.addOnsAmount) || 0,
+        premium: parseFloat(quote.premium) || 0,
+        gstAmount: parseFloat(quote.gstAmount) || 0,
+        totalPremium: parseFloat(quote.totalPremium) || 0,
+        addOnsPremium: parseFloat(quote.addOnsPremium) || 0,
+        selectedAddOns: quote.selectedAddOns || {},
+        includedAddOns: quote.includedAddOns || [],
+        accepted: Boolean(quote.accepted),
+        createdAt: quote.createdAt || new Date().toISOString(),
+        // Remove any React component references
+        companyLogo: undefined,
+        companyFallbackLogo: undefined,
+        companyColor: undefined,
+        companyBgColor: undefined
+      }));
+    }
+
+    // Clean up payment ledger
+    if (sanitized.payment_ledger && Array.isArray(sanitized.payment_ledger)) {
+      sanitized.payment_ledger = sanitized.payment_ledger.map(payment => ({
+        id: payment.id || `payment_${Date.now()}`,
+        date: payment.date || '',
+        description: payment.description || '',
+        amount: parseFloat(payment.amount) || 0,
+        mode: payment.mode || '',
+        status: payment.status || 'Completed',
+        transactionId: payment.transactionId || '',
+        bankName: payment.bankName || '',
+        paymentMadeBy: payment.paymentMadeBy || 'Customer',
+        receiptDate: payment.receiptDate || payment.date || '',
+        payoutBy: payment.payoutBy || 'Customer',
+        type: payment.type || 'customer_payment'
+      }));
+    }
+
+    // Clean up documents
+    if (sanitized.documents && Array.isArray(sanitized.documents)) {
+      sanitized.documents = sanitized.documents.map(doc => {
+        if (typeof doc === 'string') {
+          return { url: doc, tag: '' };
+        }
+        return {
+          url: doc.url || '',
+          name: doc.name || '',
+          originalName: doc.originalName || '',
+          extension: doc.extension || '',
+          type: doc.type || '',
+          size: doc.size || 0,
+          uploadedAt: doc.uploadedAt || new Date().toISOString(),
+          tag: doc.tag || ''
+        };
+      });
+    }
+
+    return sanitized;
+  };
+
   const createPolicy = async () => {
     try {
       setIsSaving(true);
@@ -6923,6 +9004,7 @@ const NewPolicyPage = () => {
 
       const policyData = {
         buyer_type: form.buyer_type || "individual",
+        vehicleType: form.vehicleType || "used", // NEW: Include vehicleType
         customer_details: customerDetails,
         nominee: {
           name: form.nomineeName || "",
@@ -6941,12 +9023,16 @@ const NewPolicyPage = () => {
         policyPrefilled: form.policyPrefilled || false // ADDED: policyPrefilled field
       };
 
-      console.log("📝 Creating policy with data:", policyData);
+      // Sanitize data before sending
+      const sanitizedData = sanitizeDataForAPI(policyData);
+      
+      console.log("📝 Creating policy with sanitized data:", sanitizedData);
 
-      const response = await axios.post(`${API_BASE_URL}/policies`, policyData, {
+      const response = await axios.post(`${API_BASE_URL}/policies`, sanitizedData, {
         headers: {
           "Content-Type": "application/json"
-        }
+        },
+        timeout: 30000
       });
       
       if (response.data && response.data.id) {
@@ -6975,7 +9061,7 @@ const NewPolicyPage = () => {
     }
   };
 
-  // ENHANCED updatePolicy function with payment data support
+  // ENHANCED updatePolicy function with vehicleType support and data sanitization
   const updatePolicy = async (overrideData = null) => {
     try {
       setIsSaving(true);
@@ -7001,7 +9087,7 @@ const NewPolicyPage = () => {
         console.log("🔄 Using override data for update:", overrideData);
         updateData = overrideData;
       } else {
-        // Standard step-based update data - UPDATED with all missing fields
+        // Standard step-based update data - UPDATED with vehicleType
         switch (step) {
           case 1:
             // Prepare customer details based on buyer type - UPDATED with all fields
@@ -7026,6 +9112,7 @@ const NewPolicyPage = () => {
 
             updateData = {
               buyer_type: form.buyer_type,
+              vehicleType: form.vehicleType, // NEW: Include vehicleType
               customer_details: customerDetails,
               nominee: {
                 name: form.nomineeName || "",
@@ -7050,32 +9137,36 @@ const NewPolicyPage = () => {
                 chassisNo: form.chassisNo || "",
                 makeMonth: form.makeMonth || "",
                 makeYear: form.makeYear || ""
-              }
+              },
+              vehicleType: form.vehicleType // NEW: Include vehicleType in vehicle details update
             };
             break;
           case 3:
-            updateData = {
-              previous_policy: {
-                insuranceCompany: form.previousInsuranceCompany || "",
-                policyNumber: form.previousPolicyNumber || "",
-                policyType: form.previousPolicyType || "",
-                issueDate: form.previousIssueDate || "",
-                policyStartDate: form.previousPolicyStartDate || "",
-                policyDuration: form.previousPolicyDuration || "",
-                policyEndDate: form.previousPolicyEndDate || "",
-                dueDate: form.previousDueDate || "",
-                claimTakenLastYear: form.previousClaimTaken || "no",
-                ncbDiscount: form.previousNcbDiscount || 0
-              }
-            };
+            // Only update previous policy for used cars
+            if (form.vehicleType === "used") {
+              updateData = {
+                previous_policy: {
+                  insuranceCompany: form.previousInsuranceCompany || "",
+                  policyNumber: form.previousPolicyNumber || "",
+                  policyType: form.previousPolicyType || "",
+                  issueDate: form.previousIssueDate || "",
+                  policyStartDate: form.previousPolicyStartDate || "",
+                  policyDuration: form.previousPolicyDuration || "",
+                  policyEndDate: form.previousPolicyEndDate || "",
+                  dueDate: form.previousDueDate || "",
+                  claimTakenLastYear: form.previousClaimTaken || "no",
+                  ncbDiscount: parseFloat(form.previousNcbDiscount) || 0
+                }
+              };
+            }
             break;
           case 4:
             updateData = {
               insurance_quote: {
                 insurer: form.insurer || "",
                 coverageType: form.coverageType || "",
-                premium: form.premium || "",
-                idv: form.idv || "",
+                premium: parseFloat(form.premium) || 0,
+                idv: parseFloat(form.idv) || 0,
                 ncb: form.ncb || "",
                 duration: form.duration || ""
               }
@@ -7091,37 +9182,34 @@ const NewPolicyPage = () => {
                 issueDate: form.issueDate || "",
                 policyStartDate: form.policyStartDate || "", // ADDED: missing field
                 dueDate: form.dueDate || "",
-                ncbDiscount: form.ncbDiscount || "",
+                ncbDiscount: parseFloat(form.ncbDiscount) || 0,
                 insuranceDuration: form.insuranceDuration || "",
-                idvAmount: form.idvAmount || "",
-                totalPremium: form.totalPremium || ""
+                idvAmount: parseFloat(form.idvAmount) || 0,
+                totalPremium: parseFloat(form.totalPremium) || 0
               }
             };
             break;
           case 6:
-            // Convert documents object back to array for API
-            const docs = Object.keys(form.documents || {});
-            let documentsArray = [];
-            for(let i=0;i<docs.length;i++){
-              const id = docs[i];
-              let doc = (form.documents || {})[id];
-              doc.tag = form.documentTags[id];
-              documentsArray.push(doc);
-            }
+            // FIXED: Convert documents object to array properly
+            const documentsArray = Object.entries(form.documents || {}).map(([docId, doc]) => ({
+              ...doc,
+              id: docId,
+              tag: form.documentTags?.[docId] || ""
+            }));
             updateData = {
               documents: documentsArray
             };
             break;
           case 7:
             // FIXED: Payment data structure with ledger
-            const totalPaid = paymentLedger.reduce((sum, payment) => sum + payment.amount, 0);
+            const totalPaid = paymentLedger.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
             const paymentStatus = totalPaid >= totalPremium ? 'Fully Paid' : 'Payment Pending';
             
             updateData = {
               payment_info: {
                 paymentMadeBy: form.paymentMadeBy || "",
                 paymentMode: form.paymentMode || "",
-                paymentAmount: form.paymentAmount || "",
+                paymentAmount: parseFloat(form.paymentAmount) || 0,
                 paymentDate: form.paymentDate || "",
                 transactionId: form.transactionId || "",
                 receiptDate: form.receiptDate || "",
@@ -7136,13 +9224,13 @@ const NewPolicyPage = () => {
           case 8:
             updateData = {
               payout: {
-                netPremium: form.netPremium || 0,
-                odAmount: form.odAmount || 0,
-                ncbAmount: form.ncbAmount || 0,
-                subVention: form.subVention || 0,
-                odAddonPercentage: form.odAddonPercentage || 10, // ADDED: missing field
-                odAddonAmount: form.odAddonAmount || 0, // ADDED: missing field
-                netAmount: form.netAmount || 0 // ADDED: missing field
+                netPremium: parseFloat(form.netPremium) || 0,
+                odAmount: parseFloat(form.odAmount) || 0,
+                ncbAmount: parseFloat(form.ncbAmount) || 0,
+                subVention: parseFloat(form.subVention) || 0,
+                odAddonPercentage: parseFloat(form.odAddonPercentage) || 10, // ADDED: missing field
+                odAddonAmount: parseFloat(form.odAddonAmount) || 0, // ADDED: missing field
+                netAmount: parseFloat(form.netAmount) || 0 // ADDED: missing field
               },
               payment_ledger: paymentLedger,
             };
@@ -7163,31 +9251,30 @@ const NewPolicyPage = () => {
       }
 
       const totalPaidAmount = paymentLedger.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
-      const currentPaymentAmount = parseFloat(form.paymentAmount) || 0;
       const remainingAmount = (parseFloat(totalPremium) || 0) - totalPaidAmount;
-      if(remainingAmount==0 && totalPaidAmount>0){
+      if (remainingAmount === 0 && totalPaidAmount > 0) {
         updateData.status = 'payment completed';
       }
 
+      // Sanitize data before sending
+      const sanitizedUpdateData = sanitizeDataForAPI(updateData);
+
       // DEBUG: Log exactly what's being sent
-      console.log("🚀 SENDING TO BACKEND:", {
+      console.log("🚀 SENDING SANITIZED DATA TO BACKEND:", {
         policyId,
-        updateData,
-        hasPaymentInfo: !!updateData.payment_info,
-        hasPaymentLedger: !!updateData.payment_ledger,
-        paymentLedgerLength: updateData.payment_ledger?.length || 0,
-        insuranceQuotesLength: updateData.insurance_quotes?.length || 0
+        updateData: sanitizedUpdateData,
+        hasPaymentInfo: !!sanitizedUpdateData.payment_info,
+        hasPaymentLedger: !!sanitizedUpdateData.payment_ledger,
+        paymentLedgerLength: sanitizedUpdateData.payment_ledger?.length || 0,
+        insuranceQuotesLength: sanitizedUpdateData.insurance_quotes?.length || 0,
+        vehicleType: form.vehicleType
       });
 
-      console.log("💰 Sending insurance_quotes to API:", updateData.insurance_quotes);
-      console.log("💰 Sending payment_ledger to API:", updateData.payment_ledger || paymentLedger);
-      console.log("📊 Previous Claim Status:", form.previousClaimTaken);
-      console.log("💳 Payment Data being sent:", updateData.payment_info);
-
-      const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, updateData, {
+      const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedUpdateData, {
         headers: {
           "Content-Type": "application/json"
-        }
+        },
+        timeout: 30000
       });
       
       console.log("✅ API Response:", response.data);
@@ -7290,14 +9377,19 @@ const NewPolicyPage = () => {
       };
 
       // Convert documents object to array for final save
-      const documentsArray = Object.values(form.documents || {});
+      const documentsArray = Object.entries(form.documents || {}).map(([docId, doc]) => ({
+        ...doc,
+        id: docId,
+        tag: form.documentTags?.[docId] || ""
+      }));
 
       // Calculate final payment status
-      const totalPaid = paymentLedger.reduce((sum, payment) => sum + payment.amount, 0);
+      const totalPaid = paymentLedger.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
       const paymentStatus = totalPaid >= totalPremium ? 'Fully Paid' : 'Payment Pending';
 
       const finalData = {
         buyer_type: form.buyer_type,
+        vehicleType: form.vehicleType, // NEW: Include vehicleType
         customer_details: customerDetails,
         nominee: {
           name: form.nomineeName,
@@ -7318,7 +9410,7 @@ const NewPolicyPage = () => {
           makeMonth: form.makeMonth,
           makeYear: form.makeYear
         },
-        previous_policy: {
+        previous_policy: form.vehicleType === "used" ? {
           insuranceCompany: form.previousInsuranceCompany || "",
           policyNumber: form.previousPolicyNumber || "",
           policyType: form.previousPolicyType || "",
@@ -7328,13 +9420,13 @@ const NewPolicyPage = () => {
           policyEndDate: form.previousPolicyEndDate || "",
           dueDate: form.previousDueDate || "",
           claimTakenLastYear: form.previousClaimTaken || "no",
-          ncbDiscount: form.previousNcbDiscount || 0
-        },
+          ncbDiscount: parseFloat(form.previousNcbDiscount) || 0
+        } : {},
         insurance_quote: {
           insurer: form.insurer,
           coverageType: form.coverageType,
-          premium: form.premium,
-          idv: form.idv,
+          premium: parseFloat(form.premium) || 0,
+          idv: parseFloat(form.idv) || 0,
           ncb: form.ncb,
           duration: form.duration
         },
@@ -7347,16 +9439,16 @@ const NewPolicyPage = () => {
           issueDate: form.issueDate,
           policyStartDate: form.policyStartDate,          
           dueDate: form.dueDate,
-          ncbDiscount: form.ncbDiscount,
+          ncbDiscount: parseFloat(form.ncbDiscount) || 0,
           insuranceDuration: form.insuranceDuration,
-          idvAmount: form.idvAmount,
-          totalPremium: form.totalPremium
+          idvAmount: parseFloat(form.idvAmount) || 0,
+          totalPremium: parseFloat(form.totalPremium) || 0
         },
         documents: documentsArray,
         payment_info: {
           paymentMadeBy: form.paymentMadeBy,
           paymentMode: form.paymentMode,
-          paymentAmount: form.paymentAmount,
+          paymentAmount: parseFloat(form.paymentAmount) || 0,
           paymentDate: form.paymentDate,
           transactionId: form.transactionId,
           receiptDate: form.receiptDate,
@@ -7367,13 +9459,13 @@ const NewPolicyPage = () => {
         },
         payment_ledger: paymentLedger,
         payout: {
-          netPremium: form.netPremium || 0,
-          odAmount: form.odAmount || 0,
-          ncbAmount: form.ncbAmount || 0,
-          subVention: form.subVention || 0,
-          odAddonPercentage: form.odAddonPercentage || 10, // ADDED: missing field
-          odAddonAmount: form.odAddonAmount || 0, // ADDED: missing field
-          netAmount: form.netAmount || 0 // ADDED: missing field
+          netPremium: parseFloat(form.netPremium) || 0,
+          odAmount: parseFloat(form.odAmount) || 0,
+          ncbAmount: parseFloat(form.ncbAmount) || 0,
+          subVention: parseFloat(form.subVention) || 0,
+          odAddonPercentage: parseFloat(form.odAddonPercentage) || 10, // ADDED: missing field
+          odAddonAmount: parseFloat(form.odAddonAmount) || 0, // ADDED: missing field
+          netAmount: parseFloat(form.netAmount) || 0 // ADDED: missing field
         },
         status: "completed",
         completed_at: Date.now(),
@@ -7382,15 +9474,17 @@ const NewPolicyPage = () => {
         policyPrefilled: form.policyPrefilled || false // ADDED: missing field
       };
 
-      console.log(`✅ Finalizing policy with previous claim:`, form.previousClaimTaken);
-      console.log(`✅ Finalizing policy ${policyId} with complete data:`, finalData);
-      console.log(`💰 Final payment ledger:`, paymentLedger);
-      console.log(`💳 Final payment info:`, finalData.payment_info);
+      // Sanitize final data
+      const sanitizedFinalData = sanitizeDataForAPI(finalData);
 
-      const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, finalData, {
+      console.log(`✅ Finalizing policy with vehicle type:`, form.vehicleType);
+      console.log(`✅ Finalizing policy ${policyId} with complete data:`, sanitizedFinalData);
+
+      const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedFinalData, {
         headers: {
           "Content-Type": "application/json"
-        }
+        },
+        timeout: 30000
       });
 
       setSaveMessage("✅ Policy completed successfully! Redirecting to policies page...");
@@ -7409,6 +9503,15 @@ const NewPolicyPage = () => {
   };
 
   const nextStep = async () => {
+    // NEW: Skip step 3 for new cars
+    if (form.vehicleType === "new" && step === 2) {
+      // Skip directly to step 4 (Insurance Quotes) from step 2
+      setStep(4);
+      setErrors({});
+      setSaveMessage("");
+      return;
+    }
+
     if (step === steps.length) {
       await handleFinish();
       return;
@@ -7421,7 +9524,9 @@ const NewPolicyPage = () => {
 
     try {
       await updatePolicy();
-      setStep((s) => Math.min(s + 1, steps.length));
+      // NEW: Skip step 3 for new cars
+      const nextStepValue = form.vehicleType === "new" && step === 2 ? 4 : step + 1;
+      setStep(nextStepValue);
       setErrors({});
       setSaveMessage("");
     } catch (error) {
@@ -7430,13 +9535,31 @@ const NewPolicyPage = () => {
   };
 
   const prevStep = () => {
-    setStep((s) => Math.max(s - 1, 1));
+    // NEW: Handle going back from step 4 for new cars
+    if (form.vehicleType === "new" && step === 4) {
+      setStep(2); // Go back to Vehicle Details
+    } else {
+      setStep((s) => Math.max(s - 1, 1));
+    }
     setErrors({});
     setSaveMessage("");
   };
 
-  const progressPercent = Math.round(((step - 1) / (steps.length - 1)) * 100);
-  const nextLabel = step < steps.length ? `Next: ${steps[step]}` : "Finish";
+  // NEW: Updated progress calculation to account for skipped step
+  const progressPercent = Math.round(((getDisplayStep(step) - 1) / (getSteps().length - 1)) * 100);
+
+  // NEW: Updated next label to show correct step name
+  const getNextLabel = () => {
+    if (step < steps.length) {
+      if (form.vehicleType === "new" && step === 2) {
+        return "Next: Insurance Quotes"; // Skip Previous Policy
+      }
+      return `Next: ${steps[step]}`;
+    }
+    return "Finish";
+  };
+
+  const nextLabel = getNextLabel();
 
   const stepProps = {
     form,
@@ -7512,6 +9635,7 @@ const NewPolicyPage = () => {
             <p className="text-sm text-gray-500">
               {isEditMode ? 'Edit existing insurance case' : 'Create a new insurance case'}
               {isEditMode && " - All fields are pre-filled with existing data"}
+              {form.vehicleType && ` - Vehicle Type: ${form.vehicleType === 'new' ? 'New Car' : 'Used Car'}`}
             </p>
           </div>
           <Link
@@ -7525,7 +9649,8 @@ const NewPolicyPage = () => {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="text-sm text-gray-600">
-              Step {step} of {steps.length}
+              {/* NEW: Updated step display to account for skipped step */}
+              Step {getDisplayStep(step)} of {getSteps().length}
             </div>
             <div className="text-sm text-gray-500">
               {progressPercent}% Complete
@@ -7534,32 +9659,35 @@ const NewPolicyPage = () => {
 
           <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-6">
             <div
-              className="h-2 bg-black rounded-full transition-all duration-300"
+              className="h-2  rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            {steps.map((title, idx) => {
-              const i = idx + 1;
-              const isCompleted = i < step;
-              const isCurrent = i === step;
+            {getSteps().map((title, idx) => {
+              const displayStep = idx + 1;
+              const actualStep = getActualStep(displayStep);
+              const isCompleted = displayStep < getDisplayStep(step);
+              const isCurrent = displayStep === getDisplayStep(step);
 
               return (
                 <div
                   key={title}
-                  className="flex-1 relative flex flex-col items-center"
+                  className="flex-1 relative flex flex-col items-center cursor-pointer"
+                  onClick={() => handleStepClick(displayStep)}
+                  title={`Click to go to ${title}`}
                 >
                   <div
                     className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
                       isCompleted
-                        ? "bg-green-500 text-white shadow-sm"
+                        ? "bg-green-500 text-white shadow-sm hover:bg-green-600"
                         : isCurrent
                         ? "bg-white border-2 border-purple-600 text-purple-600 shadow-sm"
-                        : "bg-gray-100 text-gray-500"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                     }`}
                   >
-                    {isCompleted ? <FaCheck /> : i}
+                    {isCompleted ? <FaCheck /> : displayStep}
                   </div>
                   <div
                     className={`mt-2 text-xs text-center font-medium ${
@@ -7572,6 +9700,16 @@ const NewPolicyPage = () => {
                   >
                     {title}
                   </div>
+                  {/* NEW: Show vehicle type indicator on step 2 */}
+                  {title === "Vehicle Details" && form.vehicleType && (
+                    <div className={`mt-1 px-2 py-0.5 rounded-full text-xs ${
+                      form.vehicleType === "new" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-blue-100 text-blue-800"
+                    }`}>
+                      {form.vehicleType === "new" ? "NEW" : "USED"}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -7581,14 +9719,15 @@ const NewPolicyPage = () => {
         {/* Step components */}
         {step === 1 && <CaseDetails {...stepProps} />}
         {step === 2 && <VehicleDetails {...stepProps} />}
-        {step === 3 && <PreviousPolicyDetails {...stepProps} />}
+        {/* NEW: Only show Previous Policy for used cars */}
+        {step === 3 && form.vehicleType === "used" && <PreviousPolicyDetails {...stepProps} />}
         {step === 4 && <InsuranceQuotes {...stepProps} />}
         {step === 5 && <NewPolicyDetails {...stepProps} acceptedQuote={acceptedQuote} />}
         {step === 6 && <Documents {...stepProps} />}
         {step === 7 && <Payment {...stepProps} totalPremium={totalPremium} />}
         {step === 8 && <PayoutDetails {...stepProps} />}
 
-        {/* FIXED FOOTER - Always visible with proper styling */}
+        {/* FIXED FOOTER */}
         <div className="fixed bottom-0 left-0 right-0 bg-gray-50/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg z-50">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between">
@@ -7601,7 +9740,6 @@ const NewPolicyPage = () => {
                   <FaChevronLeft /> Previous
                 </button>
                 
-                {/* NEW: Save and Exit Button */}
                 <button
                   onClick={handleSaveAndExit}
                   disabled={isSaving}
@@ -7612,7 +9750,8 @@ const NewPolicyPage = () => {
                 </button>
                 
                 <div className="text-sm text-gray-500 hidden md:block">
-                  Step {step} of {steps.length}
+                  {/* NEW: Updated step display */}
+                  Step {getDisplayStep(step)} of {getSteps().length}
                 </div>
               </div>
 
@@ -7640,4 +9779,5 @@ const NewPolicyPage = () => {
     </div>
   );
 };
+
 export default NewPolicyPage;

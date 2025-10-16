@@ -29,7 +29,12 @@ import {
   FaShieldAlt,
   FaCarCrash,
   FaFileAlt,
-  FaPercentage
+  FaPercentage,
+  FaHistory,
+  FaPlusCircle,
+  FaSearch,
+  FaDownload,
+  FaFilter
 } from 'react-icons/fa';
 
 // ================== PAYMENT BREAKDOWN COMPONENTS ==================
@@ -95,21 +100,28 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
   };
 };
 
+// Function to get payment status - MOVED BEFORE FILTER
+const getPaymentStatus = (policy) => {
+  if (policy.payment_info?.paymentStatus) {
+    return policy.payment_info.paymentStatus.toLowerCase();
+  }
+  
+  const components = calculatePaymentComponents(policy, policy.payment_ledger || []);
+  
+  if (components.customerPaidAmount >= components.effectivePayable && components.effectivePayable > 0) {
+    return 'fully paid';
+  } else if (components.customerPaidAmount > 0) {
+    return 'partially paid';
+  } else {
+    return 'pending';
+  }
+};
+
 // Compact version for table view
 const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
   const components = calculatePaymentComponents(policy, paymentLedger);
   
-  const getPaymentStatus = () => {
-    if (components.customerPaidAmount >= components.effectivePayable && components.effectivePayable > 0) {
-      return 'fully_paid';
-    } else if (components.customerPaidAmount > 0) {
-      return 'partially_paid';
-    } else {
-      return 'pending';
-    }
-  };
-
-  const paymentStatus = getPaymentStatus();
+  const paymentStatus = getPaymentStatus(policy);
   const PaymentIcon = paymentStatus === 'fully_paid' ? FaCheckCircle : 
                      paymentStatus === 'partially_paid' ? FaMoneyBillWave : FaClock;
 
@@ -119,16 +131,16 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PaymentIcon className={`text-sm ${
-            paymentStatus === 'fully_paid' ? 'text-green-600' :
-            paymentStatus === 'partially_paid' ? 'text-yellow-600' : 'text-red-600'
+            paymentStatus === 'fully paid' ? 'text-green-600' :
+            paymentStatus === 'partially paid' ? 'text-yellow-600' : 'text-red-600'
           }`} />
           <span className={`text-xs font-medium px-2 py-1 rounded ${
-            paymentStatus === 'fully_paid' ? 'bg-green-100 text-green-800 border border-green-200' :
-            paymentStatus === 'partially_paid' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+            paymentStatus === 'fully paid' ? 'bg-green-100 text-green-800 border border-green-200' :
+            paymentStatus === 'partially paid' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
             'bg-red-100 text-red-800 border border-red-200'
           }`}>
-            {paymentStatus === 'fully_paid' ? 'Fully Paid' :
-             paymentStatus === 'partially_paid' ? 'Partially Paid' : 'Payment Pending'}
+            {paymentStatus === 'fully paid' ? 'Fully Paid' :
+             paymentStatus === 'partially paid' ? 'Partially Paid' : 'Payment Pending'}
           </span>
         </div>
         
@@ -218,8 +230,8 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className={`h-2 rounded-full transition-all duration-300 ${
-              paymentStatus === 'fully_paid' ? 'bg-green-500' : 
-              paymentStatus === 'partially_paid' ? 'bg-yellow-500' : 'bg-red-500'
+              paymentStatus === 'fully paid' ? 'bg-green-500' : 
+              paymentStatus === 'partially paid' ? 'bg-yellow-500' : 'bg-red-500'
             }`}
             style={{ width: `${components.paymentProgress}%` }}
           ></div>
@@ -242,6 +254,95 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
   );
 };
 
+// ================== CSV EXPORT UTILITY ==================
+
+const exportToCSV = (policies, selectedRows = []) => {
+  // If specific rows are selected, export only those. Otherwise export all filtered policies
+  const policiesToExport = selectedRows.length > 0 
+    ? policies.filter(policy => selectedRows.includes(policy._id || policy.id))
+    : policies;
+
+  if (policiesToExport.length === 0) {
+    alert('No policies to export');
+    return;
+  }
+
+  const headers = [
+    'Policy ID',
+    'Customer Name',
+    'Mobile',
+    'Email',
+    'City',
+    'Vehicle Type',
+    'Vehicle Make',
+    'Vehicle Model',
+    'Registration No',
+    'Insurance Company',
+    'Policy Number',
+    'Policy Type',
+    'Total Premium',
+    'IDV Amount',
+    'NCB Discount',
+    'Status',
+    'Payment Status',
+    'Created Date',
+    'Expiry Date'
+  ];
+
+  const csvData = policiesToExport.map(policy => {
+    const customer = policy.customer_details || {};
+    const vehicle = policy.vehicle_details || {};
+    const policyInfo = policy.policy_info || {};
+    const insuranceQuote = policy.insurance_quote || {};
+    
+    const getCustomerName = () => {
+      if (policy.buyer_type === 'corporate') {
+        return customer.companyName || customer.contactPersonName || 'N/A';
+      }
+      return customer.name || 'N/A';
+    };
+
+    return [
+      policy._id || policy.id || 'N/A',
+      getCustomerName(),
+      customer.mobile || 'N/A',
+      customer.email || 'N/A',
+      customer.city || 'N/A',
+      policy.vehicleType === 'new' ? 'New Car' : 'Used Car',
+      vehicle.make || 'N/A',
+      vehicle.model || 'N/A',
+      vehicle.regNo || 'N/A',
+      policyInfo.insuranceCompany || insuranceQuote.insurer || 'N/A',
+      policyInfo.policyNumber || 'N/A',
+      insuranceQuote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party',
+      `₹${(policyInfo.totalPremium || insuranceQuote.premium || 0).toLocaleString('en-IN')}`,
+      `₹${(policyInfo.idvAmount || insuranceQuote.idv || 0).toLocaleString('en-IN')}`,
+      `${policyInfo.ncbDiscount || insuranceQuote.ncb || 0}%`,
+      policy.status || 'N/A',
+      getPaymentStatus(policy),
+      new Date(policy.created_at || policy.ts).toLocaleDateString('en-IN'),
+      policyInfo.dueDate ? new Date(policyInfo.dueDate).toLocaleDateString('en-IN') : 'N/A'
+    ];
+  });
+
+  const csvContent = [
+    headers.join(','),
+    ...csvData.map(row => row.map(field => `"${field}"`).join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `insurance-policies-${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 // ================== MAIN POLICY TABLE COMPONENT ==================
 
 const PolicyTable = ({ policies, loading, onView, onDelete }) => {
@@ -251,6 +352,10 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
   const [itemsPerPage] = useState(10);
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRows, setSelectedRows] = useState(new Set());
+  const [selectAll, setSelectAll] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [policyToDelete, setPolicyToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -265,14 +370,16 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     });
   }, [policies]);
 
-  // Filter policies by status and payment
+  // Filter and search policies
   const filteredPolicies = useMemo(() => {
     let filtered = sortedPolicies;
 
+    // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(policy => policy.status === statusFilter);
     }
 
+    // Apply payment filter - FIXED: Using getPaymentStatus function that's now defined above
     if (paymentFilter !== 'all') {
       filtered = filtered.filter(policy => {
         const paymentStatus = getPaymentStatus(policy);
@@ -280,8 +387,49 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       });
     }
 
+    // Apply vehicle type filter
+    if (vehicleTypeFilter !== 'all') {
+      filtered = filtered.filter(policy => {
+        const vehicleType = policy.vehicleType || 'used';
+        return vehicleType === vehicleTypeFilter;
+      });
+    }
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(policy => {
+        const customer = policy.customer_details || {};
+        const customerName = policy.buyer_type === 'corporate' 
+          ? (customer.companyName || customer.contactPersonName || '').toLowerCase()
+          : (customer.name || '').toLowerCase();
+        
+        const insuranceCompany = (
+          policy.policy_info?.insuranceCompany || 
+          policy.insurance_quote?.insurer || 
+          ''
+        ).toLowerCase();
+
+        const vehicleMake = (policy.vehicle_details?.make || '').toLowerCase();
+        const vehicleModel = (policy.vehicle_details?.model || '').toLowerCase();
+        const policyNumber = (policy.policy_info?.policyNumber || '').toLowerCase();
+        const mobile = (customer.mobile || '').toLowerCase();
+
+        return (
+          customerName.includes(query) ||
+          insuranceCompany.includes(query) ||
+          vehicleMake.includes(query) ||
+          vehicleModel.includes(query) ||
+          policyNumber.includes(query) ||
+          mobile.includes(query) ||
+          insuranceCompany.includes(query.replace(/\s+/g, '')) || // For "hdfc" instead of "HDFC Ergo"
+          insuranceCompany.includes(query.split(' ')[0]) // For "icici" instead of "ICICI Lombard"
+        );
+      });
+    }
+
     return filtered;
-  }, [sortedPolicies, statusFilter, paymentFilter]);
+  }, [sortedPolicies, statusFilter, paymentFilter, vehicleTypeFilter, searchQuery]);
 
   // Paginate policies
   const paginatedPolicies = useMemo(() => {
@@ -292,21 +440,41 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
   // Calculate total pages
   const totalPages = Math.ceil(filteredPolicies.length / itemsPerPage);
 
-  // Function to get payment status
-  const getPaymentStatus = (policy) => {
-    if (policy.payment_info?.paymentStatus) {
-      return policy.payment_info.paymentStatus.toLowerCase();
-    }
-    
-    const components = calculatePaymentComponents(policy, policy.payment_ledger || []);
-    
-    if (components.customerPaidAmount >= components.effectivePayable && components.effectivePayable > 0) {
-      return 'fully paid';
-    } else if (components.customerPaidAmount > 0) {
-      return 'partially paid';
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedRows(new Set());
     } else {
-      return 'pending';
+      const allIds = new Set(paginatedPolicies.map(policy => policy._id || policy.id));
+      setSelectedRows(allIds);
     }
+    setSelectAll(!selectAll);
+  };
+
+  // Handle individual row selection
+  const handleRowSelect = (policyId) => {
+    const newSelected = new Set(selectedRows);
+    if (newSelected.has(policyId)) {
+      newSelected.delete(policyId);
+    } else {
+      newSelected.add(policyId);
+    }
+    setSelectedRows(newSelected);
+    
+    // Update select all state
+    const allIds = new Set(paginatedPolicies.map(policy => policy._id || policy.id));
+    setSelectAll(newSelected.size === allIds.size && allIds.size > 0);
+  };
+
+  // Reset selection when page changes
+  useEffect(() => {
+    setSelectedRows(new Set());
+    setSelectAll(false);
+  }, [currentPage]);
+
+  // Function to get vehicle type
+  const getVehicleType = (policy) => {
+    return policy.vehicleType || 'used';
   };
 
   // Function to handle view click
@@ -408,33 +576,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     };
   };
 
-  // Function to format payment status display
-  const getPaymentStatusDisplay = (paymentStatus) => {
-    const paymentConfig = {
-      'fully paid': {
-        text: 'Fully Paid',
-        class: 'bg-green-100 text-green-800 border border-green-200',
-        icon: FaCheckCircle
-      },
-      'partially paid': {
-        text: 'Partially Paid',
-        class: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-        icon: FaMoneyBillWave
-      },
-      'pending': {
-        text: 'Payment Pending',
-        class: 'bg-red-100 text-red-800 border border-red-200',
-        icon: FaClock
-      }
-    };
-
-    return paymentConfig[paymentStatus] || {
-      text: 'Unknown',
-      class: 'bg-gray-100 text-gray-800 border border-gray-200',
-      icon: FaTag
-    };
-  };
-
   // Function to format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -517,21 +658,17 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     return 'N/A';
   };
 
-  // ENHANCED: Function to get customer details with corporate support
+  // Function to get customer details
   const getCustomerDetails = (policy) => {
     const customer = policy.customer_details || {};
     const isCorporate = policy.buyer_type === 'corporate';
     
-    // For corporate: Use companyName and contactPersonName
-    // For individual: Use name field
     const displayName = isCorporate 
       ? (customer.companyName || customer.contactPersonName || 'N/A')
       : (customer.name || 'N/A');
     
     const contactPerson = isCorporate ? customer.contactPersonName : null;
     const employeeName = customer.employeeName || null;
-    const panNumber = isCorporate ? customer.companyPanNumber : customer.panNumber;
-    const gstNumber = customer.gstNumber || null;
 
     return {
       name: displayName,
@@ -543,9 +680,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       buyerType: policy.buyer_type || 'individual',
       isCorporate: isCorporate,
       companyName: customer.companyName || null,
-      panNumber: panNumber || null,
-      gstNumber: gstNumber || null,
-      residenceAddress: customer.residenceAddress || 'N/A'
     };
   };
 
@@ -587,17 +721,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     return '0%';
   };
 
-  // Function to get previous policy info
-  const getPreviousPolicyInfo = (policy) => {
-    const previousPolicy = policy.previous_policy || {};
-    return {
-      company: previousPolicy.insuranceCompany || 'N/A',
-      policyNumber: previousPolicy.policyNumber || 'N/A',
-      claimTaken: previousPolicy.claimTakenLastYear || 'no',
-      ncbDiscount: previousPolicy.ncbDiscount || '0%'
-    };
-  };
-
   // Close modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -609,10 +732,17 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     setCurrentPage(page);
   };
 
+  // Handle export
+  const handleExport = () => {
+    exportToCSV(filteredPolicies, Array.from(selectedRows));
+  };
+
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, paymentFilter]);
+    setSelectedRows(new Set());
+    setSelectAll(false);
+  }, [statusFilter, paymentFilter, vehicleTypeFilter, searchQuery]);
 
   if (loading) {
     return (
@@ -637,24 +767,135 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
 
   return (
     <>
-     
+      {/* Enhanced Filters Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-3 flex-wrap flex-1">
+            {/* Search Bar */}
+            <div className="flex flex-col flex-1 min-w-[300px]">
+              <label className="text-xs font-medium text-gray-700 mb-1">Search Policies</label>
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, mobile, company, vehicle, policy number..."
+                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[140px]"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="draft">Draft</option>
+                <option value="pending">Pending</option>
+                <option value="expired">Expired</option>
+                <option value="payment completed">Payment Completed</option>
+              </select>
+            </div>
+
+            {/* Payment Filter */}
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-700 mb-1">Payment</label>
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+                className="text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[140px]"
+              >
+                <option value="all">All Payments</option>
+                <option value="fully paid">Fully Paid</option>
+                <option value="partially paid">Partially Paid</option>
+                <option value="pending">Payment Pending</option>
+              </select>
+            </div>
+
+            {/* Vehicle Type Filter */}
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-700 mb-1">Vehicle Type</label>
+              <select
+                value={vehicleTypeFilter}
+                onChange={(e) => setVehicleTypeFilter(e.target.value)}
+                className="text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[140px]"
+              >
+                <option value="all">All Vehicles</option>
+                <option value="new">New Cars</option>
+                <option value="used">Used Cars</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Export Button */}
+          <div className="flex flex-col">
+            <label className="text-xs font-medium text-gray-700 mb-1">Export Data</label>
+            <button
+              onClick={handleExport}
+              disabled={filteredPolicies.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[140px] justify-center"
+            >
+              <FaDownload className="text-sm" />
+              {selectedRows.size > 0 ? `Export (${selectedRows.size})` : 'Export All'}
+            </button>
+          </div>
+        </div>
+
+        {/* Results Count */}
+        <div className="mt-3 pt-3 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">{filteredPolicies.length}</span> policies found
+            {filteredPolicies.length !== sortedPolicies.length && (
+              <span className="text-gray-400 ml-1">(filtered from {sortedPolicies.length})</span>
+            )}
+            {searchQuery && (
+              <span className="text-purple-600 ml-2">for "{searchQuery}"</span>
+            )}
+          </div>
+          {selectedRows.size > 0 && (
+            <div className="text-sm text-blue-600 font-medium">
+              {selectedRows.size} row{selectedRows.size > 1 ? 's' : ''} selected for export
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[1400px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-                  Customer Details
+                <th className="px-4 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+                  />
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-                  Vehicle Details
+                  Customer & Vehicle
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
                   Policy Information
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-                  Payment Status
+                  Payment Breakdown
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
                   Status & Dates
@@ -679,169 +920,158 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                 const paymentStatus = getPaymentStatus(policy);
                 const idvAmount = getIdvAmount(policy);
                 const ncbDiscount = getNcbDiscount(policy);
-                const previousPolicy = getPreviousPolicyInfo(policy);
+                const vehicleType = getVehicleType(policy);
+                const isSelected = selectedRows.has(policyId);
 
                 return (
                   <tr
-                    key={policy._id || policy.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    key={policyId}
+                    className={`border-b border-gray-100 transition-colors ${
+                      isSelected ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
+                    }`}
                   >
-                    {/* Customer Details Column - ENHANCED */}
+                    {/* Checkbox Column */}
+                    <td className="px-4 py-4 border-r border-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleRowSelect(policyId)}
+                        className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+                      />
+                    </td>
+
+                    {/* Customer & Vehicle Column */}
                     <td className="px-6 py-4 border-r border-gray-100">
-                      <div className="space-y-3">
-                        {/* Policy ID */}
-                        <div className="flex items-center gap-2 mb-2">
+                      <div className="space-y-4">
+                        {/* Header with Policy ID and Vehicle Type */}
+                        <div className="flex items-center justify-between mb-2">
                           <div className="bg-gray-100 px-2 py-1 rounded text-xs font-mono text-gray-600">
                             ID: {policyId}
                           </div>
-                          {customer.isCorporate && (
-                            <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded border border-orange-200">
-                              Corporate
+                          <div className="flex items-center gap-2">
+                            {/* Vehicle Type Badge */}
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              vehicleType === 'new' 
+                                ? 'bg-green-100 text-green-800 border border-green-200' 
+                                : 'bg-blue-100 text-blue-800 border border-blue-200'
+                            }`}>
+                              {vehicleType === 'new' ? (
+                                <div className="flex items-center gap-1">
+                                  <FaPlusCircle className="text-xs" />
+                                  NEW
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <FaHistory className="text-xs" />
+                                  USED
+                                </div>
+                              )}
                             </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            customer.isCorporate ? 'bg-orange-100' : 'bg-purple-100'
-                          }`}>
-                            {customer.isCorporate ? (
-                              <FaBuilding className="text-orange-600 text-sm" />
-                            ) : (
-                              <FaUser className="text-purple-600 text-sm" />
+                            
+                            {/* Corporate Badge */}
+                            {customer.isCorporate && (
+                              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded border border-orange-200">
+                                Corporate
+                              </span>
                             )}
                           </div>
-                          <div>
-                            <div className="font-semibold text-gray-900 text-sm">
-                              {customer.name}
-                            </div>
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                        </div>
+
+                        {/* Customer Info */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              customer.isCorporate ? 'bg-orange-100' : 'bg-purple-100'
+                            }`}>
                               {customer.isCorporate ? (
-                                <>
-                                  <FaIndustry className="text-gray-400" />
-                                  Corporate Client
-                                </>
+                                <FaBuilding className="text-orange-600 text-sm" />
                               ) : (
-                                <>
-                                  <FaUser className="text-gray-400" />
-                                  Individual Client
-                                </>
+                                <FaUser className="text-purple-600 text-sm" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900 text-sm">
+                                {customer.name}
+                              </div>
+                              <div className="text-xs text-gray-500 flex items-center gap-1">
+                                {customer.isCorporate ? (
+                                  <>
+                                    <FaIndustry className="text-gray-400" />
+                                    Corporate Client
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaUser className="text-gray-400" />
+                                    Individual Client
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2 pl-11">
+                            {/* Contact Person for Corporate */}
+                            {customer.isCorporate && customer.contactPerson && (
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <FaUserTie className="text-gray-400 text-xs" />
+                                Contact: {customer.contactPerson}
+                              </div>
+                            )}
+
+                            {/* Employee Name */}
+                            {customer.employeeName && (
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <FaIdCard className="text-gray-400 text-xs" />
+                                Employee: {customer.employeeName}
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                              <FaPhone className="text-gray-400 text-xs" />
+                              {customer.mobile}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                              <FaEnvelope className="text-gray-400 text-xs" />
+                              <span className="truncate max-w-[150px]">{customer.email}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                              <FaMapMarkerAlt className="text-gray-400 text-xs" />
+                              {customer.city}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Vehicle Info */}
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <FaCar className="text-blue-600 text-sm" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900 text-sm">{vehicleInfo.main}</div>
+                              {vehicleInfo.variant && (
+                                <div className="text-xs text-gray-500">{vehicleInfo.variant}</div>
+                              )}
+                              {vehicleInfo.makeYear && (
+                                <div className="text-xs text-gray-400">Year: {vehicleInfo.makeYear}</div>
                               )}
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="space-y-2 pl-11">
-                          {/* Contact Person for Corporate */}
-                          {customer.isCorporate && customer.contactPerson && (
-                            <div className="flex items-center gap-2 text-xs text-gray-600">
-                              <FaUserTie className="text-gray-400 text-xs" />
-                              Contact: {customer.contactPerson}
-                            </div>
-                          )}
-
-                          {/* Employee Name */}
-                          {customer.employeeName && (
-                            <div className="flex items-center gap-2 text-xs text-gray-600">
-                              <FaIdCard className="text-gray-400 text-xs" />
-                              Employee: {customer.employeeName}
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <FaPhone className="text-gray-400 text-xs" />
-                            {customer.mobile}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <FaEnvelope className="text-gray-400 text-xs" />
-                            <span className="truncate max-w-[150px]">{customer.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <FaMapMarkerAlt className="text-gray-400 text-xs" />
-                            {customer.city}
-                          </div>
-
-                          {/* Additional Customer Info */}
-                          {customer.panNumber && (
-                            <div className="flex items-center gap-2 text-xs text-gray-600">
-                              <FaFileAlt className="text-gray-400 text-xs" />
-                              PAN: {customer.panNumber}
-                            </div>
-                          )}
-                          {customer.isCorporate && customer.gstNumber && (
-                            <div className="flex items-center gap-2 text-xs text-gray-600">
-                              <FaFileAlt className="text-gray-400 text-xs" />
-                              GST: {customer.gstNumber}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Vehicle Details Column - ENHANCED */}
-                    <td className="px-6 py-4 border-r border-gray-100">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <FaCar className="text-blue-600 text-sm" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-gray-900 text-sm">{vehicleInfo.main}</div>
-                            {vehicleInfo.variant && (
-                              <div className="text-xs text-gray-500">{vehicleInfo.variant}</div>
-                            )}
-                            {vehicleInfo.makeYear && (
-                              <div className="text-xs text-gray-400">Year: {vehicleInfo.makeYear}</div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2 pl-11">
-                          {vehicleInfo.regNo && (
-                            <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded inline-block">
-                              📋 Reg: {vehicleInfo.regNo}
-                            </div>
-                          )}
                           
-                          <div className="text-xs text-gray-500 space-y-1">
-                            {vehicleInfo.engineNo && (
-                              <div className="flex items-center gap-2">
-                                <FaCarCrash className="text-gray-400 text-xs" />
-                                Engine: {vehicleInfo.engineNo}
-                              </div>
-                            )}
-                            {vehicleInfo.chassisNo && (
-                              <div className="flex items-center gap-2">
-                                <FaShieldAlt className="text-gray-400 text-xs" />
-                                Chassis: {vehicleInfo.chassisNo}
+                          <div className="space-y-2 pl-11 mt-2">
+                            {vehicleInfo.regNo && (
+                              <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded inline-block">
+                                📋 Reg: {vehicleInfo.regNo}
                               </div>
                             )}
                           </div>
-
-                          {/* Previous Policy Info */}
-                          {previousPolicy.company !== 'N/A' && (
-                            <div className="mt-2 pt-2 border-t border-gray-100">
-                              <div className="text-xs text-gray-500 font-medium mb-1">Previous Policy:</div>
-                              <div className="text-xs text-gray-600 space-y-1">
-                                <div>Company: {previousPolicy.company}</div>
-                                <div>Policy No: {previousPolicy.policyNumber}</div>
-                                <div className="flex items-center gap-2">
-                                  <FaPercentage className="text-gray-400 text-xs" />
-                                  NCB: {previousPolicy.ncbDiscount}
-                                </div>
-                                <div className={`text-xs ${previousPolicy.claimTaken === 'yes' ? 'text-red-600' : 'text-green-600'}`}>
-                                  Claim: {previousPolicy.claimTaken === 'yes' ? 'Yes' : 'No'}
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </td>
 
-                    {/* Policy Information Column - ENHANCED */}
+                    {/* Policy Information Column */}
                     <td className="px-6 py-4 border-r border-gray-100">
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-gray-900 text-sm">{insuranceCompany}</span>
                           <span className={`text-xs px-2 py-1 rounded ${
@@ -853,7 +1083,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                           </span>
                         </div>
                         
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <div className="text-xs text-gray-600 flex justify-between items-center">
                             <span>Policy No:</span>
                             <span className="font-mono bg-gray-100 px-2 py-1 rounded">{policyNumber}</span>
@@ -870,25 +1100,11 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                             <span>NCB:</span>
                             <span className="font-semibold text-yellow-600">{ncbDiscount}</span>
                           </div>
-                          
-                          {/* Additional Policy Info */}
-                          {policy.policy_info?.insuranceDuration && (
-                            <div className="text-xs text-gray-600 flex justify-between">
-                              <span>Duration:</span>
-                              <span>{policy.policy_info.insuranceDuration}</span>
-                            </div>
-                          )}
-                          {policy.policy_info?.issueDate && (
-                            <div className="text-xs text-gray-600 flex justify-between">
-                              <span>Issued:</span>
-                              <span>{formatDate(policy.policy_info.issueDate)}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </td>
 
-                    {/* Payment Status Column - ENHANCED */}
+                    {/* Payment Status Column */}
                     <td className="px-6 py-4 border-r border-gray-100">
                       <CompactPaymentBreakdown 
                         policy={policy} 
@@ -896,9 +1112,9 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                       />
                     </td>
 
-                    {/* Status & Dates Column - ENHANCED */}
+                    {/* Status & Dates Column */}
                     <td className="px-6 py-4 border-r border-gray-100">
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center gap-2">
                           <StatusIcon className="text-sm" />
                           <span className={`text-xs font-medium px-2 py-1 rounded ${statusDisplay.class}`}>
@@ -906,7 +1122,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                           </span>
                         </div>
                         
-                        <div className="text-xs text-gray-600 space-y-2">
+                        <div className="text-xs text-gray-600 space-y-3">
                           <div className="flex justify-between items-center">
                             <span className="flex items-center gap-1">
                               <FaCalendarAlt className="text-gray-400" />
@@ -924,28 +1140,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                             </span>
                           </div>
                           
-                          {/* Additional Dates */}
-                          {policy.policy_info?.policyStartDate && (
-                            <div className="flex justify-between items-center">
-                              <span className="flex items-center gap-1">
-                                <FaCalendarAlt className="text-gray-400" />
-                                Start:
-                              </span>
-                              <span>{formatDate(policy.policy_info.policyStartDate)}</span>
-                            </div>
-                          )}
-                          
-                          {/* Payment Dates */}
-                          {policy.payment_info?.paymentDate && (
-                            <div className="flex justify-between items-center">
-                              <span className="flex items-center gap-1">
-                                <FaMoneyBillWave className="text-gray-400" />
-                                Last Payment:
-                              </span>
-                              <span>{formatDate(policy.payment_info.paymentDate)}</span>
-                            </div>
-                          )}
-                          
                           {/* Document Status */}
                           <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                             <span className="flex items-center gap-1">
@@ -957,7 +1151,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                 ? 'bg-green-100 text-green-800 border border-green-200' 
                                 : 'bg-gray-100 text-gray-800 border border-gray-200'
                             }`}>
-                              {policy.documents && policy.documents.length > 0 ? `${policy.documents.length} ` : 'No docs'}
+                              {policy.documents && policy.documents.length > 0 ? `${policy.documents.length} docs` : 'No docs'}
                             </span>
                           </div>
                         </div>
@@ -1073,6 +1267,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
             onClick={() => {
               setStatusFilter('all');
               setPaymentFilter('all');
+              setVehicleTypeFilter('all');
+              setSearchQuery('');
             }}
             className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-xs font-medium"
           >
@@ -1120,6 +1316,9 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                       Vehicle: {policyToDelete.vehicle_details.make} {policyToDelete.vehicle_details.model}
                     </div>
                   )}
+                  <div>
+                    Vehicle Type: {getVehicleType(policyToDelete) === 'new' ? 'New Car' : 'Used Car'}
+                  </div>
                 </div>
               </div>
             )}
