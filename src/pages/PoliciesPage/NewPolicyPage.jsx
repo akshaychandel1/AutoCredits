@@ -7,7 +7,7 @@ import {
   FaCar, FaInfoCircle,FaPlus,FaArrowRight, FaCalculator,
   FaMapMarkerAlt,FaCheckCircle,FaExclamationTriangle,FaCloudUploadAlt,FaListAlt,FaExternalLinkAlt, FaTags,FaTag,FaSpinner,FaMoneyBillWave, FaEdit,FaHistory ,
   FaUser,FaReceipt,FaEye,FaDownload,FaGift,
-  FaPhone,
+  FaPhone,FaFileContract,FaShieldAlt,FaUsers,
   FaEnvelope,
   FaSave,
   FaChevronLeft,
@@ -27,11 +27,12 @@ import {
   ChevronUp, 
   ChevronDown, 
   Trash2, 
-  FileText, 
+  FileText, Edit,
   Save,
   CheckCircle, // ADD THIS
   AlertTriangle // ADD THIS
 } from 'lucide-react';
+import PDFGenerationService from "./PDFGenerationService";
 
 import icici from './logos/ICICI.jpeg'
 import hdfc from './logos/hdfc.jpeg'
@@ -720,21 +721,24 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
 
             {/* PAN */}
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-600">
-                PAN Number
-              </label>
-              <input
-                type="text"
-                name="panNumber"
-                value={form.panNumber || ""}
-                onChange={handleChange}
-                placeholder="ABCDE1234F"
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.panNumber ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.panNumber && <p className="text-red-500 text-xs mt-1">{errors.panNumber}</p>}
-            </div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    PAN Number
+  </label>
+  <input
+    type="text"
+    name="panNumber"
+    value={form.panNumber || ""}
+    onChange={handleChange}
+    placeholder="ABCDE1234F"
+    maxLength={10} // PAN is always 10 characters
+    style={{ textTransform: "uppercase" }} // display input as uppercase
+    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+      errors.panNumber ? "border-red-500" : "border-gray-300"
+    }`}
+  />
+  {errors.panNumber && <p className="text-red-500 text-xs mt-1">{errors.panNumber}</p>}
+</div>
+
 
             {/* Aadhaar */}
             <div>
@@ -746,6 +750,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 name="aadhaarNumber"
                 value={form.aadhaarNumber || ""}
                 onChange={handleChange}
+                maxLength={12}
                 placeholder="1234 5678 9012"
                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                   errors.aadhaarNumber ? "border-red-500" : "border-gray-300"
@@ -886,40 +891,45 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
             </div>
 
             {/* PAN Number */}
-            <div>
-              <label className="block mb-1 text-sm font-medium text-gray-600">
-                PAN Number *
-              </label>
-              <input
-                type="text"
-                name="companyPanNumber"
-                value={form.companyPanNumber || ""}
-                onChange={handleChange}
-                placeholder="ABCDE1234F"
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.companyPanNumber ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.companyPanNumber && <p className="text-red-500 text-xs mt-1">{errors.companyPanNumber}</p>}
-            </div>
+           <div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    PAN Number *
+  </label>
+  <input
+    type="text"
+    name="companyPanNumber"
+    value={form.companyPanNumber || ""}
+    onChange={handleChange}
+    placeholder="ABCDE1234F"
+    maxLength={10} // PAN is always 10 characters
+    style={{ textTransform: "uppercase" }} // display input as uppercase
+    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+      errors.companyPanNumber ? "border-red-500" : "border-gray-300"
+    }`}
+  />
+  {errors.companyPanNumber && <p className="text-red-500 text-xs mt-1">{errors.companyPanNumber}</p>}
+</div>
+
 
             {/* GST Number */}
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-600">
-                GST Number *
-              </label>
-              <input
-                type="text"
-                name="gstNumber"
-                value={form.gstNumber || ""}
-                onChange={handleChange}
-                placeholder="Enter GST number"
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.gstNumber ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.gstNumber && <p className="text-red-500 text-xs mt-1">{errors.gstNumber}</p>}
-            </div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    GST Number *
+  </label>
+  <input
+    type="text"
+    name="gstNumber"
+    value={form.gstNumber || ""}
+    onChange={handleChange}
+    placeholder="Enter GST number"
+    maxLength={15} // GST is always 15 characters
+    style={{ textTransform: "uppercase" }} // display as uppercase
+    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+      errors.gstNumber ? "border-red-500" : "border-gray-300"
+    }`}
+  />
+  {errors.gstNumber && <p className="text-red-500 text-xs mt-1">{errors.gstNumber}</p>}
+</div>
           </>
         )}
 
@@ -1169,21 +1179,29 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         <div className="md:col-span-2">
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Registration Number *
-          </label>
-          <input
-            type="text"
-            name="regNo"
-            value={form.regNo || ""}
-            onChange={handleChange}
-            placeholder="Enter Vehicle Number"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.city ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
-        </div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Registration Number *
+  </label>
+  <input
+    type="text"
+    name="regNo"
+    value={form.regNo || ""}
+    onChange={(e) => {
+      handleChange({
+        target: {
+          name: e.target.name,
+          value: e.target.value.toUpperCase()
+        }
+      });
+    }}
+    placeholder="Enter Vehicle Number"
+    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+      errors.regNo ? "border-red-500" : "border-gray-300"
+    }`}
+    style={{ textTransform: 'uppercase' }}
+  />
+  {errors.regNo && <p className="text-red-500 text-xs mt-1">{errors.regNo}</p>}
+</div>
 
         {/* Vehicle Make with Auto-suggest */}
         <div>
@@ -1288,40 +1306,41 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           {errors.variant && <p className="text-red-500 text-xs mt-1">{errors.variant}</p>}
         </div>
 
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Engine Number *
-          </label>
-          <input
-            type="text"
-            name="engineNo"
-            value={form.engineNo || ""}
-            onChange={handleChange}
-            placeholder="Enter engine number"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.engineNo ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors.engineNo && <p className="text-red-500 text-xs mt-1">{errors.engineNo}</p>}
-        </div>
+       <div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Engine Number *
+  </label>
+  <input
+    type="text"
+    name="engineNo"
+    value={form.engineNo || ""}
+    onChange={handleChange}
+    placeholder="Enter engine number"
+    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase ${
+      errors.engineNo ? "border-red-500" : "border-gray-300"
+    }`}
+    style={{ textTransform: 'uppercase' }}
+  />
+  {errors.engineNo && <p className="text-red-500 text-xs mt-1">{errors.engineNo}</p>}
+</div>
 
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Chassis Number *
-          </label>
-          <input
-            type="text"
-            name="chassisNo"
-            value={form.chassisNo || ""}
-            onChange={handleChange}
-            placeholder="Enter chassis number"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.chassisNo ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors.chassisNo && <p className="text-red-500 text-xs mt-1">{errors.chassisNo}</p>}
-        </div>
-
+<div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Chassis Number *
+  </label>
+  <input
+    type="text"
+    name="chassisNo"
+    value={form.chassisNo || ""}
+    onChange={handleChange}
+    placeholder="Enter chassis number"
+    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase ${
+      errors.chassisNo ? "border-red-500" : "border-gray-300"
+    }`}
+    style={{ textTransform: 'uppercase' }}
+  />
+  {errors.chassisNo && <p className="text-red-500 text-xs mt-1">{errors.chassisNo}</p>}
+</div>
         <div className="md:col-span-2">
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Manufacture Date *
@@ -1379,7 +1398,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
 
 // ================== STEP 3: Previous Policy Details ==================
 const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
-  // Insurance companies options with more companies
+  // Insurance companies options
   const insuranceCompanies = [
     "ICICI Lombard", "HDFC Ergo", "Bajaj Allianz", "New India Assurance", 
     "United India", "National Insurance", "Oriental Insurance", "Tata AIG",
@@ -1392,45 +1411,92 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
   // NCB options
   const ncbOptions = [0, 20, 25, 35, 45, 50];
 
-  // Policy duration options based on vehicle type
-  const getPolicyDurations = (vehicleType) => {
-    if (vehicleType === "new") {
-      return ["1yr OD + 3yr TP", "2yr OD + 2yr TP", "3yr OD + 3yr TP"];
-    } else {
-      return ["1 Year"]; // Used cars get only 1 year option
-    }
+  // Policy type options
+  const policyTypeOptions = [
+    { value: "comprehensive", label: "Comprehensive" },
+    { value: "standalone", label: "Stand Alone OD" },
+    { value: "thirdParty", label: "Third Party" }
+  ];
+
+  // Policy duration options based on policy type
+  const getPolicyDurations = (policyType) => {
+    const durations = {
+      standalone: ["1 Year", "2 Years", "3 Years"],
+      comprehensive: ["1yr OD + 3yr TP", "2yr OD + 3yr TP", "3yr OD + 3yr TP"],
+      thirdParty: ["1 Year", "2 Years", "3 Years"]
+    };
+    return durations[policyType] || [];
   };
 
-  const policyDurations = getPolicyDurations(form.vehicleType);
+  const policyDurations = getPolicyDurations(form.previousPolicyType);
 
   // State for auto-suggest
   const [insuranceCompanySuggestions, setInsuranceCompanySuggestions] = useState([]);
   const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = useState(false);
-  
   const [ncbSuggestions, setNcbSuggestions] = useState([]);
   const [showNcbSuggestions, setShowNcbSuggestions] = useState(false);
-  
   const [durationSuggestions, setDurationSuggestions] = useState([]);
   const [showDurationSuggestions, setShowDurationSuggestions] = useState(false);
 
   // Calculate min date for policy start (cannot be before issue date)
   const getMinPolicyStartDate = () => {
-    return form.previousIssueDate || ''; // If issue date exists, use it as min
+    return form.previousIssueDate || '';
   };
 
-  // Calculate policy end date: start date + duration - 1 day
-  const calculatePolicyEndDate = (startDate, duration) => {
+  // Calculate policy end date based on policy type
+  const calculatePolicyEndDate = (startDate, duration, policyType) => {
     if (!startDate || !duration) return '';
     
-    const durationYears = parseInt(duration.match(/\d+/)?.[0]) || 1;
+    let years = 1;
+    
+    if (policyType === "standalone" || policyType === "thirdParty") {
+      years = parseInt(duration.match(/\d+/)?.[0]) || 1;
+    } else if (policyType === "comprehensive") {
+      const odMatch = duration.match(/(\d+)yr OD/);
+      years = odMatch ? parseInt(odMatch[1]) : 1;
+    }
+    
     const start = new Date(startDate);
     const end = new Date(start);
-    
-    // Add years and subtract 1 day
-    end.setFullYear(start.getFullYear() + durationYears);
+    end.setFullYear(start.getFullYear() + years);
     end.setDate(end.getDate() - 1);
     
     return end.toISOString().split('T')[0];
+  };
+
+  // Calculate TP expiry date
+  const calculateTpExpiryDate = (startDate, duration, policyType) => {
+    if (!startDate || !duration) return '';
+    
+    let years = policyType === "comprehensive" ? 3 : 1;
+    
+    if (policyType === "comprehensive") {
+      const tpMatch = duration.match(/\d+yr TP/);
+      years = tpMatch ? parseInt(tpMatch[0]) : 3;
+    } else if (policyType === "thirdParty") {
+      years = parseInt(duration.match(/\d+/)?.[0]) || 1;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setFullYear(start.getFullYear() + years);
+    end.setDate(end.getDate() - 1);
+    
+    return end.toISOString().split('T')[0];
+  };
+
+  // Handle policy type change
+  const handlePolicyTypeChange = (e) => {
+    const policyType = e.target.value;
+    handleChange(e);
+    
+    // Reset all related fields when policy type changes
+    const resetFields = ['previousPolicyDuration', 'previousPolicyEndDate', 'previousTpExpiryDate'];
+    resetFields.forEach(field => {
+      handleChange({
+        target: { name: field, value: '' }
+      });
+    });
   };
 
   // Handle issue date change
@@ -1438,45 +1504,32 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     const issueDate = e.target.value;
     handleChange(e);
     
-    // If policy start date exists and is before the new issue date, reset it
     if (form.previousPolicyStartDate && issueDate) {
       const startDate = new Date(form.previousPolicyStartDate);
       const newIssueDate = new Date(issueDate);
       
       if (startDate < newIssueDate) {
         handleChange({
-          target: {
-            name: 'previousPolicyStartDate',
-            value: issueDate // Set start date to issue date
-          }
+          target: { name: 'previousPolicyStartDate', value: issueDate }
         });
         
-        // Also recalculate end date if duration exists
-        if (form.previousPolicyDuration) {
-          const newEndDate = calculatePolicyEndDate(issueDate, form.previousPolicyDuration);
-          handleChange({
-            target: {
-              name: 'previousPolicyEndDate',
-              value: newEndDate
-            }
-          });
+        if (form.previousPolicyDuration && form.previousPolicyType) {
+          recalculateAllDates(issueDate, form.previousPolicyDuration);
         }
       }
     }
   };
 
-  // Handle policy start date change and auto-calculate end date
+  // Handle policy start date change
   const handlePolicyStartDateChange = (e) => {
     const startDate = e.target.value;
     const issueDate = form.previousIssueDate;
     
-    // Validate: Start date cannot be before issue date
     if (issueDate && startDate) {
       const start = new Date(startDate);
       const issue = new Date(issueDate);
       
       if (start < issue) {
-        // Show error and don't update
         alert("Policy start date cannot be before issue date!");
         return;
       }
@@ -1484,42 +1537,42 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     
     handleChange(e);
     
-    // If duration is selected, auto-calculate end date
-    if (startDate && form.previousPolicyDuration) {
-      const endDate = calculatePolicyEndDate(startDate, form.previousPolicyDuration);
-      
-      handleChange({
-        target: {
-          name: 'previousPolicyEndDate',
-          value: endDate
-        }
-      });
+    if (startDate && form.previousPolicyDuration && form.previousPolicyType) {
+      recalculateAllDates(startDate, form.previousPolicyDuration);
     }
   };
 
-  // Handle duration change and auto-calculate end date
+  // Recalculate all dates based on start date and duration
+  const recalculateAllDates = (startDate, duration) => {
+    const policyType = form.previousPolicyType;
+    
+    if (policyType === "comprehensive") {
+      const odEndDate = calculatePolicyEndDate(startDate, duration, "comprehensive");
+      const tpEndDate = calculateTpExpiryDate(startDate, duration, "comprehensive");
+      
+      handleChange({ target: { name: 'previousPolicyEndDate', value: odEndDate } });
+      handleChange({ target: { name: 'previousTpExpiryDate', value: tpEndDate } });
+    } else if (policyType === "standalone") {
+      const odEndDate = calculatePolicyEndDate(startDate, duration, "standalone");
+      handleChange({ target: { name: 'previousPolicyEndDate', value: odEndDate } });
+    } else if (policyType === "thirdParty") {
+      const tpEndDate = calculateTpExpiryDate(startDate, duration, "thirdParty");
+      handleChange({ target: { name: 'previousTpExpiryDate', value: tpEndDate } });
+    }
+  };
+
+  // Handle duration change
   const handleDurationChange = (duration) => {
     handleChange({
-      target: {
-        name: 'previousPolicyDuration',
-        value: duration
-      }
+      target: { name: 'previousPolicyDuration', value: duration }
     });
 
-    // If start date exists, auto-calculate end date
-    if (form.previousPolicyStartDate) {
-      const endDate = calculatePolicyEndDate(form.previousPolicyStartDate, duration);
-      
-      handleChange({
-        target: {
-          name: 'previousPolicyEndDate',
-          value: endDate
-        }
-      });
+    if (form.previousPolicyStartDate && form.previousPolicyType) {
+      recalculateAllDates(form.previousPolicyStartDate, duration);
     }
   };
 
-  // Auto-suggest handlers for insurance company
+  // Auto-suggest handlers
   const handleInsuranceCompanyChange = (e) => {
     const value = e.target.value;
     handleChange(e);
@@ -1535,7 +1588,6 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     }
   };
 
-  // Auto-suggest handlers for NCB
   const handleNcbChange = (e) => {
     const value = e.target.value;
     handleChange(e);
@@ -1551,11 +1603,11 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     }
   };
 
-  // Auto-suggest handlers for duration
   const handleDurationInputChange = (e) => {
     const value = e.target.value;
+    handleChange(e);
     
-    if (value) {
+    if (value && form.previousPolicyType) {
       const filtered = policyDurations.filter(duration =>
         duration.toLowerCase().includes(value.toLowerCase())
       );
@@ -1568,22 +1620,12 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
 
   // Select from suggestions
   const selectInsuranceCompany = (company) => {
-    handleChange({
-      target: {
-        name: 'previousInsuranceCompany',
-        value: company
-      }
-    });
+    handleChange({ target: { name: 'previousInsuranceCompany', value: company } });
     setShowInsuranceCompanySuggestions(false);
   };
 
   const selectNcb = (ncb) => {
-    handleChange({
-      target: {
-        name: 'previousNcbDiscount',
-        value: ncb.toString()
-      }
-    });
+    handleChange({ target: { name: 'previousNcbDiscount', value: ncb.toString() } });
     setShowNcbSuggestions(false);
   };
 
@@ -1592,18 +1634,146 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     setShowDurationSuggestions(false);
   };
 
-  // Example calculation display
-  const getExampleText = () => {
-    if (form.previousPolicyStartDate && form.previousPolicyDuration) {
-      const durationYears = parseInt(form.previousPolicyDuration.match(/\d+/)?.[0]) || 1;
-      const startDate = new Date(form.previousPolicyStartDate);
-      const endDate = new Date(startDate);
-      endDate.setFullYear(startDate.getFullYear() + durationYears);
-      endDate.setDate(endDate.getDate() - 1);
-      
-      return `Example: ${startDate.toLocaleDateString()} + ${durationYears} Year(s) - 1 Day = ${endDate.toLocaleDateString()}`;
+  // Get placeholder text for duration field
+  const getDurationPlaceholder = () => {
+    const placeholders = {
+      standalone: "Type duration (e.g., 1 Year, 2 Years)",
+      comprehensive: "Type duration (e.g., 1yr OD + 3yr TP)",
+      thirdParty: "Type duration (e.g., 1 Year, 2 Years)"
+    };
+    return placeholders[form.previousPolicyType] || "Select policy type first";
+  };
+
+  // Get policy type info text
+  const getPolicyTypeInfo = () => {
+    const info = {
+      standalone: "Available: 1 Year, 2 Years, 3 Years (OD coverage only)",
+      comprehensive: "Available: 1yr OD + 3yr TP, 2yr OD + 3yr TP, 3yr OD + 3yr TP",
+      thirdParty: "Available: 1 Year, 2 Years, 3 Years (TP coverage only)"
+    };
+    return info[form.previousPolicyType];
+  };
+
+  // Debug effect for TP expiry date
+  useEffect(() => {
+    console.log("🔍 PreviousPolicy Debug State:", {
+      previousTpExpiryDate: form.previousTpExpiryDate,
+      previousPolicyType: form.previousPolicyType,
+      previousPolicyStartDate: form.previousPolicyStartDate,
+      previousPolicyDuration: form.previousPolicyDuration,
+      formData: {
+        previousTpExpiryDate: form.previousTpExpiryDate,
+        previousPolicyEndDate: form.previousPolicyEndDate
+      }
+    });
+  }, [form.previousTpExpiryDate, form.previousPolicyType, form.previousPolicyStartDate, form.previousPolicyDuration]);
+
+  // Render expiry date fields based on policy type
+  const renderExpiryDateFields = () => {
+    const policyType = form.previousPolicyType;
+    
+    if (policyType === "standalone") {
+      return (
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            OD Expiry Date *
+          </label>
+          <input
+            type="date"
+            name="previousPolicyEndDate"
+            value={form.previousPolicyEndDate || ""}
+            onChange={handleChange}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              errors.previousPolicyEndDate ? "border-red-500" : "border-gray-300"
+            }`}
+          />
+          {errors.previousPolicyEndDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyEndDate}</p>}
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-calculated: Start Date + Duration - 1 Day
+            {form.previousPolicyStartDate && form.previousPolicyDuration && (
+              <span className="text-green-600 font-medium"> ✓ Calculated - You can edit if needed</span>
+            )}
+          </p>
+        </div>
+      );
     }
-    return "Policy end date is calculated as: Start Date + Duration - 1 Day";
+    
+    if (policyType === "comprehensive") {
+      return (
+        <>
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              OD Expiry Date *
+            </label>
+            <input
+              type="date"
+              name="previousPolicyEndDate"
+              value={form.previousPolicyEndDate || ""}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousPolicyEndDate ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousPolicyEndDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyEndDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              Auto-calculated: Start Date + OD Duration - 1 Day
+              {form.previousPolicyStartDate && form.previousPolicyDuration && (
+                <span className="text-green-600 font-medium"> ✓ Calculated - You can edit if needed</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              TP Expiry Date *
+            </label>
+            <input
+              type="date"
+              name="previousTpExpiryDate"
+              value={form.previousTpExpiryDate || ""}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousTpExpiryDate ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousTpExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.previousTpExpiryDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              Auto-calculated: Start Date + TP Duration - 1 Day
+              {form.previousPolicyStartDate && form.previousPolicyDuration && (
+                <span className="text-green-600 font-medium"> ✓ Calculated - You can edit if needed</span>
+              )}
+            </p>
+          </div>
+        </>
+      );
+    }
+    
+    if (policyType === "thirdParty") {
+      return (
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            TP Expiry Date *
+          </label>
+          <input
+            type="date"
+            name="previousTpExpiryDate"
+            value={form.previousTpExpiryDate || ""}
+            onChange={handleChange}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              errors.previousTpExpiryDate ? "border-red-500" : "border-gray-300"
+            }`}
+          />
+          {errors.previousTpExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.previousTpExpiryDate}</p>}
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-calculated: Start Date + Duration - 1 Day
+            {form.previousPolicyStartDate && form.previousPolicyDuration && (
+              <span className="text-green-600 font-medium"> ✓ Calculated - You can edit if needed</span>
+            )}
+          </p>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   return (
@@ -1624,66 +1794,13 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
         </div>
       </div>
 
-      {/* Vehicle Type Info Banner */}
-      {form.vehicleType && (
-        <div className={`mb-6 p-4 rounded-lg border ${
-          form.vehicleType === "new" 
-            ? "bg-green-50 border-green-200" 
-            : "bg-blue-50 border-blue-200"
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              {form.vehicleType === "new" ? (
-                <FaCar className="w-5 h-5 text-green-600" />
-              ) : (
-                <FaHistory className="w-5 h-5 text-blue-600" />
-              )}
-              <div>
-                <h4 className="font-semibold text-gray-800">
-                  {form.vehicleType === "new" ? "New Vehicle" : "Used Vehicle"}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {form.vehicleType === "new" 
-                    ? "Available policy durations: 1yr OD + 3yr TP, 2yr OD + 2yr TP, 3yr OD + 3yr TP"
-                    : "Policy duration: 1 Year (default for used vehicles)"
-                  }
-                </p>
-              </div>
-            </div>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              form.vehicleType === "new" 
-                ? "bg-green-100 text-green-800" 
-                : "bg-blue-100 text-blue-800"
-            }`}>
-              {form.vehicleType === "new" ? "NEW" : "USED"}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Date Calculation Info */}
-      {/* <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-        <div className="flex items-start space-x-3">
-          <FaInfoCircle className="w-5 h-5 text-purple-600 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-purple-800 mb-2">Date Calculation Rules</h4>
-            <ul className="text-sm text-purple-700 space-y-1">
-              <li>• <strong>Issue Date</strong>: Can be any date (past or future)</li>
-              <li>• <strong>Policy Start Date</strong>: Cannot be before Issue Date</li>
-              <li>• <strong>Policy End Date</strong>: Start Date + Duration - 1 Day</li>
-              <li className="text-xs text-purple-600 mt-2">{getExampleText()}</li>
-            </ul>
-          </div>
-        </div>
-      </div> */}
-
       <div className="border rounded-xl p-5 mb-6">
         <h4 className="text-md font-semibold text-gray-700 mb-4">
           Previous Policy Information (All Fields Mandatory)
         </h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Insurance Company - Auto-suggest */}
+          {/* Insurance Company */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
               Insurance Company *
@@ -1705,9 +1822,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
                   }
                   setShowInsuranceCompanySuggestions(true);
                 }}
-                onBlur={() => {
-                  setTimeout(() => setShowInsuranceCompanySuggestions(false), 200);
-                }}
+                onBlur={() => setTimeout(() => setShowInsuranceCompanySuggestions(false), 200)}
                 placeholder="Type insurance company"
                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                   errors.previousInsuranceCompany ? "border-red-500" : "border-gray-300"
@@ -1757,14 +1872,17 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
             <select
               name="previousPolicyType"
               value={form.previousPolicyType || ""}
-              onChange={handleChange}
+              onChange={handlePolicyTypeChange}
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.previousPolicyType ? "border-red-500" : "border-gray-300"
               }`}
             >
               <option value="">Select policy type</option>
-              <option value="comprehensive">Comprehensive</option>
-              <option value="thirdParty">Third Party</option>
+              {policyTypeOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             {errors.previousPolicyType && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyType}</p>}
           </div>
@@ -1779,7 +1897,6 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
               name="previousIssueDate"
               value={form.previousIssueDate || ""}
               onChange={handleIssueDateChange}
-              // No max restriction - can be future date
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.previousIssueDate ? "border-red-500" : "border-gray-300"
               }`}
@@ -1800,7 +1917,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
               name="previousPolicyStartDate"
               value={form.previousPolicyStartDate || ""}
               onChange={handlePolicyStartDateChange}
-              min={getMinPolicyStartDate()} // Cannot be before issue date
+              min={getMinPolicyStartDate()}
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.previousPolicyStartDate ? "border-red-500" : "border-gray-300"
               }`}
@@ -1814,7 +1931,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
             </p>
           </div>
 
-          {/* Policy Duration - Auto-suggest */}
+          {/* Policy Duration */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
               Policy Duration *
@@ -1826,21 +1943,17 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
                 value={form.previousPolicyDuration || ""}
                 onChange={handleDurationInputChange}
                 onFocus={() => {
-                  setDurationSuggestions(policyDurations);
-                  setShowDurationSuggestions(true);
+                  if (form.previousPolicyType) {
+                    setDurationSuggestions(policyDurations);
+                    setShowDurationSuggestions(true);
+                  }
                 }}
-                onBlur={() => {
-                  setTimeout(() => setShowDurationSuggestions(false), 200);
-                }}
-                placeholder={
-                  form.vehicleType === "new" 
-                    ? "Type duration (e.g., 1yr OD + 3yr TP)" 
-                    : "1 Year (default for used vehicles)"
-                }
+                onBlur={() => setTimeout(() => setShowDurationSuggestions(false), 200)}
+                placeholder={getDurationPlaceholder()}
                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                   errors.previousPolicyDuration ? "border-red-500" : "border-gray-300"
-                }`}
-                readOnly={form.vehicleType === "used"} // Read-only for used cars
+                } ${!form.previousPolicyType ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                disabled={!form.previousPolicyType}
               />
               
               {showDurationSuggestions && durationSuggestions.length > 0 && (
@@ -1858,44 +1971,15 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
               )}
             </div>
             {errors.previousPolicyDuration && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyDuration}</p>}
-            
-            {/* Auto-set duration for used cars */}
-            {form.vehicleType === "used" && !form.previousPolicyDuration && (
-              <button
-                type="button"
-                onClick={() => handleDurationChange("1 Year")}
-                className="mt-2 px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200 transition-colors"
-              >
-                Set to 1 Year (Used Car Default)
-              </button>
+            {form.previousPolicyType && (
+              <p className="text-xs text-purple-600 mt-1">
+                {getPolicyTypeInfo()}
+              </p>
             )}
           </div>
 
-          {/* Policy End Date (Auto-calculated) */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Policy End Date *
-            </label>
-            <input
-              type="date"
-              name="previousPolicyEndDate"
-              value={form.previousPolicyEndDate || ""}
-              onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.previousPolicyEndDate ? "border-red-500" : "border-gray-300"
-              }`}
-              readOnly
-            />
-            {errors.previousPolicyEndDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyEndDate}</p>}
-            <p className="text-xs text-gray-500 mt-1">
-              Auto-calculated: Start Date + Duration - 1 Day
-              {form.previousPolicyStartDate && form.previousPolicyDuration && (
-                <span className="text-green-600 font-medium">
-                  {" "}✓ Calculated
-                </span>
-              )}
-            </p>
-          </div>
+          {/* Expiry Date Fields - Dynamic based on policy type */}
+          {renderExpiryDateFields()}
 
           {/* Claim Taken Last Year */}
           <div>
@@ -1929,7 +2013,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
             {errors.previousClaimTaken && <p className="text-red-500 text-xs mt-1">{errors.previousClaimTaken}</p>}
           </div>
 
-          {/* NCB Discount - Auto-suggest */}
+          {/* NCB Discount */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
               NCB Discount (%) *
@@ -1944,9 +2028,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
                   setNcbSuggestions(ncbOptions);
                   setShowNcbSuggestions(true);
                 }}
-                onBlur={() => {
-                  setTimeout(() => setShowNcbSuggestions(false), 200);
-                }}
+                onBlur={() => setTimeout(() => setShowNcbSuggestions(false), 200)}
                 placeholder="Type NCB percentage"
                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                   errors.previousNcbDiscount ? "border-red-500" : "border-gray-300"
@@ -1970,69 +2052,109 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
             {errors.previousNcbDiscount && <p className="text-red-500 text-xs mt-1">{errors.previousNcbDiscount}</p>}
           </div>
         </div>
-
-        {/* Real-time Calculation Example */}
-        {/* {form.previousPolicyStartDate && form.previousPolicyDuration && form.previousPolicyEndDate && (
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center space-x-2 text-green-700">
-              <FaCalculator className="w-4 h-4" />
-              <span className="font-semibold">Calculation Verified:</span>
-            </div>
-            <p className="text-sm text-green-600 mt-1">
-              {form.previousPolicyStartDate} + {form.previousPolicyDuration} - 1 Day = {form.previousPolicyEndDate}
-            </p>
-          </div>
-        )} */}
       </div>
     </div>
   );
 };
 
-// Updated validation function
-// Add this validation function before the main component
 const previousPolicyValidation = (form) => {
   const errors = {};
+  const policyType = form.previousPolicyType;
 
-  if (!form.previousInsuranceCompany) {
-    errors.previousInsuranceCompany = "Previous insurance company is required";
-  }
+  // Common validations for all policy types
+  const commonValidations = {
+    previousInsuranceCompany: !form.previousInsuranceCompany ? "Previous insurance company is required" : null,
+    previousPolicyNumber: !form.previousPolicyNumber ? "Previous policy number is required" : null,
+    previousPolicyType: !policyType ? "Previous policy type is required" : null,
+    previousIssueDate: !form.previousIssueDate ? "Previous issue date is required" : null,
+    previousPolicyStartDate: !form.previousPolicyStartDate ? "Previous policy start date is required" : null,
+    previousPolicyDuration: !form.previousPolicyDuration ? "Previous policy duration is required" : null,
+    previousClaimTaken: !form.previousClaimTaken ? "Claim history is required" : null,
+    previousNcbDiscount: !form.previousNcbDiscount ? "Previous NCB discount is required" : 
+                        (parseFloat(form.previousNcbDiscount) < 0 || parseFloat(form.previousNcbDiscount) > 100) ? 
+                        "NCB discount must be between 0% and 100%" : null
+  };
 
-  if (!form.previousPolicyNumber) {
-    errors.previousPolicyNumber = "Previous policy number is required";
-  }
+  // Policy type specific validations
+  const policySpecificValidations = {
+    standalone: {
+      previousPolicyEndDate: !form.previousPolicyEndDate ? "OD expiry date is required" : null
+    },
+    comprehensive: {
+      previousPolicyEndDate: !form.previousPolicyEndDate ? "OD expiry date is required" : null,
+      previousTpExpiryDate: !form.previousTpExpiryDate ? "TP expiry date is required" : null
+    },
+    thirdParty: {
+      previousTpExpiryDate: !form.previousTpExpiryDate ? "TP expiry date is required" : null
+    }
+  };
 
-  if (!form.previousPolicyType) {
-    errors.previousPolicyType = "Previous policy type is required";
-  }
+  // Apply common validations
+  Object.keys(commonValidations).forEach(key => {
+    if (commonValidations[key]) {
+      errors[key] = commonValidations[key];
+    }
+  });
 
-  if (!form.previousIssueDate) {
-    errors.previousIssueDate = "Previous issue date is required";
-  }
-
-  if (!form.previousPolicyStartDate) {
-    errors.previousPolicyStartDate = "Previous policy start date is required";
-  }
-
-  if (!form.previousPolicyDuration) {
-    errors.previousPolicyDuration = "Previous policy duration is required";
-  }
-
-  if (!form.previousPolicyEndDate) {
-    errors.previousPolicyEndDate = "Previous policy end date is required";
-  }
-
-  if (!form.previousClaimTaken) {
-    errors.previousClaimTaken = "Claim history is required";
-  }
-
-  if (!form.previousNcbDiscount) {
-    errors.previousNcbDiscount = "Previous NCB discount is required";
-  } else if (parseFloat(form.previousNcbDiscount) < 0 || parseFloat(form.previousNcbDiscount) > 100) {
-    errors.previousNcbDiscount = "NCB discount must be between 0% and 100%";
+  // Apply policy type specific validations
+  if (policyType && policySpecificValidations[policyType]) {
+    Object.keys(policySpecificValidations[policyType]).forEach(key => {
+      if (policySpecificValidations[policyType][key]) {
+        errors[key] = policySpecificValidations[policyType][key];
+      }
+    });
   }
 
   return errors;
 };
+
+// Updated validation function
+// const previousPolicyValidation = (form) => {
+//   const errors = {};
+
+//   if (!form.previousInsuranceCompany) {
+//     errors.previousInsuranceCompany = "Previous insurance company is required";
+//   }
+
+//   if (!form.previousPolicyNumber) {
+//     errors.previousPolicyNumber = "Previous policy number is required";
+//   }
+
+//   if (!form.previousPolicyType) {
+//     errors.previousPolicyType = "Previous policy type is required";
+//   }
+
+//   if (!form.previousIssueDate) {
+//     errors.previousIssueDate = "Previous issue date is required";
+//   }
+
+//   if (!form.previousPolicyStartDate) {
+//     errors.previousPolicyStartDate = "Previous policy start date is required";
+//   }
+
+//   if (!form.previousPolicyDuration) {
+//     errors.previousPolicyDuration = "Previous policy duration is required";
+//   }
+
+//   if (!form.previousPolicyEndDate) {
+//     errors.previousPolicyEndDate = "Previous policy end date is required";
+//   }
+
+//   if (!form.previousClaimTaken) {
+//     errors.previousClaimTaken = "Claim history is required";
+//   }
+
+//   if (!form.previousNcbDiscount) {
+//     errors.previousNcbDiscount = "Previous NCB discount is required";
+//   } else if (parseFloat(form.previousNcbDiscount) < 0 || parseFloat(form.previousNcbDiscount) > 100) {
+//     errors.previousNcbDiscount = "NCB discount must be between 0% and 100%";
+//   }
+
+//   return errors;
+// };
+// ================== STEP 4: Insurance Quotes ==================
+// Alternative: If you don't have actual images, use this placeholder approach:
+
 // ================== STEP 4: Insurance Quotes ==================
 const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onInsuranceQuotesUpdate, onQuoteAccepted, isEditMode = false }) => {
   // Use quotes from form props with localStorage fallback
@@ -2043,6 +2165,15 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       // Priority 1: Quotes from form (for edit mode)
       if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
         console.log("🔄 Loading quotes from form:", form.insuranceQuotes.length);
+        console.log("📊 First quote details:", form.insuranceQuotes[0] ? {
+          insuranceCompany: form.insuranceQuotes[0].insuranceCompany,
+          ncbDiscount: form.insuranceQuotes[0].ncbDiscount,
+          ncbDiscountAmount: form.insuranceQuotes[0].ncbDiscountAmount,
+          policyDuration: form.insuranceQuotes[0].policyDuration,
+          policyDurationLabel: form.insuranceQuotes[0].policyDurationLabel,
+          odAmount: form.insuranceQuotes[0].odAmount,
+          accepted: form.insuranceQuotes[0].accepted // Check accepted flag
+        } : 'No quotes');
         return form.insuranceQuotes;
       }
       // Priority 2: Quotes from localStorage (for new cases)
@@ -2058,239 +2189,82 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
   const [selectedQuotes, setSelectedQuotes] = useState([]);
   const [expandedQuotes, setExpandedQuotes] = useState([]);
   const [acceptedQuote, setAcceptedQuote] = useState(null);
-  
-  // Determine NCB eligibility based on previous claim
+  const [editingQuote, setEditingQuote] = useState(null);
+
+  // FIXED: Determine NCB eligibility - only claim-taken vehicles are ineligible
   const isNcbEligible = form.previousClaimTaken !== "yes";
-  
-  // Set default NCB value based on claim status
+
+  // FIXED: Set default NCB value based on claim status and vehicle type
   const getDefaultNcb = () => {
-    if (!isNcbEligible) {
-      return "0"; // 0% if claim was taken
+    if (form.previousClaimTaken === "yes") {
+      return "0"; // 0% if claim was taken (locked)
     }
-    return "25"; // 25% default if no claim
+    if (form.vehicleType === "new") {
+      return "0"; // 0% default for new vehicles (but can be changed)
+    }
+    return "25"; // 25% default for used vehicles with no claim
   };
 
-  // Policy duration options based on vehicle type - FIXED TO SHOW CORRECT LABELS
-  const getPolicyDurationOptions = (vehicleType) => {
-    if (vehicleType === "new") {
+  // UPDATED: Policy duration options based on coverage type only (vehicle type doesn't restrict)
+  const getPolicyDurationOptions = (coverageType) => {
+    if (coverageType === "standalone") {
+      // Standalone OD - simple year options
+      return [
+        { value: "1", label: "1 Year" },
+        { value: "2", label: "2 Years" },
+        { value: "3", label: "3 Years" }
+      ];
+    } else if (coverageType === "thirdParty") {
+      // Third Party - simple year options
+      return [
+        { value: "1", label: "1 Year" },
+        { value: "2", label: "2 Years" },
+        { value: "3", label: "3 Years" }
+      ];
+    } else if (coverageType === "comprehensive") {
+      // Comprehensive - combined OD+TP options for ALL vehicles
       return [
         { value: "1yr OD + 3yr TP", label: "1yr OD + 3yr TP" },
         { value: "2yr OD + 3yr TP", label: "2yr OD + 3yr TP" },
         { value: "3yr OD + 3yr TP", label: "3yr OD + 3yr TP" },
       ];
-    } else {
-      return [
-        { value: "1", label: "1 Year" }
-      ]; // Only 1 year for used cars
     }
+    return [];
   };
 
-  const policyDurationOptions = getPolicyDurationOptions(form.vehicleType);
-
-  // Set default policy duration based on vehicle type
-  const getDefaultPolicyDuration = () => {
-    return form.vehicleType === "new" ? "1yr OD + 3yr TP" : "1";
+  // UPDATED: Set default policy duration based on coverage type
+  const getDefaultPolicyDuration = (coverageType) => {
+    if (coverageType === "standalone" || coverageType === "thirdParty") {
+      return "1"; // Default to 1 Year for Standalone OD and Third Party
+    }
+    return "1yr OD + 3yr TP"; // Default for Comprehensive
   };
 
   const [manualQuote, setManualQuote] = useState({
     insuranceCompany: '',
     coverageType: 'comprehensive',
     idv: '',
-    policyDuration: getDefaultPolicyDuration(),
+    policyDuration: getDefaultPolicyDuration('comprehensive'),
     ncbDiscount: getDefaultNcb(),
-    odAmount: '0', // Default to 0
-    thirdPartyAmount: '0', // Default to 0
-    addOnsAmount: '0', // Default to 0
+    odAmount: '0',
+    thirdPartyAmount: '0',
+    addOnsAmount: '0',
     premium: '',
     addOns: {
       zeroDep: { selected: false, amount: '0', rate: '0' },
       consumables: { selected: false, amount: '0', rate: '0' },
-      roadSideAssist: { selected: false, amount: '0', rate: '0' },
-      keyReplacement: { selected: false, amount: '0', rate: '0' },
       engineProtect: { selected: false, amount: '0', rate: '0' },
-      returnToInvoice: { selected: false, amount: '0', rate: '0' },
-      personalAccident: { selected: false, amount: '0', rate: '0' },
+      roadSideAssist: { selected: false, amount: '0', rate: '0' },
+      ncbProtection: { selected: false, amount: '0', rate: '0' },
+      keyReplacement: { selected: false, amount: '0', rate: '0' },
       tyreProtection: { selected: false, amount: '0', rate: '0' },
-      emergencyMedical: { selected: false, amount: '0', rate: '0' }
+      returnToInvoice: { selected: false, amount: '0', rate: '0' },
+      driverCover: { selected: false, amount: '0', rate: '0' },
+      passengerCover: { selected: false, amount: '0', rate: '0' },
+      lossOfBelongings: { selected: false, amount: '0', rate: '0' },
+      outstationCover: { selected: false, amount: '0', rate: '0' }
     }
   });
-
-  // Update policy duration options when vehicle type changes
-  useEffect(() => {
-    const newOptions = getPolicyDurationOptions(form.vehicleType);
-    
-    // If current policy duration is not available for the new vehicle type, reset to default
-    if (!newOptions.find(option => option.value === manualQuote.policyDuration)) {
-      setManualQuote(prev => ({
-        ...prev,
-        policyDuration: getDefaultPolicyDuration()
-      }));
-    }
-  }, [form.vehicleType]);
-
-  // ============ CALCULATION FUNCTIONS ============
-
-  // Calculate NCB discount amount (on OD amount only)
-  const calculateNcbDiscount = () => {
-    const odAmount = parseFloat(manualQuote.odAmount || 0) || 0;
-    const ncbDiscount = parseFloat(manualQuote.ncbDiscount || 0) || 0;
-    return Math.round(odAmount * (ncbDiscount / 100));
-  };
-
-  // Calculate OD amount after NCB discount
-  const calculateOdAfterNcb = () => {
-    const odAmount = parseFloat(manualQuote.odAmount || 0) || 0;
-    const ncbDiscountAmount = calculateNcbDiscount();
-    return odAmount - ncbDiscountAmount;
-  };
-
-  // Calculate add-ons total - Only includes add-ons with amount > 0 in calculation
-  const calculateAddOnsTotal = () => {
-    const individualAddOnsTotal = Object.entries(manualQuote.addOns).reduce((total, [key, addOn]) => {
-      if (addOn.selected && parseFloat(addOn.amount || 0) > 0) {
-        const amount = parseFloat(addOn.amount || 0) || 0;
-        return total + amount;
-      }
-      return total;
-    }, 0);
-    
-    const singleAddOnsAmount = parseFloat(manualQuote.addOnsAmount || 0) || 0;
-    
-    return individualAddOnsTotal + singleAddOnsAmount;
-  };
-
-  // Get included add-ons (selected but with 0 amount) for display
-  const getIncludedAddOns = () => {
-    return Object.entries(manualQuote.addOns)
-      .filter(([key, addOn]) => addOn.selected && parseFloat(addOn.amount || 0) === 0)
-      .map(([key, addOn]) => addOnDescriptions[key]);
-  };
-
-  // Calculate total premium with GST as (odAmountAfterNcb + thirdPartyAmount + addOnsTotal) + 18% GST
-  const calculateTotalPremium = () => {
-    const odAmountAfterNcb = calculateOdAfterNcb();
-    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
-    const addOnsTotal = calculateAddOnsTotal();
-    
-    const baseAmount = odAmountAfterNcb + thirdPartyAmount + addOnsTotal;
-    const gstAmount = baseAmount * 0.18;
-    const totalWithGst = baseAmount + gstAmount;
-    
-    return Math.round(totalWithGst);
-  };
-
-  // Calculate base premium without GST for display
-  const calculateBasePremium = () => {
-    const odAmount = parseFloat(manualQuote.odAmount || 0) || 0;
-    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
-    const addOnsTotal = calculateAddOnsTotal();
-    
-    return odAmount + thirdPartyAmount + addOnsTotal;
-  };
-
-  // Calculate GST amount for display
-  const calculateGstAmount = () => {
-    const odAmountAfterNcb = calculateOdAfterNcb();
-    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
-    const addOnsTotal = calculateAddOnsTotal();
-    const taxableAmount = odAmountAfterNcb + thirdPartyAmount + addOnsTotal;
-    return taxableAmount * 0.18;
-  };
-
-  // Calculate current totals for display
-  const currentBasePremium = calculateBasePremium();
-  const currentGstAmount = calculateGstAmount();
-  const currentTotalPremium = calculateTotalPremium();
-  const currentAddOnsTotal = calculateAddOnsTotal();
-  const currentNcbDiscountAmount = calculateNcbDiscount();
-  const currentOdAfterNcb = calculateOdAfterNcb();
-
-  // ============ END CALCULATION FUNCTIONS ============
-
-  // Load accepted quote in edit mode
-  useEffect(() => {
-    if (isEditMode && quotes.length > 0 && !acceptedQuote) {
-      // Strategy 1: Look for quote with accepted flag
-      let previouslyAcceptedQuote = quotes.find(quote => quote.accepted === true);
-      
-      // Strategy 2: If no accepted flag, use the first quote (fallback)
-      if (!previouslyAcceptedQuote && quotes.length > 0) {
-        previouslyAcceptedQuote = quotes[0];
-        console.log("🔄 No accepted flag found, using first quote as fallback");
-      }
-      
-      if (previouslyAcceptedQuote) {
-        console.log("🔄 Loading accepted quote in edit mode:", previouslyAcceptedQuote.insuranceCompany);
-        setAcceptedQuote(previouslyAcceptedQuote);
-        
-        // Notify parent component
-        if (onQuoteAccepted) {
-          onQuoteAccepted(previouslyAcceptedQuote);
-        }
-      }
-    }
-  }, [isEditMode, quotes, acceptedQuote, onQuoteAccepted]);
-
-  // Function to accept a quote for policy creation
-  const acceptQuote = (quote) => {
-    setAcceptedQuote(quote);
-    console.log("✅ Quote accepted:", quote.insuranceCompany, "Premium: ₹" + quote.totalPremium);
-    
-    // Call callback to inform parent component
-    if (onQuoteAccepted) {
-      onQuoteAccepted(quote);
-    }
-  };
-
-  // Function to unaccept quote
-  const unacceptQuote = () => {
-    setAcceptedQuote(null);
-    console.log("❌ Quote unaccepted");
-    
-    // Call callback to inform parent component
-    if (onQuoteAccepted) {
-      onQuoteAccepted(null);
-    }
-  };
-
-  // Update manualQuote when claim status changes
-  useEffect(() => {
-    setManualQuote(prev => ({
-      ...prev,
-      ncbDiscount: getDefaultNcb()
-    }));
-  }, [form.previousClaimTaken]);
-
-  // Save quotes to localStorage AND sync with parent form
-  useEffect(() => {
-    try {
-      localStorage.setItem('insuranceQuotes', JSON.stringify(quotes));
-      console.log("💾 Saved quotes to localStorage:", quotes.length);
-    } catch (error) {
-      console.error('Error saving quotes to localStorage:', error);
-    }
-  }, [quotes]);
-
-  // Sync quotes with parent form whenever quotes change
-  useEffect(() => {
-    if (onInsuranceQuotesUpdate) {
-      const currentQuotes = quotes || [];
-      const formQuotes = form.insuranceQuotes || [];
-      
-      if (JSON.stringify(currentQuotes) !== JSON.stringify(formQuotes)) {
-        console.log("🔄 Syncing quotes to parent:", quotes.length);
-        onInsuranceQuotesUpdate(quotes);
-      }
-    }
-  }, [quotes, onInsuranceQuotesUpdate, form.insuranceQuotes]);
-
-  // Sync with form.insuranceQuotes when they change externally (edit mode)
-  useEffect(() => {
-    if (form.insuranceQuotes && JSON.stringify(form.insuranceQuotes) !== JSON.stringify(quotes)) {
-      console.log("🔄 External quotes update detected:", form.insuranceQuotes.length);
-      setQuotes(form.insuranceQuotes);
-    }
-  }, [form.insuranceQuotes]);
 
   // Insurance companies with real image paths and colors
   const insuranceCompanies = [
@@ -2366,28 +2340,266 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     }
   ];
 
-  // Add-on descriptions only (no fixed rates)
+  // UPDATED: Update policy duration options when coverage type changes
+  useEffect(() => {
+    const newOptions = getPolicyDurationOptions(manualQuote.coverageType);
+    
+    // If current policy duration is not in new options, reset to default
+    if (!newOptions.find(option => option.value === manualQuote.policyDuration)) {
+      setManualQuote(prev => ({
+        ...prev,
+        policyDuration: getDefaultPolicyDuration(manualQuote.coverageType)
+      }));
+    }
+  }, [manualQuote.coverageType]);
+
+  // Handle coverage type changes
+  useEffect(() => {
+    if (manualQuote.coverageType === "standalone") {
+      setManualQuote(prev => ({
+        ...prev,
+        thirdPartyAmount: "0",
+        policyDuration: getDefaultPolicyDuration("standalone")
+      }));
+    }
+  }, [manualQuote.coverageType]);
+
+  // ============ FIXED CALCULATION FUNCTIONS ============
+
+  // FIXED: Calculate NCB discount amount (on OD amount only)
+  const calculateNcbDiscount = (odAmount = null, ncbDiscount = null) => {
+    const odAmt = odAmount !== null ? parseFloat(odAmount || 0) : parseFloat(manualQuote.odAmount || 0);
+    const ncbDisc = ncbDiscount !== null ? parseFloat(ncbDiscount || 0) : parseFloat(manualQuote.ncbDiscount || 0);
+    
+    if (odAmt > 0 && ncbDisc > 0) {
+      return Math.round(odAmt * (ncbDisc / 100));
+    }
+    return 0;
+  };
+
+  // FIXED: Calculate OD amount after NCB discount
+  const calculateOdAfterNcb = (odAmount = null, ncbDiscount = null) => {
+    const odAmt = odAmount !== null ? parseFloat(odAmount || 0) : parseFloat(manualQuote.odAmount || 0);
+    const ncbDiscountAmount = calculateNcbDiscount(odAmount, ncbDiscount);
+    return Math.max(0, odAmt - ncbDiscountAmount);
+  };
+
+  // Calculate add-ons total
+  const calculateAddOnsTotal = () => {
+    const individualAddOnsTotal = Object.entries(manualQuote.addOns).reduce((total, [key, addOn]) => {
+      if (addOn.selected && parseFloat(addOn.amount || 0) > 0) {
+        const amount = parseFloat(addOn.amount || 0) || 0;
+        return total + amount;
+      }
+      return total;
+    }, 0);
+    
+    const singleAddOnsAmount = parseFloat(manualQuote.addOnsAmount || 0) || 0;
+    
+    return individualAddOnsTotal + singleAddOnsAmount;
+  };
+
+  // Get included add-ons
+  const getIncludedAddOns = () => {
+    return Object.entries(manualQuote.addOns)
+      .filter(([key, addOn]) => addOn.selected && parseFloat(addOn.amount || 0) === 0)
+      .map(([key, addOn]) => addOnDescriptions[key]);
+  };
+
+  // Calculate total premium with GST
+  const calculateTotalPremium = () => {
+    const odAmountAfterNcb = calculateOdAfterNcb();
+    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
+    const addOnsTotal = calculateAddOnsTotal();
+    
+    const baseAmount = odAmountAfterNcb + thirdPartyAmount + addOnsTotal;
+    const gstAmount = baseAmount * 0.18;
+    const totalWithGst = baseAmount + gstAmount;
+    
+    return Math.round(totalWithGst);
+  };
+
+  // Calculate base premium without GST for display
+  const calculateBasePremium = () => {
+    const odAmount = parseFloat(manualQuote.odAmount || 0) || 0;
+    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
+    const addOnsTotal = calculateAddOnsTotal();
+    
+    return odAmount + thirdPartyAmount + addOnsTotal;
+  };
+
+  // Calculate GST amount for display
+  const calculateGstAmount = () => {
+    const odAmountAfterNcb = calculateOdAfterNcb();
+    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
+    const addOnsTotal = calculateAddOnsTotal();
+    const taxableAmount = odAmountAfterNcb + thirdPartyAmount + addOnsTotal;
+    return Math.round(taxableAmount * 0.18);
+  };
+
+  // Calculate current totals for display
+  const currentBasePremium = calculateBasePremium();
+  const currentGstAmount = calculateGstAmount();
+  const currentTotalPremium = calculateTotalPremium();
+  const currentAddOnsTotal = calculateAddOnsTotal();
+  const currentNcbDiscountAmount = calculateNcbDiscount();
+  const currentOdAfterNcb = calculateOdAfterNcb();
+
+  // ============ END FIXED CALCULATION FUNCTIONS ============
+
+  // FIXED: Enhanced function to load quotes in edit mode with proper NCB and policy term
+  const loadQuotesInEditMode = useCallback(() => {
+    if (isEditMode && form.insuranceQuotes && form.insuranceQuotes.length > 0) {
+      console.log("🔄 Loading quotes in edit mode:", form.insuranceQuotes.length);
+      
+      // Process each quote to ensure NCB and policy term are properly set
+      const processedQuotes = form.insuranceQuotes.map(quote => {
+        console.log("📊 Processing quote:", {
+          insuranceCompany: quote.insuranceCompany,
+          ncbDiscount: quote.ncbDiscount,
+          ncbDiscountAmount: quote.ncbDiscountAmount,
+          policyDuration: quote.policyDuration,
+          policyDurationLabel: quote.policyDurationLabel,
+          odAmount: quote.odAmount,
+          accepted: quote.accepted // Check if accepted flag exists
+        });
+
+        // Ensure NCB discount amount is calculated if missing
+        let ncbDiscountAmount = quote.ncbDiscountAmount;
+        if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
+          ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
+          console.log("🔢 Calculated missing NCB discount:", ncbDiscountAmount);
+        }
+
+        // Ensure policy duration label is set if missing
+        let policyDurationLabel = quote.policyDurationLabel;
+        if (!policyDurationLabel && quote.policyDuration) {
+          // Try to find matching label from options
+          const options = getPolicyDurationOptions(quote.coverageType);
+          const matchedOption = options.find(opt => opt.value === quote.policyDuration);
+          policyDurationLabel = matchedOption ? matchedOption.label : quote.policyDuration;
+          console.log("📅 Set policy duration label:", policyDurationLabel);
+        }
+
+        return {
+          ...quote,
+          ncbDiscountAmount: ncbDiscountAmount || 0,
+          policyDurationLabel: policyDurationLabel || quote.policyDuration,
+          // Ensure OD after NCB is calculated
+          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0))
+        };
+      });
+
+      console.log("✅ Processed quotes with NCB and policy term:", processedQuotes);
+
+      // CRITICAL FIX: Find and set accepted quote - look for accepted flag
+      const accepted = processedQuotes.find(quote => quote.accepted === true);
+      console.log("🔍 Looking for accepted quote:", {
+        found: !!accepted,
+        acceptedQuote: accepted,
+        allQuotes: processedQuotes.map(q => ({ company: q.insuranceCompany, accepted: q.accepted }))
+      });
+      
+      if (accepted) {
+        console.log("✅ Setting accepted quote in edit mode:", accepted.insuranceCompany);
+        setAcceptedQuote(accepted);
+        if (onQuoteAccepted) {
+          onQuoteAccepted(accepted);
+        }
+      } else {
+        console.log("❌ No accepted quote found in edit mode");
+        // If no quote is marked as accepted, check if we should accept the first one
+        // or leave it as null based on your business logic
+      }
+
+      setQuotes(processedQuotes);
+    }
+  }, [isEditMode, form.insuranceQuotes, onQuoteAccepted]);
+
+  // Load quotes when component mounts or form.insuranceQuotes changes
+  useEffect(() => {
+    console.log("🎯 InsuranceQuotes - Initial load debug:", {
+      isEditMode,
+      hasQuotes: form.insuranceQuotes?.length > 0,
+      quotesCount: form.insuranceQuotes?.length,
+      acceptedQuoteInForm: form.insuranceQuotes?.find(q => q.accepted)
+    });
+    
+    loadQuotesInEditMode();
+  }, [loadQuotesInEditMode, isEditMode, form.insuranceQuotes]); // Add form.insuranceQuotes as dependency
+
+  // Update manualQuote when claim status OR vehicle type changes
+  useEffect(() => {
+    setManualQuote(prev => ({
+      ...prev,
+      ncbDiscount: getDefaultNcb()
+    }));
+  }, [form.previousClaimTaken, form.vehicleType]);
+
+  // Save quotes to localStorage AND sync with parent form
+  useEffect(() => {
+    try {
+      localStorage.setItem('insuranceQuotes', JSON.stringify(quotes));
+      console.log("💾 Saved quotes to localStorage:", quotes.length);
+    } catch (error) {
+      console.error('Error saving quotes to localStorage:', error);
+    }
+  }, [quotes]);
+
+  // FIXED: Optimized quote syncing to prevent infinite loops
+  const prevQuotesRef = useRef([]);
+  useEffect(() => {
+    // Only sync if quotes actually changed and we have a callback
+    if (onInsuranceQuotesUpdate && JSON.stringify(prevQuotesRef.current) !== JSON.stringify(quotes)) {
+      console.log("🔄 Syncing quotes to parent (changed):", quotes.length);
+      onInsuranceQuotesUpdate(quotes);
+      prevQuotesRef.current = [...quotes];
+    }
+  }, [quotes, onInsuranceQuotesUpdate]);
+
+  // Debug effect to track state
+  useEffect(() => {
+    console.log("🔍 InsuranceQuotes Debug State:", {
+      quotesCount: quotes.length,
+      acceptedQuote: acceptedQuote,
+      isEditMode: isEditMode,
+      formInsuranceQuotes: form.insuranceQuotes,
+      formInsuranceQuotesAccepted: form.insuranceQuotes?.find(q => q.accepted)
+    });
+  }, [quotes, acceptedQuote, isEditMode, form.insuranceQuotes]);
+
+  // Updated add-on descriptions
   const addOnDescriptions = {
-    zeroDep: "Zero Depreciation Cover",
-    consumables: "Consumables Cover",
-    roadSideAssist: "Road Side Assistance",
-    keyReplacement: "Key & Lock Replacement",
-    engineProtect: "Engine Protect",
-    returnToInvoice: "Return to Invoice",
-    personalAccident: "Personal Accident Cover",
+    zeroDep: "Zero Depreciation",
+    consumables: "Consumables",
+    engineProtect: "Engine Protection",
+    roadSideAssist: "Roadside Assistance",
+    ncbProtection: "No Claim Bonus (NCB) Protection",
+    keyReplacement: "Key Replacement",
     tyreProtection: "Tyre Protection",
-    emergencyMedical: "Emergency Medical"
+    returnToInvoice: "Return to Invoice",
+    driverCover: "Driver Cover",
+    passengerCover: "Personal Accident Cover for Passengers",
+    lossOfBelongings: "Loss of Personal Belongings",
+    outstationCover: "Outstation Emergency Cover"
   };
 
   // NCB options
   const ncbOptions = [0, 20, 25, 35, 45, 50];
 
-  // Handle manual quote input changes - PROPERLY HANDLES EMPTY VALUES
+  // Coverage type options
+  const coverageTypeOptions = [
+    { value: 'comprehensive', label: 'Comprehensive' },
+    { value: 'standalone', label: 'Stand Alone OD' },
+    { value: 'thirdParty', label: 'Third Party' }
+  ];
+
+  // Handle manual quote input changes
   const handleManualQuoteChange = (e) => {
     const { name, value } = e.target;
     
-    // Prevent NCB changes if not eligible
-    if (name === "ncbDiscount" && !isNcbEligible) {
+    // Prevent NCB changes if claim was taken
+    if (name === "ncbDiscount" && form.previousClaimTaken === "yes") {
       return;
     }
     
@@ -2412,12 +2624,10 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         updatedAddOns[addOnKey] = {
           ...updatedAddOns[addOnKey],
           selected: value,
-          // Keep existing amount and rate when toggling selection
           amount: updatedAddOns[addOnKey].amount || '0',
           rate: updatedAddOns[addOnKey].rate || '0'
         };
       } else {
-        // For amount/rate changes, ensure we have a value (default to '0' if empty)
         const safeValue = value === '' ? '0' : value;
         updatedAddOns[addOnKey] = {
           ...updatedAddOns[addOnKey],
@@ -2440,7 +2650,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         updatedAddOns[key] = {
           ...updatedAddOns[key],
           selected: true,
-          amount: '0' // Set all to 0 amount when selecting all
+          amount: '0'
         };
       });
       return {
@@ -2468,7 +2678,187 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     });
   };
 
-  // Add manual quote - HANDLES EMPTY VALUES PROPERLY
+  // FIXED: Enhanced function to start editing a quote with proper NCB and policy term handling
+  const startEditingQuote = (quote, index) => {
+    console.log("✏️ Starting to edit quote:", {
+      insuranceCompany: quote.insuranceCompany,
+      ncbDiscount: quote.ncbDiscount,
+      ncbDiscountAmount: quote.ncbDiscountAmount,
+      policyDuration: quote.policyDuration,
+      policyDurationLabel: quote.policyDurationLabel,
+      odAmount: quote.odAmount,
+      accepted: quote.accepted
+    });
+
+    setEditingQuote({ ...quote, originalIndex: index });
+    
+    const company = insuranceCompanies.find(c => c.name === quote.insuranceCompany);
+    
+    // Convert add-ons back to the manualQuote format
+    const addOnsData = {};
+    Object.keys(addOnDescriptions).forEach(key => {
+      const addOnData = quote.selectedAddOns?.[key];
+      addOnsData[key] = {
+        selected: !!addOnData,
+        amount: addOnData?.amount?.toString() || '0',
+        rate: addOnData?.rate?.toString() || '0'
+      };
+    });
+
+    // FIXED: Calculate NCB discount amount when loading quote for editing
+    const odAmount = quote.odAmount?.toString() || '0';
+    const ncbDiscount = quote.ncbDiscount?.toString() || getDefaultNcb();
+    const ncbDiscountAmount = calculateNcbDiscount(odAmount, ncbDiscount);
+
+    // FIXED: Use the actual policy duration from the quote, not default
+    const policyDuration = quote.policyDuration || getDefaultPolicyDuration(quote.coverageType);
+
+    setManualQuote({
+      insuranceCompany: quote.insuranceCompany,
+      coverageType: quote.coverageType || 'comprehensive',
+      idv: quote.idv?.toString() || '',
+      policyDuration: policyDuration,
+      ncbDiscount: ncbDiscount,
+      odAmount: odAmount,
+      thirdPartyAmount: quote.thirdPartyAmount?.toString() || '0',
+      addOnsAmount: quote.addOnsAmount?.toString() || '0',
+      premium: quote.premium?.toString() || '',
+      addOns: addOnsData
+    });
+
+    console.log("✅ Manual quote set for editing:", {
+      insuranceCompany: quote.insuranceCompany,
+      ncbDiscount: ncbDiscount,
+      policyDuration: policyDuration,
+      odAmount: odAmount
+    });
+  };
+
+  // Function to cancel editing
+  const cancelEditing = () => {
+    setEditingQuote(null);
+    resetManualQuoteForm();
+  };
+
+  // FIXED: Enhanced function to update an existing quote with proper NCB and policy term
+  const updateQuote = () => {
+    if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv) {
+      alert("Please fill all required fields: Insurance Company, Coverage Type, and IDV");
+      return;
+    }
+
+    const company = insuranceCompanies.find(c => c.name === manualQuote.insuranceCompany);
+    const addOnsPremium = calculateAddOnsTotal();
+    
+    // FIXED: Calculate NCB discount amount using current manualQuote values
+    const ncbDiscountAmount = calculateNcbDiscount();
+    const odAmountAfterNcb = calculateOdAfterNcb();
+    const totalPremium = calculateTotalPremium();
+    const basePremium = calculateBasePremium();
+    const gstAmount = calculateGstAmount();
+
+    // FIXED: Get the policy duration label from options
+    const policyDurationOptions = getPolicyDurationOptions(manualQuote.coverageType);
+    const policyDurationOption = policyDurationOptions.find(opt => opt.value === manualQuote.policyDuration);
+    const policyDurationLabel = policyDurationOption ? policyDurationOption.label : manualQuote.policyDuration;
+
+    // Prepare selected add-ons
+    const selectedAddOns = Object.entries(manualQuote.addOns)
+      .filter(([_, addOn]) => addOn.selected)
+      .reduce((acc, [key, addOn]) => {
+        acc[key] = {
+          description: addOnDescriptions[key],
+          amount: parseFloat(addOn.amount || 0) || 0,
+          rate: parseFloat(addOn.rate || 0) || 0,
+          included: parseFloat(addOn.amount || 0) === 0
+        };
+        return acc;
+      }, {});
+
+    const updatedQuote = {
+      id: editingQuote.id,
+      insuranceCompany: manualQuote.insuranceCompany,
+      companyLogo: company?.logo || '',
+      companyFallbackLogo: company?.fallbackLogo || '🏢',
+      companyColor: company?.color || '#000',
+      companyBgColor: company?.bgColor || '#fff',
+      coverageType: manualQuote.coverageType,
+      idv: parseFloat(manualQuote.idv || 0) || 0,
+      policyDuration: manualQuote.policyDuration,
+      policyDurationLabel: policyDurationLabel,
+      ncbDiscount: parseInt(manualQuote.ncbDiscount),
+      ncbDiscountAmount: ncbDiscountAmount,
+      odAmount: parseFloat(manualQuote.odAmount || 0) || 0,
+      odAmountAfterNcb: odAmountAfterNcb,
+      thirdPartyAmount: parseFloat(manualQuote.thirdPartyAmount || 0) || 0,
+      addOnsAmount: parseFloat(manualQuote.addOnsAmount || 0) || 0,
+      premium: basePremium,
+      gstAmount: gstAmount,
+      totalPremium: totalPremium,
+      addOnsPremium: addOnsPremium,
+      selectedAddOns: selectedAddOns,
+      includedAddOns: getIncludedAddOns(),
+      createdAt: editingQuote.createdAt,
+      updatedAt: new Date().toISOString(),
+      accepted: editingQuote.accepted // Preserve accepted status
+    };
+
+    const updatedQuotes = [...quotes];
+    updatedQuotes[editingQuote.originalIndex] = updatedQuote;
+    
+    console.log("✏️ Updating quote at index:", editingQuote.originalIndex);
+    console.log("📊 Updated quote details:", {
+      ncbDiscount: updatedQuote.ncbDiscount,
+      ncbDiscountAmount: updatedQuote.ncbDiscountAmount,
+      policyDuration: updatedQuote.policyDuration,
+      policyDurationLabel: updatedQuote.policyDurationLabel,
+      accepted: updatedQuote.accepted
+    });
+    
+    setQuotes(updatedQuotes);
+    
+    // If the accepted quote was updated, update the acceptedQuote state
+    if (acceptedQuote && acceptedQuote.id === editingQuote.id) {
+      setAcceptedQuote(updatedQuote);
+      if (onQuoteAccepted) {
+        onQuoteAccepted(updatedQuote);
+      }
+    }
+    
+    setEditingQuote(null);
+    resetManualQuoteForm();
+  };
+
+  // Reset manual quote form
+  const resetManualQuoteForm = () => {
+    setManualQuote({
+      insuranceCompany: '',
+      coverageType: 'comprehensive',
+      idv: '',
+      policyDuration: getDefaultPolicyDuration('comprehensive'),
+      ncbDiscount: getDefaultNcb(),
+      odAmount: '0',
+      thirdPartyAmount: '0',
+      addOnsAmount: '0',
+      premium: '',
+      addOns: {
+        zeroDep: { selected: false, amount: '0', rate: '0' },
+        consumables: { selected: false, amount: '0', rate: '0' },
+        engineProtect: { selected: false, amount: '0', rate: '0' },
+        roadSideAssist: { selected: false, amount: '0', rate: '0' },
+        ncbProtection: { selected: false, amount: '0', rate: '0' },
+        keyReplacement: { selected: false, amount: '0', rate: '0' },
+        tyreProtection: { selected: false, amount: '0', rate: '0' },
+        returnToInvoice: { selected: false, amount: '0', rate: '0' },
+        driverCover: { selected: false, amount: '0', rate: '0' },
+        passengerCover: { selected: false, amount: '0', rate: '0' },
+        lossOfBelongings: { selected: false, amount: '0', rate: '0' },
+        outstationCover: { selected: false, amount: '0', rate: '0' }
+      }
+    });
+  };
+
+  // Add manual quote
   const addManualQuote = () => {
     console.log("🔍 Add Quote Button Clicked - Current Values:", {
       insuranceCompany: manualQuote.insuranceCompany,
@@ -2476,6 +2866,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       idv: manualQuote.idv,
       odAmount: manualQuote.odAmount,
       thirdPartyAmount: manualQuote.thirdPartyAmount,
+      addOnsAmount: manualQuote.addOnsAmount,
       isInsuranceCompanyValid: !!manualQuote.insuranceCompany,
       isCoverageTypeValid: !!manualQuote.coverageType,
       isIdvValid: !!manualQuote.idv,
@@ -2495,10 +2886,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     const basePremium = calculateBasePremium();
     const gstAmount = calculateGstAmount();
 
-    // Get the policy duration label - FIXED: Use the actual value as label for new vehicles
-    const policyDurationLabel = manualQuote.policyDuration;
+    // FIXED: Get the policy duration label from options
+    const policyDurationOptions = getPolicyDurationOptions(manualQuote.coverageType);
+    const policyDurationOption = policyDurationOptions.find(opt => opt.value === manualQuote.policyDuration);
+    const policyDurationLabel = policyDurationOption ? policyDurationOption.label : manualQuote.policyDuration;
 
-    // Prepare selected add-ons - include ALL selected add-ons (both with 0 and >0 amount)
+    // Prepare selected add-ons
     const selectedAddOns = Object.entries(manualQuote.addOns)
       .filter(([_, addOn]) => addOn.selected)
       .reduce((acc, [key, addOn]) => {
@@ -2506,7 +2899,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           description: addOnDescriptions[key],
           amount: parseFloat(addOn.amount || 0) || 0,
           rate: parseFloat(addOn.rate || 0) || 0,
-          included: parseFloat(addOn.amount || 0) === 0 // Flag to indicate included (0 amount)
+          included: parseFloat(addOn.amount || 0) === 0
         };
         return acc;
       }, {});
@@ -2521,7 +2914,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       coverageType: manualQuote.coverageType,
       idv: parseFloat(manualQuote.idv || 0) || 0,
       policyDuration: manualQuote.policyDuration,
-      policyDurationLabel: policyDurationLabel, // Use the descriptive label directly
+      policyDurationLabel: policyDurationLabel,
       ncbDiscount: parseInt(manualQuote.ncbDiscount),
       ncbDiscountAmount: ncbDiscountAmount,
       odAmount: parseFloat(manualQuote.odAmount || 0) || 0,
@@ -2533,38 +2926,24 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       totalPremium: totalPremium,
       addOnsPremium: addOnsPremium,
       selectedAddOns: selectedAddOns,
-      includedAddOns: getIncludedAddOns(), // Store included add-ons separately
+      includedAddOns: getIncludedAddOns(),
       createdAt: new Date().toISOString(),
-      accepted: false // Initialize as not accepted
+      accepted: false // New quotes are not accepted by default
     };
 
     const updatedQuotes = [...quotes, newQuote];
     console.log("➕ Adding new quote. Previous:", quotes.length, "New:", updatedQuotes.length);
-    setQuotes(updatedQuotes);
-
-    // Reset manual quote form but keep NCB setting based on eligibility
-    setManualQuote({
-      insuranceCompany: '',
-      coverageType: 'comprehensive',
-      idv: '',
-      policyDuration: getDefaultPolicyDuration(),
-      ncbDiscount: getDefaultNcb(),
-      odAmount: '0', // Reset to 0
-      thirdPartyAmount: '0', // Reset to 0
-      addOnsAmount: '0', // Reset to 0
-      premium: '',
-      addOns: {
-        zeroDep: { selected: false, amount: '0', rate: '0' },
-        consumables: { selected: false, amount: '0', rate: '0' },
-        roadSideAssist: { selected: false, amount: '0', rate: '0' },
-        keyReplacement: { selected: false, amount: '0', rate: '0' },
-        engineProtect: { selected: false, amount: '0', rate: '0' },
-        returnToInvoice: { selected: false, amount: '0', rate: '0' },
-        personalAccident: { selected: false, amount: '0', rate: '0' },
-        tyreProtection: { selected: false, amount: '0', rate: '0' },
-        emergencyMedical: { selected: false, amount: '0', rate: '0' }
-      }
+    console.log("📊 Quote details:", {
+      insuranceCompany: newQuote.insuranceCompany,
+      totalPremium: newQuote.totalPremium,
+      ncbDiscount: newQuote.ncbDiscount,
+      ncbDiscountAmount: newQuote.ncbDiscountAmount,
+      policyDuration: newQuote.policyDuration,
+      policyDurationLabel: newQuote.policyDurationLabel,
+      accepted: newQuote.accepted
     });
+    setQuotes(updatedQuotes);
+    resetManualQuoteForm();
   };
 
   // Remove quote
@@ -2572,9 +2951,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     console.log("🗑️ Removing quote at index:", index);
     const quoteToRemove = quotes[index];
     
-    // If removing the accepted quote, unaccept it first
     if (acceptedQuote && acceptedQuote.id === quoteToRemove.id) {
       unacceptQuote();
+    }
+    
+    if (editingQuote && editingQuote.originalIndex === index) {
+      cancelEditing();
     }
     
     const updatedQuotes = quotes.filter((_, i) => i !== index);
@@ -2592,14 +2974,55 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       setSelectedQuotes([]);
       setExpandedQuotes([]);
       setAcceptedQuote(null);
+      setEditingQuote(null);
       
-      // Clear localStorage too
       localStorage.removeItem('insuranceQuotes');
       
-      // Notify parent about quote unacceptance
       if (onQuoteAccepted) {
         onQuoteAccepted(null);
       }
+    }
+  };
+
+  // Function to accept a quote for policy creation
+  const acceptQuote = (quote) => {
+    // First, unaccept any currently accepted quote
+    const updatedQuotes = quotes.map(q => ({
+      ...q,
+      accepted: q.id === quote.id // Only set the selected quote as accepted
+    }));
+    
+    setQuotes(updatedQuotes);
+    setAcceptedQuote(quote);
+    
+    console.log("✅ Quote accepted:", quote.insuranceCompany, "Premium: ₹" + quote.totalPremium);
+    console.log("📊 Accepted quote details:", {
+      ncbDiscount: quote.ncbDiscount,
+      ncbDiscountAmount: quote.ncbDiscountAmount,
+      policyDuration: quote.policyDuration,
+      policyDurationLabel: quote.policyDurationLabel,
+      accepted: true
+    });
+    
+    if (onQuoteAccepted) {
+      onQuoteAccepted(quote);
+    }
+  };
+
+  // Function to unaccept quote
+  const unacceptQuote = () => {
+    // Remove accepted status from all quotes
+    const updatedQuotes = quotes.map(q => ({
+      ...q,
+      accepted: false
+    }));
+    
+    setQuotes(updatedQuotes);
+    setAcceptedQuote(null);
+    console.log("❌ Quote unaccepted");
+    
+    if (onQuoteAccepted) {
+      onQuoteAccepted(null);
     }
   };
 
@@ -2642,292 +3065,30 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     downloadQuotesPDF(selectedQuoteData);
   };
 
+  // Download all quotes as PDF
+  const downloadAllQuotesPDF = () => {
+    if (quotes.length === 0) {
+      alert("No quotes available to download");
+      return;
+    }
+    downloadQuotesPDF(quotes);
+  };
+
   // Professional PDF generation function
   const downloadQuotesPDF = (quotesToDownload) => {
     try {
       setIsGenerating(true);
       
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.width;
-      const pageHeight = pdf.internal.pageSize.height;
-      const margin = 15;  // Reduced margin for more content space
-      const contentWidth = pageWidth - (2 * margin);
-
-      // Enhanced color scheme for a unique, modern look
-      const primaryColor = [0, 102, 204];  // Deep blue
-      const secondaryColor = [51, 153, 255];  // Light blue
-      const accentColor = [0, 204, 102];  // Vibrant green
-      const textColor = [34, 34, 34];  // Dark gray
-      const lightBg = [240, 248, 255];  // Very light blue
-      const borderColor = [204, 204, 204];  // Soft gray
-
-      // Modern Header with subtle gradient simulation
-      pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      pdf.rect(0, 0, pageWidth, 50, 'F');  // Main header band
-      pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-      pdf.rect(0, 50, pageWidth, 10, 'F');  // Subtle accent line
-
-      // Title with modern font styling
-      pdf.setFontSize(26);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(255, 255, 255);
-      pdf.text('Insurance Quote Comparison', margin, 35);
-
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'italic');
-      pdf.text('Tailored Options for Your Vehicle', pageWidth - margin, 35, { align: 'right' });
-
-      // Customer Information Section with card-like design
-      pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(margin, 70, contentWidth, 35, 5, 5, 'F');  // Rounded card
-      pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      pdf.roundedRect(margin, 70, contentWidth, 35, 5, 5, 'S');
-
-      pdf.setFontSize(11);
-      pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Your Details:', margin + 10, 82);
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Customer: ${form.customerName || 'Not Specified'}`, margin + 10, 92);
-      pdf.text(`Vehicle: ${form.make || ''} ${form.model || ''} ${form.variant || ''}`, margin + 10, 100);
-      pdf.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - margin - 10, 92, { align: 'right' });
-      pdf.text(`Quotes Analyzed: ${quotesToDownload.length}`, pageWidth - margin - 10, 100, { align: 'right' });
-
-      let yPosition = 120;
-
-      // Quick Summary Dashboard
-      if (quotesToDownload.length > 1) {
-        pdf.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
-        pdf.roundedRect(margin, yPosition, contentWidth, 40, 5, 5, 'F');
-        pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-        pdf.roundedRect(margin, yPosition, contentWidth, 40, 5, 5, 'S');
-
-        pdf.setFontSize(11);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        pdf.text('Quick Insights', margin + 10, yPosition + 12);
-
-        const lowestPremium = Math.min(...quotesToDownload.map(q => q.totalPremium));
-        const avgPremium = quotesToDownload.reduce((sum, q) => sum + q.totalPremium, 0) / quotesToDownload.length;
-        const savingsPotential = Math.max(...quotesToDownload.map(q => q.totalPremium)) - lowestPremium;
-
-        pdf.setFontSize(10);
-        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-        pdf.setFont('helvetica', 'normal');
-
-        // Dashboard items
-        const dashItems = [
-          { label: 'Best Price', value: `₹${lowestPremium.toLocaleString('en-IN')}`, color: accentColor },
-          { label: 'Average', value: `₹${Math.round(avgPremium).toLocaleString('en-IN')}`, color: secondaryColor },
-          { label: 'Potential Savings', value: `₹${savingsPotential.toLocaleString('en-IN')}`, color: accentColor }
-        ];
-
-        let dashX = margin + 10;
-        dashItems.forEach(item => {
-          pdf.setTextColor(item.color[0], item.color[1], item.color[2]);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(item.value, dashX, yPosition + 25);
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(9);
-          pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-          pdf.text(item.label, dashX, yPosition + 33);
-          dashX += contentWidth / 3;
-        });
-
-        yPosition += 50;
-      }
-
-      // Enhanced Comparison Table with improved readability
-      yPosition = createEnhancedComparisonTable(pdf, quotesToDownload, margin, yPosition, pageWidth, pageHeight, contentWidth);
-
-      // Recommendation Section
-      if (quotesToDownload.length > 1) {
-        yPosition += 10;
-        if (yPosition > pageHeight - 60) {
-          pdf.addPage();
-          yPosition = 20;
-        }
-
-        pdf.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
-        pdf.roundedRect(margin, yPosition, contentWidth, 40, 5, 5, 'F');
-        pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-        pdf.roundedRect(margin, yPosition, contentWidth, 40, 5, 5, 'S');
-
-        pdf.setFontSize(11);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-        pdf.text('Our Recommendation', margin + 10, yPosition + 12);
-
-        const bestQuote = [...quotesToDownload].sort((a, b) => a.totalPremium - b.totalPremium)[0];
-
-        pdf.setFontSize(10);
-        pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(`We recommend ${bestQuote.insuranceCompany} for the best value at ₹${bestQuote.totalPremium.toLocaleString('en-IN')}.`, margin + 10, yPosition + 25);
-        pdf.text(`It offers comprehensive coverage with ${Object.keys(bestQuote.selectedAddOns || {}).length} add-ons and ${bestQuote.ncbDiscount}% NCB.`, margin + 10, yPosition + 33);
-
-        yPosition += 50;
-      }
-
-      // Elegant Footer
-      if (yPosition > pageHeight - 30) {
-        pdf.addPage();
-        yPosition = pageHeight - 25;
-      } else {
-        yPosition = pageHeight - 25;
-      }
-
-      pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      pdf.line(margin, yPosition - 5, pageWidth - margin, yPosition - 5);
-
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.setFont('helvetica', 'italic');
-      pdf.text('Powered by AutoCredit Insurance • Confidential • For internal use only', margin, yPosition);
-      pdf.text(`Page 1 of ${pdf.internal.getNumberOfPages()}`, pageWidth - margin, yPosition, { align: 'right' });
-
-      const fileName = `premium-insurance-comparison-${form.customerName || 'client'}-${new Date().getTime()}.pdf`;
-      pdf.save(fileName);
+      PDFGenerationService.generateQuotesPDF(quotesToDownload, form);
+      
+      console.log("✅ Enhanced PDF generated and download triggered");
+      
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  // Enhanced table creation function for better comparison
-  const createEnhancedComparisonTable = (pdf, quotes, startX, startY, pageWidth, pageHeight, contentWidth) => {
-    let yPosition = startY + 10;
-
-    // Table Header with modern design
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    pdf.roundedRect(startX, yPosition, contentWidth, 14, 3, 3, 'F');
-
-    const headers = ['Provider', 'Total Premium', 'IDV', 'Coverage', 'NCB', 'Add-ons', 'Term', 'Key Highlights'];
-    const colWidths = [contentWidth * 0.18, contentWidth * 0.12, contentWidth * 0.12, contentWidth * 0.12, contentWidth * 0.08, contentWidth * 0.12, contentWidth * 0.10, contentWidth * 0.16];
-
-    let xPosition = startX + 5;
-    headers.forEach((header, idx) => {
-      pdf.text(header, xPosition, yPosition + 10);
-      xPosition += colWidths[idx];
-    });
-
-    yPosition += 14;
-
-    // Sort quotes by total premium ascending
-    const sortedQuotes = [...quotes].sort((a, b) => a.totalPremium - b.totalPremium);
-
-    pdf.setFontSize(10);
-    pdf.setTextColor(0, 0, 0);
-    pdf.setFont('helvetica', 'normal');
-
-    sortedQuotes.forEach((quote, rowIndex) => {
-      // Page break check
-      if (yPosition + 40 > pageHeight - 30) {  // Increased height for more details
-        pdf.addPage();
-        yPosition = 20;
-
-        // Redraw header
-        pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        pdf.roundedRect(startX, yPosition, contentWidth, 14, 3, 3, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFont('helvetica', 'bold');
-        xPosition = startX + 5;
-        headers.forEach((header, idx) => {
-          pdf.text(header, xPosition, yPosition + 10);
-          xPosition += colWidths[idx];
-        });
-        yPosition += 14;
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFont('helvetica', 'normal');
-      }
-
-      // Row background with alternating colors and hover-like effect for best quote
-      const isBest = rowIndex === 0;
-      pdf.setFillColor(isBest ? [230, 255, 241] : (rowIndex % 2 === 0 ? 255 : 248, rowIndex % 2 === 0 ? 255 : 248, rowIndex % 2 === 0 ? 255 : 248));  // Light green for best, white/gray alternate
-      pdf.rect(startX, yPosition, contentWidth, 40, 'F');  // Taller rows for sub-details
-
-      pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      pdf.rect(startX, yPosition, contentWidth, 40, 'S');
-
-      xPosition = startX + 5;
-
-      // Provider with bold and color
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(isBest ? accentColor[0] : textColor[0], isBest ? accentColor[1] : textColor[1], isBest ? accentColor[2] : textColor[2]);
-      pdf.text(quote.insuranceCompany, xPosition, yPosition + 10);
-      if (isBest) pdf.text('★ Best Value', xPosition, yPosition + 18, { fontSize: 8 });
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-      xPosition += colWidths[0];
-
-      // Total Premium highlighted
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`₹${(quote.totalPremium || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 10);
-      pdf.setFontSize(8);
-      pdf.text(`GST: ₹${(quote.gstAmount || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      xPosition += colWidths[1];
-
-      // IDV
-      pdf.text(`₹${(quote.idv || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 10);
-      pdf.setFontSize(8);
-      pdf.text(`OD: ₹${(quote.odAmountAfterNcb || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
-      pdf.setFontSize(10);
-      xPosition += colWidths[2];
-
-      // Coverage
-      pdf.text(quote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party', xPosition, yPosition + 10);
-      pdf.setFontSize(8);
-      pdf.text(`TP: ₹${(quote.thirdPartyAmount || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
-      pdf.setFontSize(10);
-      xPosition += colWidths[3];
-
-      // NCB
-      pdf.text(`${quote.ncbDiscount}%`, xPosition, yPosition + 10);
-      pdf.setFontSize(8);
-      pdf.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-      pdf.text(`Save: ₹${(quote.ncbDiscountAmount || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
-      pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
-      pdf.setFontSize(10);
-      xPosition += colWidths[4];
-
-      // Add-ons
-      const addOnsCount = Object.keys(quote.selectedAddOns || {}).length;
-      pdf.text(`${addOnsCount} Add-ons`, xPosition, yPosition + 10);
-      pdf.setFontSize(8);
-      pdf.text(`₹${(quote.addOnsPremium || 0).toLocaleString('en-IN')}`, xPosition, yPosition + 18);
-      pdf.setFontSize(10);
-      xPosition += colWidths[5];
-
-      // Term
-      pdf.text(quote.policyDurationLabel || quote.policyDuration, xPosition, yPosition + 10);
-      xPosition += colWidths[6];
-
-      // Key Highlights as bullet list
-      pdf.setFontSize(8);
-      const highlights = [];
-      if (quote.selectedAddOns) {
-        Object.values(quote.selectedAddOns).slice(0, 3).forEach(addOn => {
-          highlights.push(`• ${addOn.description.split(' ')[0]}`);
-        });
-      }
-      highlights.forEach((hl, i) => {
-        pdf.text(hl, xPosition, yPosition + 10 + (i * 8));
-      });
-      if (highlights.length === 0) pdf.text('Standard Coverage', xPosition, yPosition + 10);
-      pdf.setFontSize(10);
-
-      yPosition += 40;
-    });
-
-    return yPosition;
   };
 
   // Component for company logo with fallback
@@ -2955,6 +3116,19 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     );
   };
 
+  // Get display label for coverage type
+  const getCoverageTypeLabel = (type) => {
+    switch (type) {
+      case 'comprehensive': return 'Comprehensive';
+      case 'standalone': return 'Stand Alone OD';
+      case 'thirdParty': return 'Third Party';
+      default: return type;
+    }
+  };
+
+  // Get current policy duration options based on coverage type
+  const currentPolicyDurationOptions = getPolicyDurationOptions(manualQuote.coverageType);
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
@@ -2963,16 +3137,29 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           <p className="text-sm text-gray-500">
             Quotes: {quotes.length} | Required: At least 1 | {acceptedQuote ? `✅ ${acceptedQuote.insuranceCompany} Accepted` : '❌ No Quote Accepted'}
             {isEditMode && acceptedQuote && <span className="text-green-600 ml-2">• Loaded from saved data</span>}
+            {editingQuote && <span className="text-blue-600 ml-2">• Editing Quote</span>}
           </p>
         </div>
-        {quotes.length > 0 && (
-          <button
-            onClick={clearAllQuotes}
-            className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Clear All Quotes
-          </button>
-        )}
+        <div className="flex gap-2">
+          {quotes.length > 0 && (
+            <button
+              onClick={clearAllQuotes}
+              className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Clear All Quotes
+            </button>
+          )}
+          {quotes.length > 0 && (
+            <button
+              onClick={downloadAllQuotesPDF}
+              disabled={isGenerating}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              {isGenerating ? 'Generating...' : 'Download All PDF'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Validation Error Display */}
@@ -3006,6 +3193,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                 <p className="text-sm text-green-600">
                   {acceptedQuote.insuranceCompany} - ₹{acceptedQuote.totalPremium?.toLocaleString('en-IN')}
                   {acceptedQuote.ncbDiscount > 0 && ` (with ${acceptedQuote.ncbDiscount}% NCB)`}
+                  {acceptedQuote.policyDurationLabel && ` - ${acceptedQuote.policyDurationLabel}`}
                 </p>
               </div>
             </div>
@@ -3019,69 +3207,75 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         </div>
       )}
 
-      {/* NCB Eligibility Status */}
+      {/* FIXED: NCB Eligibility Status */}
       <div className={`mb-4 p-3 rounded-lg border ${
-        !isNcbEligible 
+        form.previousClaimTaken === "yes" 
           ? 'bg-red-50 border-red-200' 
+          : form.vehicleType === "new"
+          ? 'bg-blue-50 border-blue-200'
           : 'bg-green-50 border-green-200'
       }`}>
         <div className="flex items-center justify-between">
           <div>
             <p className={`text-sm font-medium ${
-              !isNcbEligible ? 'text-red-700' : 'text-green-700'
+              form.previousClaimTaken === "yes" 
+                ? 'text-red-700' 
+                : form.vehicleType === "new"
+                ? 'text-blue-700'
+                : 'text-green-700'
             }`}>
-              <strong>NCB Status:</strong> {!isNcbEligible ? 'Not Eligible' : 'Eligible'}
+              <strong>NCB Status:</strong> {
+                form.previousClaimTaken === "yes" 
+                  ? 'Not Eligible (Claim Taken)' 
+                  : form.vehicleType === "new"
+                  ? 'New Vehicle (Starts at 0%)'
+                  : 'Eligible (Default 25%)'
+              }
             </p>
             <p className={`text-xs ${
-              !isNcbEligible ? 'text-red-600' : 'text-green-600'
+              form.previousClaimTaken === "yes" 
+                ? 'text-red-600' 
+                : form.vehicleType === "new"
+                ? 'text-blue-600'
+                : 'text-green-600'
             }`}>
-              {!isNcbEligible 
+              {form.previousClaimTaken === "yes" 
                 ? 'Claim was taken in previous policy - NCB set to 0%' 
+                : form.vehicleType === "new"
+                ? 'New vehicle starts at 0% NCB, but you can change it'
                 : 'No claim in previous policy - Default NCB is 25% (can be changed)'
               }
             </p>
           </div>
-          {!isNcbEligible && (
+          {form.previousClaimTaken === "yes" && (
             <div className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-bold">
               NCB LOST
+            </div>
+          )}
+          {form.vehicleType === "new" && form.previousClaimTaken !== "yes" && (
+            <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-bold">
+              NEW VEHICLE
             </div>
           )}
         </div>
       </div>
 
-      {/* Debug Info */}
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-sm text-blue-700">
-              <strong>Quotes Status:</strong> {quotes.length} quote(s) added
-            </p>
-            <p className="text-xs text-blue-600">
-              {quotes.length === 0 ? "Add at least one quote to proceed" : 
-               acceptedQuote ? "✅ Quote accepted - can proceed to next step" : 
-               "❌ Please accept a quote to proceed to next step"}
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              console.log("=== QUOTES DEBUG ===");
-              console.log("Local quotes:", quotes);
-              console.log("Form insuranceQuotes:", form.insuranceQuotes);
-              console.log("Previous Claim:", form.previousClaimTaken);
-              console.log("NCB Eligible:", isNcbEligible);
-              console.log("Accepted Quote:", acceptedQuote);
-              console.log("Can proceed:", quotes.length > 0 && acceptedQuote !== null);
-            }}
-            className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-          >
-            Debug Quotes
-          </button>
-        </div>
-      </div>
-      
-      {/* Add Quote Form */}
+      {/* Add/Edit Quote Form */}
       <div className="bg-gray-50 rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Add New Quote</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">
+            {editingQuote ? `Edit Quote: ${editingQuote.insuranceCompany}` : 'Add New Quote'}
+          </h3>
+          {editingQuote && (
+            <button
+              onClick={cancelEditing}
+              className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Cancel Edit
+            </button>
+          )}
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {/* Insurance Company */}
           <div>
@@ -3162,11 +3356,13 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               <input
                 type="text"
                 name="coverageType"
-                value={manualQuote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party'}
+                value={getCoverageTypeLabel(manualQuote.coverageType)}
                 onChange={(e) => {
                   const value = e.target.value.toLowerCase();
                   if (value.includes('comp') || value.includes('comp')) {
                     setManualQuote(prev => ({ ...prev, coverageType: 'comprehensive' }));
+                  } else if (value.includes('stand') || value.includes('alone')) {
+                    setManualQuote(prev => ({ ...prev, coverageType: 'standalone' }));
                   } else if (value.includes('third') || value.includes('3rd')) {
                     setManualQuote(prev => ({ ...prev, coverageType: 'thirdParty' }));
                   }
@@ -3174,30 +3370,24 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                 onFocus={() => setIsCoverageSuggestionsOpen(true)}
                 onBlur={() => setTimeout(() => setIsCoverageSuggestionsOpen(false), 200)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="Type Comprehensive or Third Party"
+                placeholder="Type Comprehensive, Stand Alone, or Third Party"
               />
               
               {/* Dropdown suggestions */}
               {isCoverageSuggestionsOpen && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                  <div
-                    onClick={() => {
-                      setManualQuote(prev => ({ ...prev, coverageType: 'comprehensive' }));
-                      setIsCoverageSuggestionsOpen(false);
-                    }}
-                    className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors border-b border-gray-100"
-                  >
-                    Comprehensive
-                  </div>
-                  <div
-                    onClick={() => {
-                      setManualQuote(prev => ({ ...prev, coverageType: 'thirdParty' }));
-                      setIsCoverageSuggestionsOpen(false);
-                    }}
-                    className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors"
-                  >
-                    Third Party
-                  </div>
+                  {coverageTypeOptions.map(option => (
+                    <div
+                      key={option.value}
+                      onClick={() => {
+                        setManualQuote(prev => ({ ...prev, coverageType: option.value }));
+                        setIsCoverageSuggestionsOpen(false);
+                      }}
+                      className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors border-b border-gray-100 last:border-b-0"
+                    >
+                      {option.label}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -3218,7 +3408,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
             />
           </div>
 
-          {/* Policy Duration */}
+          {/* UPDATED: Policy Duration - Now fully editable for all vehicle types and coverage types */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Policy Duration *
@@ -3227,27 +3417,33 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               name="policyDuration"
               value={manualQuote.policyDuration}
               onChange={handleManualQuoteChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                form.vehicleType === "used" 
-                  ? "bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed" 
-                  : "border-gray-300"
-              }`}
-              disabled={form.vehicleType === "used"}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
-              {policyDurationOptions.map(option => (
+              {currentPolicyDurationOptions.map(option => (
                 <option key={option.value} value={option.value}>
-                  {option.label} {form.vehicleType === "used" && option.value === "1" ? '(Used Car Default)' : ''}
+                  {option.label}
                 </option>
               ))}
             </select>
-            {form.vehicleType === "used" && (
-              <p className="text-xs text-gray-500 mt-1">
-                Used vehicles are limited to 1 Year policy duration
+            {/* UPDATED: Info text based on coverage type only */}
+            {manualQuote.coverageType === "standalone" && (
+              <p className="text-xs text-purple-600 mt-1">
+                Stand Alone OD: 1, 2, or 3 year options available
+              </p>
+            )}
+            {manualQuote.coverageType === "thirdParty" && (
+              <p className="text-xs text-orange-600 mt-1">
+                Third Party: 1, 2, or 3 year options available
+              </p>
+            )}
+            {manualQuote.coverageType === "comprehensive" && (
+              <p className="text-xs text-blue-600 mt-1">
+                Comprehensive: Combined OD and TP duration options available for all vehicles
               </p>
             )}
           </div>
 
-          {/* NCB Discount */}
+          {/* FIXED: NCB Discount */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               NCB Discount (%)
@@ -3256,22 +3452,31 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               name="ncbDiscount"
               value={manualQuote.ncbDiscount}
               onChange={handleManualQuoteChange}
-              disabled={!isNcbEligible}
+              disabled={form.previousClaimTaken === "yes"}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                !isNcbEligible 
+                form.previousClaimTaken === "yes"
                   ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed' 
                   : 'border-gray-300'
               }`}
             >
               {ncbOptions.map(ncb => (
                 <option key={ncb} value={ncb}>
-                  {ncb}% {!isNcbEligible && ncb === 0 ? '(Auto-set)' : ''}
+                  {ncb}% {
+                    form.previousClaimTaken === "yes" && ncb === 0 ? '(Auto-set - Claim Taken)' :
+                    form.vehicleType === "new" && ncb === 0 ? '(New Vehicle Default)' :
+                    ''
+                  }
                 </option>
               ))}
             </select>
-            {!isNcbEligible && (
+            {form.previousClaimTaken === "yes" && (
               <p className="text-xs text-red-600 mt-1">
                 NCB disabled - claim was taken in previous policy
+              </p>
+            )}
+            {form.vehicleType === "new" && form.previousClaimTaken !== "yes" && (
+              <p className="text-xs text-blue-600 mt-1">
+                New vehicle - you can set NCB percentage (starts at 0%)
               </p>
             )}
           </div>
@@ -3301,9 +3506,23 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               name="thirdPartyAmount"
               value={manualQuote.thirdPartyAmount}
               onChange={handleManualQuoteChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter 3rd party amount (optional)"
+              disabled={manualQuote.coverageType === "standalone"}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                manualQuote.coverageType === "standalone"
+                  ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'border-gray-300'
+              }`}
+              placeholder={
+                manualQuote.coverageType === "standalone" 
+                  ? "Auto-set to 0 for Stand Alone OD" 
+                  : "Enter 3rd party amount (optional)"
+              }
             />
+            {manualQuote.coverageType === "standalone" && (
+              <p className="text-xs text-blue-500 mt-1">
+                Third Party amount set to 0 for Stand Alone OD coverage
+              </p>
+            )}
           </div>
 
           {/* Add Ons Amount Field */}
@@ -3321,7 +3540,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
             />
           </div>
 
-          {/* Add-ons Input Fields (Optional checkboxes) */}
+          {/* Add-ons Input Fields */}
           <div className="col-span-full">
             <div className="flex justify-between items-center mb-3">
               <h4 className="text-md font-semibold text-gray-800">Additional Add-ons (Optional)</h4>
@@ -3406,7 +3625,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               <div>
                 <span className="text-gray-600">Add-ons Total:</span>
                 <div className="font-semibold text-lg text-purple-600">₹{currentAddOnsTotal.toLocaleString('en-IN')}</div>
-                <div className="text-xs text-gray-500">(Only add-ons with amount &gt; 0)</div>
+                <div className="text-xs text-gray-500">(Individual + Add-ons field)</div>
               </div>
               <div>
                 <span className="text-gray-600">NCB Discount:</span>
@@ -3447,21 +3666,32 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           </div>
         </div>
 
-        {/* Add Quote Button */}
-        <button
-          onClick={addManualQuote}
-          disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv}
-          className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
-          title={
-            !manualQuote.insuranceCompany ? "Insurance Company is required" :
-            !manualQuote.coverageType ? "Coverage Type is required" :
-            !manualQuote.idv ? "IDV is required" :
-            "Add Quote"
-          }
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Add Quote
-        </button>
+        {/* Add/Update Quote Button */}
+        {editingQuote ? (
+          <button
+            onClick={updateQuote}
+            disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv}
+            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
+          >
+            <Edit className="w-5 h-5 mr-2" />
+            Update Quote
+          </button>
+        ) : (
+          <button
+            onClick={addManualQuote}
+            disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv}
+            className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
+            title={
+              !manualQuote.insuranceCompany ? "Insurance Company is required" :
+              !manualQuote.coverageType ? "Coverage Type is required" :
+              !manualQuote.idv ? "IDV is required" :
+              "Add Quote"
+            }
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Quote
+          </button>
+        )}
       </div>
 
       {/* Quotes List */}
@@ -3501,6 +3731,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               const company = insuranceCompanies.find(c => c.name === quote.insuranceCompany);
               const isExpanded = expandedQuotes.includes(index);
               const isAccepted = acceptedQuote && acceptedQuote.id === quote.id;
+              const isBeingEdited = editingQuote && editingQuote.id === quote.id;
               
               // Separate included add-ons (amount = 0) from premium add-ons (amount > 0)
               const premiumAddOns = Object.entries(quote.selectedAddOns || {})
@@ -3511,7 +3742,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               return (
                 <div key={index} className={`border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white ${
                   isAccepted ? 'ring-2 ring-green-500 ring-opacity-50' : ''
-                }`}>
+                } ${isBeingEdited ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}>
                   {/* Quote Header */}
                   <div 
                     className="p-4 text-white relative"
@@ -3535,17 +3766,27 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                                 ACCEPTED
                               </span>
                             )}
+                            {isBeingEdited && (
+                              <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-bold flex items-center">
+                                <Edit className="w-3 h-3 mr-1" />
+                                EDITING
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center space-x-2 text-sm opacity-90">
                             <span>IDV: ₹{quote.idv?.toLocaleString('en-IN')}</span>
                             <span>•</span>
-                            {/* FIXED: Use policyDurationLabel directly */}
-                            <span>{quote.policyDurationLabel}</span>
+                            <span>{quote.policyDurationLabel || quote.policyDuration}</span>
                             <span>•</span>
                             <span>NCB: {quote.ncbDiscount}%</span>
-                            {!isNcbEligible && (
+                            {form.previousClaimTaken === "yes" && (
                               <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
-                                NCB Lost
+                                NCB LOST
+                              </span>
+                            )}
+                            {form.vehicleType === "new" && form.previousClaimTaken !== "yes" && (
+                              <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
+                                NEW VEHICLE
                               </span>
                             )}
                           </div>
@@ -3558,12 +3799,20 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                             Total Premium
                           </div>
                         </div>
-                        {!isAccepted && (
+                        {!isAccepted && !isBeingEdited && (
                           <button
                             onClick={() => acceptQuote(quote)}
                             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                           >
                             Accept Quote
+                          </button>
+                        )}
+                        {!isBeingEdited && (
+                          <button
+                            onClick={() => startEditingQuote(quote, index)}
+                            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            Edit
                           </button>
                         )}
                         <button
@@ -3596,6 +3845,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                               <span className="font-semibold">₹{quote.odAmount?.toLocaleString('en-IN')}</span>
                             </div>
                             
+                            {/* FIXED: NCB Discount Amount Display */}
                             <div className="flex justify-between items-center text-green-600">
                               <span>NCB Discount {quote.ncbDiscount}% (on OD)</span>
                               <span>-₹{(quote.ncbDiscountAmount || 0).toLocaleString('en-IN')}</span>
@@ -3611,12 +3861,20 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                               <span className="font-semibold">₹{quote.thirdPartyAmount?.toLocaleString('en-IN')}</span>
                             </div>
 
+                            {/* Add-ons Amount Field */}
+                            {quote.addOnsAmount > 0 && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600">Additional Add-ons</span>
+                                <span className="font-semibold text-purple-600">+₹{quote.addOnsAmount?.toLocaleString('en-IN')}</span>
+                              </div>
+                            )}
+
                             {/* Premium Add-ons (with amount > 0) */}
                             {premiumAddOns.length > 0 && (
                               <div className="pt-2 border-t">
                                 <div className="flex justify-between items-center mb-2">
                                   <span className="text-gray-600">Premium Add-ons</span>
-                                  <span className="font-semibold text-purple-600">+₹{quote.addOnsPremium?.toLocaleString('en-IN')}</span>
+                                  <span className="font-semibold text-purple-600">+₹{(quote.addOnsPremium - quote.addOnsAmount).toLocaleString('en-IN')}</span>
                                 </div>
                                 <div className="space-y-2">
                                   {premiumAddOns.map(([key, addOn]) => (
@@ -3657,19 +3915,30 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                           <div className="space-y-3">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Policy Term</span>
-                              {/* FIXED: Use policyDurationLabel directly */}
-                              <span className="font-semibold">{quote.policyDurationLabel}</span>
+                              <span className="font-semibold">{quote.policyDurationLabel || quote.policyDuration}</span>
                             </div>
                             
                             <div className="flex justify-between">
                               <span className="text-gray-600">Coverage Type</span>
-                              <span className="font-semibold">{quote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party'}</span>
+                              <span className="font-semibold">{getCoverageTypeLabel(quote.coverageType)}</span>
                             </div>
                             
                             <div className="flex justify-between">
                               <span className="text-gray-600">IDV</span>
                               <span className="font-semibold">₹{quote.idv?.toLocaleString('en-IN')}</span>
                             </div>
+
+                            {/* Add-ons Amount Field Display */}
+                            {quote.addOnsAmount > 0 && (
+                              <div className="pt-2">
+                                <div className="text-purple-600 font-medium mb-2">Additional Add-ons</div>
+                                <div className="flex flex-wrap gap-2">
+                                  <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">
+                                    Additional Coverage: ₹{quote.addOnsAmount.toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
 
                             {/* Included Add-ons Section */}
                             {includedAddOns.length > 0 && (
@@ -3709,7 +3978,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                               </div>
                             )}
 
-                            {Object.keys(quote.selectedAddOns || {}).length === 0 && (
+                            {Object.keys(quote.selectedAddOns || {}).length === 0 && quote.addOnsAmount === 0 && (
                               <div className="pt-2">
                                 <span className="text-gray-400 text-sm">No add-ons selected</span>
                               </div>
@@ -3761,27 +4030,50 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
   // NCB options dropdown (same as InsuranceQuotes)
   const ncbOptions = [0, 20, 25, 35, 45, 50];
 
-  // Policy duration options based on vehicle type (same as InsuranceQuotes)
-  const getPolicyDurationOptions = (vehicleType) => {
-    if (vehicleType === "new") {
+  // Policy type options
+  const policyTypeOptions = [
+    { value: "comprehensive", label: "Comprehensive" },
+    { value: "standalone", label: "Stand Alone OD" },
+    { value: "thirdParty", label: "Third Party" }
+  ];
+
+  // UPDATED: Policy duration options based on vehicle type and policy type
+  const getPolicyDurationOptions = (vehicleType, policyType) => {
+    if (policyType === "standalone") {
+      // Standalone OD - simple year options
       return [
-        { value: "1yr OD + 3yr TP", label: "1yr OD + 3yr TP", odYears: 1, tpYears: 3 },
-        { value: "2yr OD + 3yr TP", label: "2yr OD + 3yr TP", odYears: 2, tpYears: 3 },
-        { value: "3yr OD + 3yr TP", label: "3yr OD + 3yr TP", odYears: 3, tpYears: 3 }
+        { value: "1", label: "1 Year", odYears: 1, tpYears: 0, isSimple: true, expiryType: "od" },
+        { value: "2", label: "2 Years", odYears: 2, tpYears: 0, isSimple: true, expiryType: "od" },
+        { value: "3", label: "3 Years", odYears: 3, tpYears: 0, isSimple: true, expiryType: "od" }
+      ];
+    } else if (policyType === "thirdParty") {
+      // Third Party - simple year options
+      return [
+        { value: "1", label: "1 Year", odYears: 0, tpYears: 1, isSimple: true, expiryType: "tp" },
+        { value: "2", label: "2 Years", odYears: 0, tpYears: 2, isSimple: true, expiryType: "tp" },
+        { value: "3", label: "3 Years", odYears: 0, tpYears: 3, isSimple: true, expiryType: "tp" }
+      ];
+    } else if (policyType === "comprehensive") {
+      // UPDATED: Comprehensive policies for BOTH new and used vehicles - combined OD+TP options
+      return [
+        { value: "1", label: "1yr OD + 3yr TP", odYears: 1, tpYears: 3, isSimple: false, expiryType: "both" },
+        { value: "2", label: "2yr OD + 3yr TP", odYears: 2, tpYears: 3, isSimple: false, expiryType: "both" },
+        { value: "3", label: "3yr OD + 3yr TP", odYears: 3, tpYears: 3, isSimple: false, expiryType: "both" }
       ];
     } else {
+      // Fallback for any other cases
       return [
-        { value: "1 Year", label: "1 Year", odYears: 1, tpYears: 1 }
-      ]; // Only 1 year for used cars
+        { value: "1", label: "1 Year", odYears: 1, tpYears: 1, isSimple: true, expiryType: "both" }
+      ];
     }
   };
 
-  const policyDurationOptions = getPolicyDurationOptions(form.vehicleType);
+  const policyDurationOptions = getPolicyDurationOptions(form.vehicleType, form.policyType);
 
   // Track the last accepted quote to detect changes
   const [lastAcceptedQuoteId, setLastAcceptedQuoteId] = useState(null);
 
-  // Function to calculate expiry date based on policy start date and duration (with -1 day)
+  // Function to calculate expiry date based on policy start date and years (with -1 day)
   const calculateExpiryDate = (policyStartDate, years) => {
     if (!policyStartDate || !years) return '';
     
@@ -3802,37 +4094,44 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     const selectedOption = policyDurationOptions.find(opt => opt.value === durationOption);
     if (!selectedOption) return { odExpiry: '', tpExpiry: '' };
     
-    const odExpiry = calculateExpiryDate(policyStartDate, selectedOption.odYears);
-    const tpExpiry = calculateExpiryDate(policyStartDate, selectedOption.tpYears);
+    const odExpiry = selectedOption.odYears > 0 ? calculateExpiryDate(policyStartDate, selectedOption.odYears) : '';
+    const tpExpiry = selectedOption.tpYears > 0 ? calculateExpiryDate(policyStartDate, selectedOption.tpYears) : '';
     
     return { odExpiry, tpExpiry };
   };
 
-  // Fixed function to get duration value from accepted quote
-  const getDurationValueFromQuote = (quote, vehicleType) => {
-    if (vehicleType === "used") {
-      // For used cars, always use "1 Year"
-      return "1 Year";
-    } else {
-      // For new cars, map the policyDuration to the appropriate option
-      const durationMap = {
-        1: "1yr OD + 3yr TP",
-        2: "2yr OD + 3yr TP", 
-        3: "3yr OD + 3yr TP"
-      };
-      
-      const mappedValue = durationMap[quote.policyDuration];
-      
-      if (mappedValue) {
-        return mappedValue;
-      } else {
-        // Fallback: try to find a matching option
-        const fallbackOption = getPolicyDurationOptions(vehicleType).find(
-          opt => opt.odYears === quote.policyDuration
-        );
-        return fallbackOption ? fallbackOption.value : "1yr OD + 3yr TP";
+  // Check if current duration is simple (single expiry)
+  const isSimpleDuration = () => {
+    const selectedOption = policyDurationOptions.find(opt => opt.value === form.insuranceDuration);
+    return selectedOption ? selectedOption.isSimple : false;
+  };
+
+  // Get expiry type for current selection
+  const getExpiryType = () => {
+    const selectedOption = policyDurationOptions.find(opt => opt.value === form.insuranceDuration);
+    return selectedOption ? selectedOption.expiryType : 'both';
+  };
+
+  // Handle policy type change
+  const handlePolicyTypeChange = (e) => {
+    const policyType = e.target.value;
+    handleChange(e);
+    
+    // Reset duration when policy type changes
+    handleChange({
+      target: {
+        name: 'insuranceDuration',
+        value: ''
       }
-    }
+    });
+    
+    // Reset expiry dates
+    handleChange({
+      target: { name: 'odExpiryDate', value: '' }
+    });
+    handleChange({
+      target: { name: 'tpExpiryDate', value: '' }
+    });
   };
 
   // Handle issue date change
@@ -3856,12 +4155,18 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
         // Also recalculate expiry dates if duration exists
         if (form.insuranceDuration) {
           const { odExpiry, tpExpiry } = calculateSeparateExpiryDates(issueDate, form.insuranceDuration);
-          handleChange({
-            target: { name: 'odExpiryDate', value: odExpiry }
-          });
-          handleChange({
-            target: { name: 'tpExpiryDate', value: tpExpiry }
-          });
+          const expiryType = getExpiryType();
+          
+          if (expiryType === 'od' || expiryType === 'both') {
+            handleChange({
+              target: { name: 'odExpiryDate', value: odExpiry }
+            });
+          }
+          if (expiryType === 'tp' || expiryType === 'both') {
+            handleChange({
+              target: { name: 'tpExpiryDate', value: tpExpiry }
+            });
+          }
         }
       }
     }
@@ -3889,13 +4194,21 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     // Auto-calculate expiry dates if duration exists
     if (startDate && form.insuranceDuration) {
       const { odExpiry, tpExpiry } = calculateSeparateExpiryDates(startDate, form.insuranceDuration);
+      const expiryType = getExpiryType();
       
-      handleChange({
-        target: { name: 'odExpiryDate', value: odExpiry }
-      });
-      handleChange({
-        target: { name: 'tpExpiryDate', value: tpExpiry }
-      });
+      // Set OD expiry for OD-only or both policies
+      if (expiryType === 'od' || expiryType === 'both') {
+        handleChange({
+          target: { name: 'odExpiryDate', value: odExpiry }
+        });
+      }
+      
+      // Set TP expiry for TP-only or both policies
+      if (expiryType === 'tp' || expiryType === 'both') {
+        handleChange({
+          target: { name: 'tpExpiryDate', value: tpExpiry }
+        });
+      }
     }
   };
 
@@ -3907,24 +4220,282 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     // Auto-calculate expiry dates if policy start date exists
     if (form.policyStartDate && newDuration) {
       const { odExpiry, tpExpiry } = calculateSeparateExpiryDates(form.policyStartDate, newDuration);
+      const expiryType = getExpiryType();
       
-      handleChange({
-        target: { name: 'odExpiryDate', value: odExpiry }
-      });
-      handleChange({
-        target: { name: 'tpExpiryDate', value: tpExpiry }
-      });
+      // Set OD expiry for OD-only or both policies
+      if (expiryType === 'od' || expiryType === 'both') {
+        handleChange({
+          target: { name: 'odExpiryDate', value: odExpiry }
+        });
+      } else {
+        // Clear OD expiry for TP-only policies
+        handleChange({
+          target: { name: 'odExpiryDate', value: '' }
+        });
+      }
+      
+      // Set TP expiry for TP-only or both policies
+      if (expiryType === 'tp' || expiryType === 'both') {
+        handleChange({
+          target: { name: 'tpExpiryDate', value: tpExpiry }
+        });
+      } else {
+        // Clear TP expiry for OD-only policies
+        handleChange({
+          target: { name: 'tpExpiryDate', value: '' }
+        });
+      }
     }
   };
 
-  // Effect to auto-fill when acceptedQuote changes
+  // ENHANCED: Function to get duration value from accepted quote with proper mapping
+  // const getDurationValueFromQuote = (quote, vehicleType, policyType) => {
+  //   console.log("🔄 Mapping duration from quote:", {
+  //     quotePolicyDuration: quote.policyDuration,
+  //     vehicleType: vehicleType,
+  //     policyType: policyType,
+  //     coverageType: quote.coverageType
+  //   });
+
+  //   if (!quote || !quote.policyDuration) {
+  //     console.log("❌ No quote or policy duration found");
+  //     return "";
+  //   }
+
+  //   // Get the current duration options based on policy type
+  //   const currentOptions = getPolicyDurationOptions(vehicleType, policyType);
+  //   console.log("📋 Available duration options:", currentOptions);
+
+  //   const quoteDuration = quote.policyDuration;
+
+  //   // First, try exact match with value
+  //   const exactMatch = currentOptions.find(opt => opt.value === quoteDuration);
+  //   if (exactMatch) {
+  //     console.log("✅ Exact match found:", exactMatch.value);
+  //     return exactMatch.value;
+  //   }
+
+  //   // For comprehensive policies, handle both simple numbers and combined formats
+  //   if (policyType === "comprehensive") {
+  //     // If quote has simple number, map to comprehensive options
+  //     if (["1", "2", "3"].includes(quoteDuration)) {
+  //       const comprehensiveMap = {
+  //         "1": "1", // 1yr OD + 3yr TP
+  //         "2": "2", // 2yr OD + 3yr TP  
+  //         "3": "3"  // 3yr OD + 3yr TP
+  //       };
+  //       const mappedValue = comprehensiveMap[quoteDuration];
+  //       if (mappedValue && currentOptions.find(opt => opt.value === mappedValue)) {
+  //         console.log("🔄 Mapped simple duration to comprehensive:", quoteDuration, "→", mappedValue);
+  //         return mappedValue;
+  //       }
+  //     }
+      
+  //     // If quote has combined format, try to match
+  //     if (quoteDuration.includes("yr OD") || quoteDuration.includes("year OD")) {
+  //       const matchedOption = currentOptions.find(opt => 
+  //         opt.label.toLowerCase().includes(quoteDuration.toLowerCase()) ||
+  //         quoteDuration.toLowerCase().includes(opt.label.toLowerCase())
+  //       );
+  //       if (matchedOption) {
+  //         console.log("✅ Matched comprehensive duration by label:", quoteDuration, "→", matchedOption.value);
+  //         return matchedOption.value;
+  //       }
+  //     }
+  //   }
+
+  //   // For standalone policies
+  //   if (policyType === "standalone") {
+  //     const standaloneMap = {
+  //       "1": "1",
+  //       "2": "2", 
+  //       "3": "3",
+  //       "1 Year": "1",
+  //       "2 Years": "2",
+  //       "3 Years": "3"
+  //     };
+  //     const mappedValue = standaloneMap[quoteDuration];
+  //     if (mappedValue && currentOptions.find(opt => opt.value === mappedValue)) {
+  //       console.log("🔄 Mapped standalone duration:", quoteDuration, "→", mappedValue);
+  //       return mappedValue;
+  //     }
+  //   }
+
+  //   // For third party policies
+  //   if (policyType === "thirdParty") {
+  //     const thirdPartyMap = {
+  //       "1": "1",
+  //       "2": "2", 
+  //       "3": "3",
+  //       "1 Year": "1",
+  //       "2 Years": "2", 
+  //       "3 Years": "3"
+  //     };
+  //     const mappedValue = thirdPartyMap[quoteDuration];
+  //     if (mappedValue && currentOptions.find(opt => opt.value === mappedValue)) {
+  //       console.log("🔄 Mapped third party duration:", quoteDuration, "→", mappedValue);
+  //       return mappedValue;
+  //     }
+  //   }
+
+  //   // Try to find by label match
+  //   const labelMatch = currentOptions.find(opt => 
+  //     opt.label.toLowerCase().includes(quoteDuration.toLowerCase()) ||
+  //     quoteDuration.toLowerCase().includes(opt.label.toLowerCase())
+  //   );
+  //   if (labelMatch) {
+  //     console.log("✅ Matched by label:", quoteDuration, "→", labelMatch.value);
+  //     return labelMatch.value;
+  //   }
+
+  //   // Fallback: Use the first available option
+  //   const fallbackValue = currentOptions.length > 0 ? currentOptions[0].value : "";
+  //   console.log("⚡ Using fallback duration:", fallbackValue);
+  //   return fallbackValue;
+  // };
+
+  // FIXED: Enhanced function to get duration value from accepted quote with proper mapping
+const getDurationValueFromQuote = (quote, vehicleType, policyType) => {
+  console.log("🔄 Mapping duration from quote:", {
+    quotePolicyDuration: quote.policyDuration,
+    quotePolicyDurationType: typeof quote.policyDuration,
+    vehicleType: vehicleType,
+    policyType: policyType,
+    coverageType: quote.coverageType
+  });
+
+  if (!quote || !quote.policyDuration) {
+    console.log("❌ No quote or policy duration found");
+    return "";
+  }
+
+  // Get the current duration options based on policy type
+  const currentOptions = getPolicyDurationOptions(vehicleType, policyType);
+  console.log("📋 Available duration options:", currentOptions);
+
+  // FIX: Convert to string to prevent .includes() error
+  const quoteDuration = String(quote.policyDuration);
+  console.log("🔤 Converted quoteDuration to string:", quoteDuration);
+
+  // First, try exact match with value
+  const exactMatch = currentOptions.find(opt => opt.value === quoteDuration);
+  if (exactMatch) {
+    console.log("✅ Exact match found:", exactMatch.value);
+    return exactMatch.value;
+  }
+
+  // For comprehensive policies, handle both simple numbers and combined formats
+  if (policyType === "comprehensive") {
+    // If quote has simple number, map to comprehensive options
+    if (["1", "2", "3"].includes(quoteDuration)) {
+      const comprehensiveMap = {
+        "1": "1", // 1yr OD + 3yr TP
+        "2": "2", // 2yr OD + 3yr TP  
+        "3": "3"  // 3yr OD + 3yr TP
+      };
+      const mappedValue = comprehensiveMap[quoteDuration];
+      if (mappedValue && currentOptions.find(opt => opt.value === mappedValue)) {
+        console.log("🔄 Mapped simple duration to comprehensive:", quoteDuration, "→", mappedValue);
+        return mappedValue;
+      }
+    }
+    
+    // FIX: Check if string before using .includes()
+    if (quoteDuration.includes("yr OD") || quoteDuration.includes("year OD")) {
+      const matchedOption = currentOptions.find(opt => 
+        opt.label.toLowerCase().includes(quoteDuration.toLowerCase()) ||
+        quoteDuration.toLowerCase().includes(opt.label.toLowerCase())
+      );
+      if (matchedOption) {
+        console.log("✅ Matched comprehensive duration by label:", quoteDuration, "→", matchedOption.value);
+        return matchedOption.value;
+      }
+    }
+  }
+
+  // For standalone policies
+  if (policyType === "standalone") {
+    const standaloneMap = {
+      "1": "1",
+      "2": "2", 
+      "3": "3",
+      "1 Year": "1",
+      "2 Years": "2",
+      "3 Years": "3",
+      "1yr OD + 3yr TP": "1", // ADDED: Map comprehensive to standalone
+      "2yr OD + 3yr TP": "2", // ADDED: Map comprehensive to standalone  
+      "3yr OD + 3yr TP": "3"  // ADDED: Map comprehensive to standalone
+    };
+    const mappedValue = standaloneMap[quoteDuration];
+    if (mappedValue && currentOptions.find(opt => opt.value === mappedValue)) {
+      console.log("🔄 Mapped standalone duration:", quoteDuration, "→", mappedValue);
+      return mappedValue;
+    }
+  }
+
+  // For third party policies
+  if (policyType === "thirdParty") {
+    const thirdPartyMap = {
+      "1": "1",
+      "2": "2", 
+      "3": "3",
+      "1 Year": "1",
+      "2 Years": "2", 
+      "3 Years": "3",
+      "1yr OD + 3yr TP": "1", // ADDED: Map comprehensive to third party
+      "2yr OD + 3yr TP": "1", // ADDED: Map comprehensive to third party
+      "3yr OD + 3yr TP": "1"  // ADDED: Map comprehensive to third party
+    };
+    const mappedValue = thirdPartyMap[quoteDuration];
+    if (mappedValue && currentOptions.find(opt => opt.value === mappedValue)) {
+      console.log("🔄 Mapped third party duration:", quoteDuration, "→", mappedValue);
+      return mappedValue;
+    }
+  }
+
+  // Try to find by label match
+  const labelMatch = currentOptions.find(opt => 
+    opt.label.toLowerCase().includes(quoteDuration.toLowerCase()) ||
+    quoteDuration.toLowerCase().includes(opt.label.toLowerCase())
+  );
+  if (labelMatch) {
+    console.log("✅ Matched by label:", quoteDuration, "→", labelMatch.value);
+    return labelMatch.value;
+  }
+
+  // Fallback: Use the first available option
+  const fallbackValue = currentOptions.length > 0 ? currentOptions[0].value : "";
+  console.log("⚡ Using fallback duration:", fallbackValue);
+  return fallbackValue;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // ENHANCED: Auto-fill effect with better quote handling
   useEffect(() => {
     if (acceptedQuote) {
       // Check if this is a different quote than the last one we processed
       const isDifferentQuote = acceptedQuote.id !== lastAcceptedQuoteId;
       
       if (isDifferentQuote) {
-        console.log("🔄 Auto-filling policy details from accepted quote...");
+        console.log("🔄 Auto-filling policy details from accepted quote...", {
+          quoteId: acceptedQuote.id,
+          insuranceCompany: acceptedQuote.insuranceCompany,
+          policyDuration: acceptedQuote.policyDuration,
+          policyDurationLabel: acceptedQuote.policyDurationLabel,
+          coverageType: acceptedQuote.coverageType,
+          vehicleType: form.vehicleType
+        });
         
         // Auto-fill basic policy details from accepted quote
         handleChange({
@@ -3940,24 +4511,65 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
           target: { name: 'ncbDiscount', value: acceptedQuote.ncbDiscount?.toString() || '' }
         });
         
-        // Auto-fill insurance duration from accepted quote
-        const durationValue = getDurationValueFromQuote(acceptedQuote, form.vehicleType);
-        console.log("🎯 Setting insurance duration to:", durationValue);
-        
-        handleChange({
-          target: { name: 'insuranceDuration', value: durationValue }
-        });
-        
-        // Update the last processed quote ID
-        setLastAcceptedQuoteId(acceptedQuote.id);
-        
-        console.log("✅ Policy details auto-filled successfully");
+        // Auto-fill policy type from accepted quote coverage type
+        if (acceptedQuote.coverageType) {
+          console.log("🎯 Setting policy type from quote coverage:", acceptedQuote.coverageType);
+          handleChange({
+            target: { name: 'policyType', value: acceptedQuote.coverageType }
+          });
+          
+          // Wait for policy type to update, then set duration
+          setTimeout(() => {
+            // Get the mapped duration value from the accepted quote
+            const durationValue = getDurationValueFromQuote(
+              acceptedQuote, 
+              form.vehicleType, 
+              acceptedQuote.coverageType // Use the quote's coverage type
+            );
+            
+            console.log("🎯 Setting insurance duration to:", durationValue, {
+              fromQuote: acceptedQuote.policyDuration,
+              vehicleType: form.vehicleType,
+              policyType: acceptedQuote.coverageType
+            });
+            
+            if (durationValue) {
+              handleChange({
+                target: { name: 'insuranceDuration', value: durationValue }
+              });
+            }
+
+            // Update the last processed quote ID
+            setLastAcceptedQuoteId(acceptedQuote.id);
+            
+            console.log("✅ Policy details auto-filled successfully");
+          }, 100);
+        }
       }
     } else {
       // Reset the tracker if no quote is accepted
       setLastAcceptedQuoteId(null);
     }
   }, [acceptedQuote, lastAcceptedQuoteId, handleChange, form.vehicleType]);
+
+  // Debug effect to track quote changes and mapping
+  useEffect(() => {
+    console.log("🔍 NewPolicyDetails Debug:", {
+      acceptedQuote: acceptedQuote ? {
+        id: acceptedQuote.id,
+        insuranceCompany: acceptedQuote.insuranceCompany,
+        policyDuration: acceptedQuote.policyDuration,
+        policyDurationLabel: acceptedQuote.policyDurationLabel,
+        coverageType: acceptedQuote.coverageType
+      } : null,
+      formPolicyType: form.policyType,
+      formInsuranceDuration: form.insuranceDuration,
+      formOdExpiryDate: form.odExpiryDate,
+      formTpExpiryDate: form.tpExpiryDate,
+      lastAcceptedQuoteId,
+      vehicleType: form.vehicleType
+    });
+  }, [acceptedQuote, form.policyType, form.insuranceDuration, form.odExpiryDate, form.tpExpiryDate, lastAcceptedQuoteId, form.vehicleType]);
 
   // Reset form when accepted quote is removed
   useEffect(() => {
@@ -3966,8 +4578,25 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     }
   }, [acceptedQuote, lastAcceptedQuoteId]);
 
+  // Update duration options when policy type changes
+  useEffect(() => {
+    // Reset duration when policy type changes
+    if (form.insuranceDuration) {
+      const currentOptions = getPolicyDurationOptions(form.vehicleType, form.policyType);
+      const currentOptionExists = currentOptions.find(opt => opt.value === form.insuranceDuration);
+      
+      if (!currentOptionExists) {
+        handleChange({
+          target: { name: 'insuranceDuration', value: '' }
+        });
+      }
+    }
+  }, [form.policyType, form.vehicleType]);
+
   // Get selected duration option details
   const selectedDurationOption = policyDurationOptions.find(opt => opt.value === form.insuranceDuration);
+  const isSimpleDurationType = isSimpleDuration();
+  const expiryType = getExpiryType();
 
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
@@ -3982,7 +4611,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             </h3>
             {acceptedQuote && (
               <p className="text-sm text-green-600 flex items-center gap-1 mt-1">
-                <CheckCircle className="w-4 h-4" />
+                <FaCheckCircle className="w-4 h-4" />
                 Auto-filled from accepted quote: {acceptedQuote.insuranceCompany}
                 {lastAcceptedQuoteId && (
                   <span className="text-xs text-gray-500 ml-2">
@@ -3995,70 +4624,40 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
         </div>
       </div>
 
-      {/* Vehicle Type Info Banner */}
-      {form.vehicleType && (
-        <div className={`mb-4 p-4 rounded-lg border ${
-          form.vehicleType === "new" 
-            ? "bg-green-50 border-green-200" 
-            : "bg-blue-50 border-blue-200"
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              {form.vehicleType === "new" ? (
-                <FaCar className="w-5 h-5 text-green-600" />
-              ) : (
-                <FaHistory className="w-5 h-5 text-blue-600" />
-              )}
-              <div>
-                <h4 className="font-semibold text-gray-800">
-                  {form.vehicleType === "new" ? "New Vehicle" : "Used Vehicle"}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {form.vehicleType === "new" 
-                    ? "Available policy durations: 1yr OD + 3yr TP, 2yr OD + 3yr TP, 3yr OD + 3yr TP"
-                    : "Policy duration: 1 Year (default for used vehicles)"
-                  }
+      {/* Duration Mapping Info */}
+      {acceptedQuote && form.insuranceDuration && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <FaInfoCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+            <div>
+              <h4 className="font-semibold text-blue-800 mb-2">Duration Mapped from Accepted Quote</h4>
+              <div className="text-sm text-blue-700 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Quote Duration:</span>
+                  <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">
+                    {acceptedQuote.policyDuration} {acceptedQuote.policyDurationLabel && `(${acceptedQuote.policyDurationLabel})`}
+                  </span>
+                  <FaArrowRight className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium">Policy Duration:</span>
+                  <span className="bg-green-100 px-2 py-1 rounded text-green-800">
+                    {form.insuranceDuration} {selectedDurationOption?.label && `(${selectedDurationOption.label})`}
+                  </span>
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  Duration automatically mapped from accepted quote based on vehicle type and policy type. You can edit this if needed.
                 </p>
               </div>
             </div>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              form.vehicleType === "new" 
-                ? "bg-green-100 text-green-800" 
-                : "bg-blue-100 text-blue-800"
-            }`}>
-              {form.vehicleType === "new" ? "NEW" : "USED"}
-            </span>
           </div>
         </div>
       )}
-
-      {/* Date Calculation Info */}
-      <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-        <div className="flex items-start space-x-3">
-          <FaInfoCircle className="w-5 h-5 text-purple-600 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-purple-800 mb-2">Date Calculation Rules</h4>
-            <ul className="text-sm text-purple-700 space-y-1">
-              <li>• <strong>Issue Date</strong>: Can be any date (past or future)</li>
-              <li>• <strong>Policy Start Date</strong>: Cannot be before Issue Date</li>
-              <li>• <strong>OD & TP Expiry Dates</strong>: Start Date + Duration - 1 Day</li>
-              <li className="text-xs text-purple-600 mt-2">
-                {selectedDurationOption && form.policyStartDate ? 
-                  `Example: ${form.policyStartDate} + ${selectedDurationOption.odYears} Year(s) - 1 Day = OD Expiry, + ${selectedDurationOption.tpYears} Year(s) - 1 Day = TP Expiry` : 
-                  "Expiry dates are calculated as: Start Date + Duration - 1 Day"
-                }
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
 
       {/* Quote Acceptance Status Banner */}
       {acceptedQuote ? (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+              <FaCheckCircle className="w-6 h-6 text-green-600" />
               <div>
                 <h4 className="font-semibold text-green-800">
                   {lastAcceptedQuoteId === acceptedQuote.id ? "Quote Accepted & Auto-Filled" : "New Quote Accepted - Updating..."}
@@ -4066,6 +4665,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
                 <p className="text-sm text-green-600">
                   {acceptedQuote.insuranceCompany} - ₹{acceptedQuote.totalPremium?.toLocaleString('en-IN')}
                   {acceptedQuote.ncbDiscount > 0 && ` (with ${acceptedQuote.ncbDiscount}% NCB)`}
+                  {acceptedQuote.policyDurationLabel && ` - ${acceptedQuote.policyDurationLabel}`}
                 </p>
               </div>
             </div>
@@ -4077,7 +4677,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
       ) : (
         <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+            <FaExclamationTriangle className="w-5 h-5 text-yellow-600" />
             <div>
               <p className="text-yellow-700 text-sm font-medium">
                 <strong>Case Status: Pending Quote Acceptance</strong>
@@ -4121,12 +4721,41 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             </select>
             {acceptedQuote && form.insuranceCompany === acceptedQuote.insuranceCompany && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
+                <FaCheckCircle className="w-3 h-3" />
                 From accepted quote
                 {lastAcceptedQuoteId !== acceptedQuote.id && <span className="text-orange-500"> (Updating...)</span>}
               </p>
             )}
             {errors.insuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.insuranceCompany}</p>}
+          </div>
+
+          {/* Policy Type */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Policy Type *
+            </label>
+            <select
+              name="policyType"
+              value={form.policyType || ""}
+              onChange={handlePolicyTypeChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.policyType ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              <option value="">Select Policy Type</option>
+              {policyTypeOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {acceptedQuote && form.policyType === acceptedQuote.coverageType && (
+              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                <FaCheckCircle className="w-3 h-3" />
+                From accepted quote
+              </p>
+            )}
+            {errors.policyType && <p className="text-red-500 text-xs mt-1">{errors.policyType}</p>}
           </div>
 
           <div>
@@ -4189,103 +4818,117 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             </p>
           </div>
 
-          {/* Insurance Duration - Dropdown - FIXED */}
+          {/* UPDATED: Insurance Duration - Dropdown with proper comprehensive options for ALL vehicles */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
               Insurance Duration *
             </label>
             <select
               name="insuranceDuration"
-              value={form.insuranceDuration || (form.vehicleType === "used" ? "1 Year" : "")}
+              value={form.insuranceDuration || ""}
               onChange={handleDurationChange}
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.insuranceDuration ? "border-red-500" : "border-gray-300"
-              } ${
-                form.vehicleType === "used" ? "bg-gray-100 cursor-not-allowed" : ""
               }`}
-              disabled={form.vehicleType === "used"}
             >
               <option value="">Select Duration</option>
               {policyDurationOptions.map((option, index) => (
                 <option key={index} value={option.value}>
-                  {option.label} {form.vehicleType === "used" && option.value === "1 Year" ? '(Used Car Default)' : ''}
+                  {option.label}
                 </option>
               ))}
             </select>
             
-            {/* Auto-fill status - FIXED */}
+            {/* Auto-fill status */}
             {acceptedQuote && form.insuranceDuration && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
-                Auto-filled from accepted quote: {acceptedQuote.policyDuration} Year{acceptedQuote.policyDuration > 1 ? 's' : ''}
-                {form.vehicleType === "new" && (
+                <FaCheckCircle className="w-3 h-3" />
+                Auto-filled from accepted quote
+                {acceptedQuote.policyDuration && form.insuranceDuration !== acceptedQuote.policyDuration && (
                   <span className="text-blue-600 ml-1">
-                    (as {form.insuranceDuration})
+                    (mapped from "{acceptedQuote.policyDuration}" to "{form.insuranceDuration}")
                   </span>
                 )}
+                {acceptedQuote.policyDuration && form.insuranceDuration === acceptedQuote.policyDuration && (
+                  <span className="text-blue-600 ml-1">
+                    (direct mapping)
+                  </span>
+                )}
+                <span className="text-gray-500 ml-1">• Editable</span>
               </p>
             )}
             
             {errors.insuranceDuration && <p className="text-red-500 text-xs mt-1">{errors.insuranceDuration}</p>}
             
-            {form.vehicleType === "used" && acceptedQuote && (
+            {/* Duration Options Info */}
+            {form.policyType === "comprehensive" && (
               <p className="text-xs text-blue-600 mt-1">
-                Used vehicle default: 1 Year (from accepted quote: {acceptedQuote.policyDuration} Year{acceptedQuote.policyDuration > 1 ? 's' : ''})
+                Available: 1yr OD + 3yr TP, 2yr OD + 3yr TP, 3yr OD + 3yr TP
               </p>
             )}
           </div>
 
-          {/* OD Expiry Date */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              OD Expiry Date *
-            </label>
-            <input
-              type="date"
-              name="odExpiryDate"
-              value={form.odExpiryDate || ""}
-              onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.odExpiryDate ? "border-red-500" : "border-gray-300"
-              }`}
-              readOnly
-            />
-            {errors.odExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.odExpiryDate}</p>}
-            <p className="text-xs text-gray-500 mt-1">
-              Auto-calculated: Start Date + OD Duration - 1 Day
-              {form.policyStartDate && form.insuranceDuration && (
-                <span className="text-green-600 font-medium">
-                  {" "}✓ Calculated
-                </span>
-              )}
-            </p>
-          </div>
+          {/* OD Expiry Date - Show for Standalone and Comprehensive */}
+          {(form.policyType === "standalone" || form.policyType === "comprehensive") && (
+            <div>
+              <label className="block mb-1 text-sm font-medium text-gray-600">
+                {form.policyType === "standalone" ? "Policy Expiry Date *" : "OD Expiry Date *"}
+              </label>
+              <input
+                type="date"
+                name="odExpiryDate"
+                value={form.odExpiryDate || ""}
+                onChange={handleChange}
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.odExpiryDate ? "border-red-500" : "border-gray-300"
+                }`}
+                readOnly
+              />
+              {errors.odExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.odExpiryDate}</p>}
+              <p className="text-xs text-gray-500 mt-1">
+                {form.policyType === "standalone" 
+                  ? "Auto-calculated: Start Date + Duration - 1 Day"
+                  : "Auto-calculated: Start Date + OD Duration - 1 Day"
+                }
+                {form.policyStartDate && form.insuranceDuration && (
+                  <span className="text-green-600 font-medium">
+                    {" "}✓ Calculated
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
 
-          {/* TP Expiry Date */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              TP Expiry Date *
-            </label>
-            <input
-              type="date"
-              name="tpExpiryDate"
-              value={form.tpExpiryDate || ""}
-              onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.tpExpiryDate ? "border-red-500" : "border-gray-300"
-              }`}
-              readOnly
-            />
-            {errors.tpExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.tpExpiryDate}</p>}
-            <p className="text-xs text-gray-500 mt-1">
-              Auto-calculated: Start Date + TP Duration - 1 Day
-              {form.policyStartDate && form.insuranceDuration && (
-                <span className="text-green-600 font-medium">
-                  {" "}✓ Calculated
-                </span>
-              )}
-            </p>
-          </div>
+          {/* TP Expiry Date - Show for Third Party and Comprehensive */}
+          {(form.policyType === "thirdParty" || form.policyType === "comprehensive") && (
+            <div>
+              <label className="block mb-1 text-sm font-medium text-gray-600">
+                {form.policyType === "thirdParty" ? "Policy Expiry Date *" : "TP Expiry Date *"}
+              </label>
+              <input
+                type="date"
+                name="tpExpiryDate"
+                value={form.tpExpiryDate || ""}
+                onChange={handleChange}
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.tpExpiryDate ? "border-red-500" : "border-gray-300"
+                }`}
+                readOnly
+              />
+              {errors.tpExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.tpExpiryDate}</p>}
+              <p className="text-xs text-gray-500 mt-1">
+                {form.policyType === "thirdParty" 
+                  ? "Auto-calculated: Start Date + Duration - 1 Day"
+                  : "Auto-calculated: Start Date + TP Duration - 1 Day"
+                }
+                {form.policyStartDate && form.insuranceDuration && (
+                  <span className="text-green-600 font-medium">
+                    {" "}✓ Calculated
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
 
           {/* NCB Discount - Dropdown */}
           <div>
@@ -4309,7 +4952,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             </select>
             {acceptedQuote && form.ncbDiscount === acceptedQuote.ncbDiscount?.toString() && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
+                <FaCheckCircle className="w-3 h-3" />
                 From accepted quote: {acceptedQuote.ncbDiscount}%
               </p>
             )}
@@ -4332,7 +4975,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             />
             {acceptedQuote && form.idvAmount === acceptedQuote.idv?.toString() && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
+                <FaCheckCircle className="w-3 h-3" />
                 From accepted quote: ₹{acceptedQuote.idv?.toLocaleString('en-IN')}
               </p>
             )}
@@ -4355,7 +4998,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             />
             {acceptedQuote && form.totalPremium === acceptedQuote.totalPremium?.toString() && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
+                <FaCheckCircle className="w-3 h-3" />
                 From accepted quote: ₹{acceptedQuote.totalPremium?.toLocaleString('en-IN')}
               </p>
             )}
@@ -4363,25 +5006,9 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
           </div>
         </div>
       </div>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className={`px-6 py-2 rounded-lg font-medium text-sm transition-all ${
-            isSaving
-              ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-              : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
-          }`}
-        >
-          {isSaving ? 'Saving...' : 'Save Policy Details'}
-        </button>
-      </div>
     </div>
   );
 };
-
 // ================== STEP 6: Documents (Updated with Requirements & Tagging) ==================
 const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
   const [uploading, setUploading] = useState(false);
@@ -4612,44 +5239,97 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     }
   };
 
+  // const uploadSingleFile = async (fileObj, detectedExtension) => {
+  //   try {
+  //     const formData = new FormData();
+  //     formData.append('file', fileObj);
+
+  //     // Add comprehensive file metadata
+  //     formData.append('fileName', fileObj.name);
+  //     formData.append('fileType', fileObj.type);
+  //     formData.append('originalExtension', detectedExtension);
+  //     formData.append('preserveExtension', 'true');
+  //     formData.append('timestamp', Date.now().toString());
+
+  //     let config = {
+  //       method: 'post',
+  //       maxBodyLength: Infinity,
+  //       url: 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/files',
+  //       headers: { 
+  //         'Content-Type': 'multipart/form-data',
+  //       },
+  //       data: formData,
+  //       timeout: 60000 // 60 seconds timeout
+  //     };
+
+  //     const response = await axios.request(config);
+  //     console.log(`📡 Upload response for ${fileObj.name}:`, response.data);
+      
+  //     if (!response.data.path) {
+  //       throw new Error('No file path returned from server');
+  //     }
+      
+  //     return response.data.path;
+  //   } catch (error) {
+  //     console.error(`Error uploading file ${fileObj.name}:`, error);
+  //     throw new Error(`Upload failed: ${error.message}`);
+  //   }
+  // }
+
+  
+ 
+ 
+ 
   const uploadSingleFile = async (fileObj, detectedExtension) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', fileObj);
+  try {
+    const formData = new FormData();
 
-      // Add comprehensive file metadata
-      formData.append('fileName', fileObj.name);
-      formData.append('fileType', fileObj.type);
-      formData.append('originalExtension', detectedExtension);
-      formData.append('preserveExtension', 'true');
-      formData.append('timestamp', Date.now().toString());
+    // Ensure file name includes correct extension
+    let fileName = fileObj.name || `document_${Date.now()}`;
+    const hasExtension = fileName.includes('.');
+    const extension = detectedExtension || getFileExtensionFromFile(fileObj);
 
-      let config = {
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/files',
-        headers: { 
-          'Content-Type': 'multipart/form-data',
-        },
-        data: formData,
-        timeout: 60000 // 60 seconds timeout
-      };
-
-      const response = await axios.request(config);
-      console.log(`📡 Upload response for ${fileObj.name}:`, response.data);
-      
-      if (!response.data.path) {
-        throw new Error('No file path returned from server');
-      }
-      
-      return response.data.path;
-    } catch (error) {
-      console.error(`Error uploading file ${fileObj.name}:`, error);
-      throw new Error(`Upload failed: ${error.message}`);
+    if (!hasExtension && extension) {
+      fileName = `${fileName}.${extension}`;
     }
-  }
 
-  // Remove document
+    // Append actual file
+    formData.append('file', fileObj);
+
+    // Add comprehensive file metadata
+    formData.append('fileName', fileName); // ✅ full name with extension
+    formData.append('fileType', fileObj.type);
+    formData.append('originalExtension', extension);
+    formData.append('preserveExtension', 'true');
+    formData.append('timestamp', Date.now().toString());
+
+    const config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/files',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      data: formData,
+      timeout: 60000, // 60s
+    };
+
+    const response = await axios.request(config);
+    console.log(`📡 Upload response for ${fileName}:`, response.data);
+
+    if (!response.data.path) {
+      throw new Error('No file path returned from server');
+    }
+
+    return response.data.path;
+  } catch (error) {
+    console.error(`❌ Error uploading file ${fileObj.name}:`, error);
+    throw new Error(`Upload failed: ${error.message}`);
+  }
+};
+ 
+ // Remove document
+ 
   const removeDocument = (docId) => {
     const currentDocuments = form.documents || {};
     const updatedDocuments = { ...currentDocuments };
@@ -5013,12 +5693,12 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
           )}
         </div>
         
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+        {/* <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <p className="text-sm text-yellow-700 flex items-center gap-2">
             <FaExclamationTriangle className="text-yellow-600" />
             <strong>Note:</strong> Upload all documents first, then tag each document in the section below.
           </p>
-        </div>
+        </div> */}
       </div>
 
       {/* Documents Count */}
@@ -5454,8 +6134,7 @@ const Payment = ({
     "Online Transfer/UPI",
     "Cash",
     "Cheque",
-    "Credit/Debit Card",
-    "Subvention"
+    "Credit/Debit Card"
   ];
 
   // Payment modes for In House (excludes subvention)
@@ -5758,14 +6437,14 @@ const Payment = ({
     });
   };
 
-  // Handle auto credit amount change
+  // Handle auto credit amount change - FIXED: Always use final premium amount
   const handleAutoCreditChange = (e) => {
-    const value = e.target.value;
-    setAutoCreditAmount(value);
+    // Prevent any changes to auto credit amount - always use final premium
+    setAutoCreditAmount(finalPremiumAmount);
     handleChange({
       target: {
         name: 'autoCreditAmount',
-        value: value
+        value: finalPremiumAmount
       }
     });
   };
@@ -5960,7 +6639,7 @@ const Payment = ({
     }
   };
 
-  // Add payment to ledger function for In House
+  // Add payment to ledger function for In House - FIXED: Use final premium for auto credit
   const addInHousePaymentToLedger = async () => {
     if (!form.inHousePaymentAmount || !form.inHousePaymentDate || !form.inHousePaymentMode || 
         !form.autoCreditPaymentMode || !form.autoCreditPaymentDate) {
@@ -5984,14 +6663,11 @@ const Payment = ({
 
     // Add auto credit entry only if it doesn't exist
     if (!existingAutoCredit) {
-      const totalSubventionRefund = calculateTotalSubventionRefund();
-      const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
-      
       const autoCreditPayment = {
         id: Date.now().toString() + '_auto_credit',
         date: form.autoCreditPaymentDate,
         description: `Auto Credit to Insurance Company - ${form.autoCreditPaymentMode}`,
-        amount: netPremium,
+        amount: finalPremiumAmount, // Use final premium amount here instead of netPremium
         mode: form.autoCreditPaymentMode,
         status: 'Pending', // Initially pending until customer pays full amount
         transactionId: form.autoCreditTransactionId || 'N/A',
@@ -6039,7 +6715,7 @@ const Payment = ({
     const paymentData = {
       payment_info: {
         paymentMadeBy: "In House",
-        autoCreditAmount: finalPremiumAmount,
+        autoCreditAmount: finalPremiumAmount, // Use final premium here
         autoCreditPaymentMode: form.autoCreditPaymentMode,
         autoCreditPaymentDate: form.autoCreditPaymentDate,
         autoCreditTransactionId: form.autoCreditTransactionId || '',
@@ -6273,7 +6949,7 @@ const Payment = ({
   // NEW: Check if payout should be disabled
   const isPayoutDisabled = customerRemainingAmount > 0;
 
-  // Ensure form fields are properly initialized
+  // Ensure form fields are properly initialized - FIXED: Use final premium for auto credit
   useEffect(() => {
     const initialFields = {
       paymentMadeBy: form.paymentMadeBy || "Customer",
@@ -6293,7 +6969,7 @@ const Payment = ({
       autoCreditPaymentDate: form.autoCreditPaymentDate || "",
       autoCreditTransactionId: form.autoCreditTransactionId || "",
       autoCreditBankName: form.autoCreditBankName || "",
-      autoCreditAmount: form.autoCreditAmount || netPremium,
+      autoCreditAmount: form.autoCreditAmount || finalPremiumAmount, // Use final premium here
       subvention_payment: form.subvention_payment || "No Subvention"
     };
     
@@ -6308,9 +6984,8 @@ const Payment = ({
       }
     });
     
-    if (netPremium) {
-      setAutoCreditAmount(netPremium);
-    }
+    // Always set to final premium amount
+    setAutoCreditAmount(finalPremiumAmount);
   }, [finalPremiumAmount, totalSubventionRefund]);
 
   // Update ledger when propPaymentLedger changes
@@ -6626,233 +7301,232 @@ const Payment = ({
   };
 
   // FIXED: Edit Form Component with proper text input handling
-  // FIXED: Edit Form Component with proper text input handling
-const EditPaymentForm = ({ payment, onSave, onCancel }) => {
-  const [localEditForm, setLocalEditForm] = useState(editFormData);
+  const EditPaymentForm = ({ payment, onSave, onCancel }) => {
+    const [localEditForm, setLocalEditForm] = useState(editFormData);
 
-  const handleLocalChange = (e) => {
-    const { name, value, type } = e.target;
-    
-    // Handle different input types appropriately
-    if (type === 'number') {
-      // For number inputs, store as string while typing, parse only on save
-      setLocalEditForm(prev => ({
+    const handleLocalChange = (e) => {
+      const { name, value, type } = e.target;
+      
+      // Handle different input types appropriately
+      if (type === 'number') {
+        // For number inputs, store as string while typing, parse only on save
+        setLocalEditForm(prev => ({
+          ...prev,
+          [name]: value // Keep as string for free typing
+        }));
+      } else {
+        setLocalEditForm(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+      
+      // Also update the main editFormData for consistency
+      setEditFormData(prev => ({
         ...prev,
-        [name]: value // Keep as string for free typing
+        [name]: type === 'number' ? value : value // Keep numbers as strings for now
       }));
-    } else {
-      setLocalEditForm(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-    
-    // Also update the main editFormData for consistency
-    setEditFormData(prev => ({
-      ...prev,
-      [name]: type === 'number' ? value : value // Keep numbers as strings for now
-    }));
-  };
-
-  const handleLocalSave = () => {
-    // Validate required fields
-    if (!localEditForm.amount || !localEditForm.date || !localEditForm.mode) {
-      alert("Please fill all required fields (Amount, Date, and Payment Mode)");
-      return;
-    }
-
-    // Parse amount to number only when saving
-    const amountToSave = parseFloat(localEditForm.amount);
-    if (isNaN(amountToSave) || amountToSave <= 0) {
-      alert("Please enter a valid amount");
-      return;
-    }
-
-    const formDataToSave = {
-      ...localEditForm,
-      amount: amountToSave
     };
-    
-    console.log("Saving local form:", formDataToSave);
-    onSave(formDataToSave);
-  };
 
-  // Get appropriate payment mode options based on who made the payment
-  const getPaymentModeOptions = () => {
-    return localEditForm.paymentMadeBy === "Customer" 
-      ? customerPaymentModeOptions 
-      : inHousePaymentModeOptions;
-  };
+    const handleLocalSave = () => {
+      // Validate required fields
+      if (!localEditForm.amount || !localEditForm.date || !localEditForm.mode) {
+        alert("Please fill all required fields (Amount, Date, and Payment Mode)");
+        return;
+      }
 
-  return (
-    <div className="fixed inset-0  bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">Edit Payment</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Date *</label>
-            <input
-              type="date"
-              name="date"
-              value={localEditForm.date}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
+      // Parse amount to number only when saving
+      const amountToSave = parseFloat(localEditForm.amount);
+      if (isNaN(amountToSave) || amountToSave <= 0) {
+        alert("Please enter a valid amount");
+        return;
+      }
+
+      const formDataToSave = {
+        ...localEditForm,
+        amount: amountToSave
+      };
+      
+      console.log("Saving local form:", formDataToSave);
+      onSave(formDataToSave);
+    };
+
+    // Get appropriate payment mode options based on who made the payment
+    const getPaymentModeOptions = () => {
+      return localEditForm.paymentMadeBy === "Customer" 
+        ? customerPaymentModeOptions 
+        : inHousePaymentModeOptions;
+    };
+
+    return (
+      <div className="fixed inset-0  bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <h3 className="text-lg font-semibold mb-4">Edit Payment</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Date *</label>
+              <input
+                type="date"
+                name="date"
+                value={localEditForm.date}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Amount (₹) *</label>
+              <input
+                type="number"
+                name="amount"
+                value={localEditForm.amount}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+                min="0"
+                step="0.01"
+                placeholder="Enter amount"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Payment Mode *</label>
+              <select
+                name="mode"
+                value={localEditForm.mode}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+              >
+                <option value="">Select payment mode</option>
+                {getPaymentModeOptions().map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+              <select
+                name="status"
+                value={localEditForm.status}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
+                <option value="Failed">Failed</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Transaction ID</label>
+              <input
+                type="text"
+                name="transactionId"
+                value={localEditForm.transactionId}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Enter transaction ID"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
+              <input
+                type="text"
+                name="bankName"
+                value={localEditForm.bankName}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Enter bank name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
+              <input
+                type="text"
+                name="description"
+                value={localEditForm.description}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Enter description"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Receipt Date</label>
+              <input
+                type="date"
+                name="receiptDate"
+                value={localEditForm.receiptDate}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Payment Made By</label>
+              <select
+                name="paymentMadeBy"
+                value={localEditForm.paymentMadeBy}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                disabled // Keep this disabled as we shouldn't change who made the payment
+              >
+                <option value="Customer">Customer</option>
+                <option value="In House">In House</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Payout By</label>
+              <select
+                name="payoutBy"
+                value={localEditForm.payoutBy}
+                onChange={handleLocalChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="Customer">Customer</option>
+                <option value="In House">In House</option>
+                <option value="Auto Credit to Insurance Company">Auto Credit to Insurance Company</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Show current values for reference */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-md">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Current Values:</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><span className="text-gray-600">Amount:</span> ₹{formatIndianNumber(payment.amount)}</div>
+              <div><span className="text-gray-600">Date:</span> {payment.date}</div>
+              <div><span className="text-gray-600">Mode:</span> {payment.mode}</div>
+              <div><span className="text-gray-600">Status:</span> {payment.status}</div>
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Amount (₹) *</label>
-            <input
-              type="number"
-              name="amount"
-              value={localEditForm.amount}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-              min="0"
-              step="0.01"
-              placeholder="Enter amount"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Payment Mode *</label>
-            <select
-              name="mode"
-              value={localEditForm.mode}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
-              <option value="">Select payment mode</option>
-              {getPaymentModeOptions().map(option => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-            <select
-              name="status"
-              value={localEditForm.status}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              Cancel
+            </button>
+            <button
+              onClick={handleLocalSave}
+              className="px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
             >
-              <option value="Completed">Completed</option>
-              <option value="Pending">Pending</option>
-              <option value="Failed">Failed</option>
-            </select>
+              Save Changes
+            </button>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Transaction ID</label>
-            <input
-              type="text"
-              name="transactionId"
-              value={localEditForm.transactionId}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter transaction ID"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
-            <input
-              type="text"
-              name="bankName"
-              value={localEditForm.bankName}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter bank name"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
-            <input
-              type="text"
-              name="description"
-              value={localEditForm.description}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter description"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Receipt Date</label>
-            <input
-              type="date"
-              name="receiptDate"
-              value={localEditForm.receiptDate}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Payment Made By</label>
-            <select
-              name="paymentMadeBy"
-              value={localEditForm.paymentMadeBy}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              disabled // Keep this disabled as we shouldn't change who made the payment
-            >
-              <option value="Customer">Customer</option>
-              <option value="In House">In House</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Payout By</label>
-            <select
-              name="payoutBy"
-              value={localEditForm.payoutBy}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option value="Customer">Customer</option>
-              <option value="In House">In House</option>
-              <option value="Auto Credit to Insurance Company">Auto Credit to Insurance Company</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Show current values for reference */}
-        <div className="mb-4 p-3 bg-gray-50 rounded-md">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Current Values:</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div><span className="text-gray-600">Amount:</span> ₹{formatIndianNumber(payment.amount)}</div>
-            <div><span className="text-gray-600">Date:</span> {payment.date}</div>
-            <div><span className="text-gray-600">Mode:</span> {payment.mode}</div>
-            <div><span className="text-gray-600">Status:</span> {payment.status}</div>
-          </div>
-        </div>
-        
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleLocalSave}
-            className="px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-          >
-            Save Changes
-          </button>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
@@ -6927,7 +7601,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
         )}
         
         {/* Payout Distribution */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 p-3 bg-white rounded-lg border">
+        {/* <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 p-3 bg-white rounded-lg border">
           <div className="text-center">
             <p className="text-sm text-gray-500">Auto Credit to Insurance Co.</p>
             <p className="font-semibold text-green-600">₹{formatIndianNumber(autoCreditTotal)}</p>
@@ -6954,7 +7628,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
             <p className="font-semibold text-orange-600">₹{formatIndianNumber(inHouseReceived)}</p>
             <p className="text-xs text-gray-500 mt-1">Handled by in-house team</p>
           </div>
-        </div>
+        </div> */}
         
         {/* Progress Bar - Adjusted for subvention */}
         <div className="mt-4">
@@ -7036,7 +7710,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
               <label className="block text-sm font-medium text-gray-600 mb-1">
                 Payment Amount (₹) *
               </label>
-              <input
+              <INRCurrencyInput
                 type="number"
                 name="customerPaymentAmount"
                 value={form.customerPaymentAmount || ""}
@@ -7103,7 +7777,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
               <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">
                 Receipt Date
               </label>
@@ -7115,7 +7789,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
               <p className="text-xs text-gray-500 mt-1">Date when receipt was issued</p>
-            </div>
+            </div> */}
           </div>
 
           {/* Add Payment Button */}
@@ -7139,7 +7813,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
             In House Payment
           </h4>
 
-          {/* Auto Credit to Insurance Company */}
+          {/* Auto Credit to Insurance Company - FIXED: Always show final premium amount */}
           <div className="mb-6 p-4 border border-gray-200 rounded-lg">
             <h5 className="text-sm font-semibold text-gray-800 mb-3">Auto Credit to Insurance Company</h5>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -7147,18 +7821,22 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Amount (₹) *
                 </label>
-                <input
+                <INRCurrencyInput
                   type="number"
                   name="autoCreditAmount"
-                  value={autoCreditAmount || ""}
+                  value={finalPremiumAmount} // Always use final premium amount
                   onChange={handleAutoCreditChange}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   placeholder="Enter auto credit amount"
                   readOnly
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Auto credit amount: ₹{formatIndianNumber(netPremium)} 
-                  {totalSubventionRefund > 0 && ` (After ₹${formatIndianNumber(totalSubventionRefund)} subvention)`}
+                  Auto credit amount: ₹{formatIndianNumber(finalPremiumAmount)} (Final Premium)
+                  {totalSubventionRefund > 0 && (
+                    <span className="text-green-600">
+                      {" "} - After subvention: ₹{formatIndianNumber(netPremium)}
+                    </span>
+                  )}
                 </p>
                 {autoCreditExists && (
                   <p className={`text-xs mt-1 ${
@@ -7274,7 +7952,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Payment Amount (₹) *
                 </label>
-                <input
+                <INRCurrencyInput
                   type="number"
                   name="inHousePaymentAmount"
                   value={form.inHousePaymentAmount || ""}
@@ -7341,7 +8019,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                 <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
               </div>
               
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Receipt Date
                 </label>
@@ -7353,7 +8031,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
                 <p className="text-xs text-gray-500 mt-1">Date when receipt was issued</p>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -7511,7 +8189,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
       )}
 
       {/* Next Step Button */}
-      <div className="mt-6 flex justify-between items-center">
+      {/* <div className="mt-6 flex justify-between items-center">
         <div className="text-sm text-gray-600">
           {paymentLedger.length > 0 ? (
             customerRemainingAmount <= 0 ? (
@@ -7532,7 +8210,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
           {isSaving ? "Saving..." : "Proceed to Payout"} 
           <FaArrowRight />
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };
@@ -7910,51 +8588,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
       )}
 
       {/* Payment Ledger Information */}
-      {paymentLedger.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-6">
-          <h4 className="text-md font-semibold text-green-700 mb-3 flex items-center">
-            <FaMoneyBillWave className="mr-2" />
-            Payment Ledger Information
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="text-green-600 font-medium">Total Payments:</span>
-              <div className="font-semibold">₹{totalPaid.toLocaleString('en-IN')}</div>
-            </div>
-            <div>
-              <span className="text-green-600 font-medium">Subvention Payments:</span>
-              <div className="font-semibold text-blue-600">₹{subventionFromLedger.toLocaleString('en-IN')}</div>
-            </div>
-            <div>
-              <span className="text-green-600 font-medium">Number of Payments:</span>
-              <div className="font-semibold">{paymentLedger.length}</div>
-            </div>
-          </div>
-          
-          {/* Subvention Payment Details */}
-          {subventionFromLedger > 0 && (
-            <div className="mt-4">
-              <h5 className="font-medium text-green-700 text-sm mb-2">Subvention Payment Details:</h5>
-              <div className="space-y-1 text-xs">
-                {paymentLedger
-                  .filter(payment => 
-                    payment.category === 'subvention' || 
-                    payment.mode?.toLowerCase().includes('subvention') ||
-                    payment.notes?.toLowerCase().includes('subvention') ||
-                    payment.paymentType === 'subvention'
-                  )
-                  .map((payment, index) => (
-                    <div key={payment.id || index} className="flex justify-between items-center bg-blue-50 px-3 py-2 rounded">
-                      <span>{payment.date} - {payment.mode}</span>
-                      <span className="font-semibold">₹{parseFloat(payment.amount).toLocaleString('en-IN')}</span>
-                    </div>
-                  ))
-                }
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+     
 
       {/* Show warning if no accepted quote */}
       {!acceptedQuote && (
@@ -7984,7 +8618,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
               type="number"
               step="0.01"
               name="netPremium"
-              value={form.netPremium || ""}
+              value={acceptedQuote.totalPremium || ""}
               onChange={handleChange}
               placeholder="Enter net premium amount"
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
@@ -8019,7 +8653,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
             {odAddonTotalFromQuote > 0 && (
               <p className="text-xs text-blue-500 mt-1">
                 From quote: ₹{odAddonTotalFromQuote.toLocaleString('en-IN')} 
-                (OD: ₹{parseFloat(acceptedQuote.odAmount || 0).toLocaleString('en-IN')} + 
+                (OD: ₹{parseFloat(acceptedQuote.odAmount|| 0).toLocaleString('en-IN')} + 
                 Add-ons: ₹{parseFloat(acceptedQuote.addOnsPremium || 0).toLocaleString('en-IN')})
               </p>
             )}
@@ -8028,7 +8662,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
           {/* Percentage of OD + Addons */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              Percentage of OD + Addons (%) *
+              Payout (%) *
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -8136,11 +8770,11 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
                 <div className="font-semibold">₹{breakdown.odAddonAmount.toLocaleString('en-IN')}</div>
               </div>
               <div>
-                <span className="text-gray-600">Percentage:</span>
+                <span className="text-gray-600">Payout (%):</span>
                 <div className="font-semibold">{breakdown.percentage}%</div>
               </div>
               <div>
-                <span className="text-gray-600">Percentage Amount:</span>
+                <span className="text-gray-600">Payout Amount:</span>
                 <div className="font-semibold text-purple-600">
                   ₹{breakdown.percentageAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
@@ -8252,7 +8886,7 @@ const NewPolicyPage = () => {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     buyer_type: "individual",
-    vehicleType: "used", // NEW: Added vehicleType field
+    vehicleType: "used",
     insurance_category: "motor",
     status: "draft",
     ts: Date.now(),
@@ -8301,6 +8935,7 @@ const NewPolicyPage = () => {
     previousPolicyStartDate: "", 
     previousPolicyDuration: "", 
     previousPolicyEndDate: "", 
+    previousTpExpiryDate: "",
     previousDueDate: "",
     previousNcbDiscount: "",
     // Insurance Quote fields
@@ -8310,7 +8945,7 @@ const NewPolicyPage = () => {
     idv: "",
     ncb: "",
     duration: "",
-    // New Policy fields
+    // New Policy fields - FIXED: Added missing expiry date fields
     policyIssued: "",
     insuranceCompany: "",
     policyNumber: "",
@@ -8322,6 +8957,9 @@ const NewPolicyPage = () => {
     insuranceDuration: "",
     idvAmount: "",
     totalPremium: "",
+    policyType: "", // FIXED: Added policyType field
+    odExpiryDate: "", // FIXED: Added this missing field
+    tpExpiryDate: "", // FIXED: Added this missing field
     // Documents - changed to object for tagging
     documents: {},
     documentTags: {},
@@ -8338,9 +8976,9 @@ const NewPolicyPage = () => {
     totalPaidAmount: 0,
     // Payout fields
     netPremium: "",
-    odAddonPercentage: 10, // default value
-    odAddonAmount: "", // NEW: Added missing field
-    netAmount: "", // NEW: Added missing field
+    odAddonPercentage: 10,
+    odAddonAmount: "",
+    netAmount: "",
     odAmount: "",
     ncbAmount: "",
     subVention: "",
@@ -8357,6 +8995,23 @@ const NewPolicyPage = () => {
   const [acceptedQuote, setAcceptedQuote] = useState(null);
   const [paymentLedger, setPaymentLedger] = useState([]);
 
+  // FIXED: Add debounce utility and update prevention
+  const [isUpdating, setIsUpdating] = useState(false);
+  const lastUpdateRef = useRef(0);
+
+  // Debounce utility function
+  const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
   const steps = [
     "Case Details",
     "Vehicle Details", 
@@ -8368,7 +9023,7 @@ const NewPolicyPage = () => {
     "Payout"
   ];
 
-  // NEW: Function to get actual steps based on vehicle type
+  // Function to get actual steps based on vehicle type
   const getSteps = () => {
     if (form.vehicleType === "new") {
       return steps.filter(step => step !== "Previous Policy");
@@ -8376,7 +9031,7 @@ const NewPolicyPage = () => {
     return steps;
   };
 
-  // NEW: Function to get actual step number for navigation
+  // Function to get actual step number for navigation
   const getActualStep = (displayStep) => {
     if (form.vehicleType === "new" && displayStep >= 3) {
       return displayStep + 1;
@@ -8384,7 +9039,7 @@ const NewPolicyPage = () => {
     return displayStep;
   };
 
-  // NEW: Function to get display step number
+  // Function to get display step number
   const getDisplayStep = (actualStep) => {
     if (form.vehicleType === "new" && actualStep >= 3) {
       return actualStep - 1;
@@ -8392,7 +9047,7 @@ const NewPolicyPage = () => {
     return actualStep;
   };
 
-  // NEW: Function to handle step click
+  // Function to handle step click
   const handleStepClick = (clickedStep) => {
     if (isSaving || isCompleted) return;
     
@@ -8424,9 +9079,9 @@ const NewPolicyPage = () => {
     console.log("🔍 Calculating total premium...");
     
     // First check if we have an accepted quote with premium
-    if (acceptedQuote && acceptedQuote.premium) {
-      console.log("✅ Using premium from accepted quote:", acceptedQuote.premium);
-      return parseFloat(acceptedQuote.premium);
+    if (acceptedQuote && acceptedQuote.totalPremium) {
+      console.log("✅ Using totalPremium from accepted quote:", acceptedQuote.totalPremium);
+      return parseFloat(acceptedQuote.totalPremium);
     }
     
     // Then check if we have premium in the insurance quote section
@@ -8444,14 +9099,13 @@ const NewPolicyPage = () => {
     // Check insurance quotes array
     if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
       const acceptedQuoteFromArray = form.insuranceQuotes.find(quote => quote.accepted === true);
-      if (acceptedQuoteFromArray && acceptedQuoteFromArray.premium) {
-        console.log("✅ Using premium from accepted quote in insuranceQuotes array:", acceptedQuoteFromArray.premium);
-        return parseFloat(acceptedQuoteFromArray.premium);
+      if (acceptedQuoteFromArray && acceptedQuoteFromArray.totalPremium) {
+        console.log("✅ Using premium from accepted quote in insuranceQuotes array:", acceptedQuoteFromArray.totalPremium);
+        return parseFloat(acceptedQuoteFromArray.totalPremium);
       }
     }
     
     console.log("❌ No premium found, defaulting to 0");
-    // Default to 0 if no premium found
     return 0;
   };
 
@@ -8477,16 +9131,14 @@ const NewPolicyPage = () => {
     });
   }, [paymentLedger]);
 
-  const handleQuoteAccepted = (quote) => {
+  // FIXED: Optimized quote acceptance handler
+  const handleQuoteAccepted = useCallback((quote) => {
     console.log("✅ Quote accepted in parent:", quote);
     setAcceptedQuote(quote);
     
-    if (policyId) {
-      setTimeout(() => {
-        updatePolicy();
-      }, 500);
-    }
-  };
+    // Don't auto-update policy immediately to prevent network overload
+    // User can manually save when ready
+  }, []);
 
   // ENHANCED: Function to update payment ledger from Payment component
   const handlePaymentLedgerUpdate = (ledger) => {
@@ -8524,11 +9176,11 @@ const NewPolicyPage = () => {
         duration: "",
         insuranceQuotes: [],
         previousClaimTaken: "no",
-        vehicleType: "" // Reset vehicle type for new case
+        vehicleType: ""
       }));
       
       setAcceptedQuote(null);
-      setPaymentLedger([]); // Clear payment ledger for new case
+      setPaymentLedger([]);
       hasClearedStorage.current = true;
     }
   }, [isEditMode, id]);
@@ -8544,7 +9196,7 @@ const NewPolicyPage = () => {
     }
   }, [id]);
 
-  // Enhanced function to fetch policy data for editing with proper mapping including vehicleType
+  // ENHANCED: Function to fetch policy data with proper expiry date handling
   const fetchPolicyData = async (policyId) => {
     setLoadingPolicy(true);
     try {
@@ -8563,6 +9215,50 @@ const NewPolicyPage = () => {
       const actualData = policyData.data;
       console.log("📊 Actual Policy Data:", actualData);
       
+      // FIXED: Process insurance quotes to ensure NCB and policy term are properly set
+      let processedInsuranceQuotes = [];
+      if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
+        processedInsuranceQuotes = actualData.insurance_quotes.map(quote => {
+          // Ensure NCB discount amount is calculated if missing
+          let ncbDiscountAmount = quote.ncbDiscountAmount;
+          if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
+            ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
+            console.log("🔢 Calculated missing NCB discount in fetch:", ncbDiscountAmount);
+          }
+
+          // Ensure policy duration label is set if missing
+          let policyDurationLabel = quote.policyDurationLabel;
+          if (!policyDurationLabel && quote.policyDuration) {
+            // Create basic label if missing
+            policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString())//quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`;
+            console.log("📅 Set policy duration label in fetch:", policyDurationLabel);
+          }
+
+          return {
+            ...quote,
+            ncbDiscountAmount: ncbDiscountAmount || 0,
+            policyDurationLabel: policyDurationLabel || quote.policyDuration,
+            odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0))
+          };
+        });
+        
+        console.log("✅ Processed insurance quotes in fetch:", processedInsuranceQuotes);
+      }
+
+      // CRITICAL FIX: Properly map previous policy data including TP expiry date
+      const previousPolicyData = actualData.previous_policy || {};
+      
+      console.log("🔍 Previous Policy Data from API:", previousPolicyData);
+      console.log("📅 TP Expiry Date from API:", previousPolicyData.tpExpiryDate);
+      console.log("📅 Policy End Date from API:", previousPolicyData.policyEndDate);
+
+      // CRITICAL FIX: Properly map new policy data including expiry dates
+      const policyInfoData = actualData.policy_info || {};
+      
+      console.log("🔍 New Policy Data from API:", policyInfoData);
+      console.log("📅 OD Expiry Date from API:", policyInfoData.odExpiryDate);
+      console.log("📅 TP Expiry Date from API:", policyInfoData.tpExpiryDate);
+
       // Transform documents array to object with tagging
       const documentsObject = {};
       const documentTagsObject = {};
@@ -8570,24 +9266,24 @@ const NewPolicyPage = () => {
         actualData.documents.forEach((doc, index) => {
           const docId = `doc_${index}`;
           documentsObject[docId] = doc;
-          documentTagsObject[docId] = doc.tag || ""; // Initialize tags as empty
+          documentTagsObject[docId] = doc.tag || "";
         });
       }
 
-      // Find accepted quote from insurance_quotes array
+      // Find accepted quote from processed insurance quotes
       let acceptedQuoteData = null;
-      if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
-        acceptedQuoteData = actualData.insurance_quotes.find(quote => quote.accepted === true);
-        if (!acceptedQuoteData && actualData.insurance_quotes.length > 0) {
-          acceptedQuoteData = actualData.insurance_quotes[0]; // Fallback to first quote
+      if (processedInsuranceQuotes.length > 0) {
+        acceptedQuoteData = processedInsuranceQuotes.find(quote => quote.accepted === true);
+        if (!acceptedQuoteData && processedInsuranceQuotes.length > 0) {
+          acceptedQuoteData = processedInsuranceQuotes[0];
         }
       }
 
-      // Create a clean transformed data object with ALL fields properly mapped including vehicleType
+      // Create a clean transformed data object with ALL fields properly mapped
       const transformedData = {
         // Basic info
         buyer_type: actualData.buyer_type || "individual",
-        vehicleType: actualData.vehicleType || "used", // NEW: Default to used for backward compatibility
+        vehicleType: actualData.vehicleType || "used",
         insurance_category: actualData.insurance_category || "motor",
         status: actualData.status || "draft",
         
@@ -8596,7 +9292,7 @@ const NewPolicyPage = () => {
         mobile: actualData.customer_details?.mobile || "",
         email: actualData.customer_details?.email || "",
         employeeName: actualData.customer_details?.employeeName || "",
-        age: actualData.customer_details?.age || "", // ADDED: age field
+        age: actualData.customer_details?.age || "",
         gender: actualData.customer_details?.gender || "",
         panNumber: actualData.customer_details?.panNumber || "",
         aadhaarNumber: actualData.customer_details?.aadhaarNumber || "",
@@ -8616,7 +9312,7 @@ const NewPolicyPage = () => {
         relation: actualData.nominee?.relation || "",
         nomineeAge: actualData.nominee?.age || "",
         
-        // Reference - FIXED: Corrected spelling from 'refrence' to 'reference'
+        // Reference - FIXED: Corrected spelling
         referenceName: actualData.reference?.name || actualData.refrence?.name || "",
         referencePhone: actualData.reference?.phone || actualData.refrence?.phone || "",
         
@@ -8630,20 +9326,21 @@ const NewPolicyPage = () => {
         makeMonth: actualData.vehicle_details?.makeMonth || "",
         makeYear: actualData.vehicle_details?.makeYear || "",
         
-        // Previous policy
-        previousInsuranceCompany: actualData.previous_policy?.insuranceCompany || "",
-        previousPolicyNumber: actualData.previous_policy?.policyNumber || "",
-        previousPolicyType: actualData.previous_policy?.policyType || "",
-        previousIssueDate: actualData.previous_policy?.issueDate || "",
-        previousDueDate: actualData.previous_policy?.dueDate || "",
-        previousPolicyStartDate: actualData.previous_policy?.policyStartDate || "", 
-        previousPolicyDuration: actualData.previous_policy?.policyDuration || "",
-        previousPolicyEndDate: actualData.previous_policy?.policyEndDate || "",
-        previousClaimTaken: actualData.previous_policy?.claimTakenLastYear || "no",
-        previousNcbDiscount: actualData.previous_policy?.ncbDiscount || "",
+        // Previous policy - CRITICAL FIX: Include all expiry dates
+        previousInsuranceCompany: previousPolicyData.insuranceCompany || "",
+        previousPolicyNumber: previousPolicyData.policyNumber || "",
+        previousPolicyType: previousPolicyData.policyType || "",
+        previousIssueDate: previousPolicyData.issueDate || "",
+        previousDueDate: previousPolicyData.dueDate || "",
+        previousPolicyStartDate: previousPolicyData.policyStartDate || "", 
+        previousPolicyDuration: previousPolicyData.policyDuration || "",
+        previousPolicyEndDate: previousPolicyData.policyEndDate || "",
+        previousTpExpiryDate: previousPolicyData.tpExpiryDate || "",
+        previousClaimTaken: previousPolicyData.claimTakenLastYear || "no",
+        previousNcbDiscount: previousPolicyData.ncbDiscount || "",
         
-        // Insurance quotes
-        insuranceQuotes: actualData.insurance_quotes || [],
+        // Insurance quotes - use processed quotes
+        insuranceQuotes: processedInsuranceQuotes,
         
         // Insurance quote (legacy)
         insurer: actualData.insurance_quote?.insurer || "",
@@ -8653,18 +9350,21 @@ const NewPolicyPage = () => {
         ncb: actualData.insurance_quote?.ncb || "",
         duration: actualData.insurance_quote?.duration || "",
         
-        // Policy info
-        policyIssued: actualData.policy_info?.policyIssued || "",
-        insuranceCompany: actualData.policy_info?.insuranceCompany || "",
-        policyNumber: actualData.policy_info?.policyNumber || "",
-        covernoteNumber: actualData.policy_info?.covernoteNumber || "",
-        issueDate: actualData.policy_info?.issueDate || "",
-        policyStartDate: actualData.policy_info?.policyStartDate || "",
-        dueDate: actualData.policy_info?.dueDate || "",
-        ncbDiscount: actualData.policy_info?.ncbDiscount || "",
-        insuranceDuration: actualData.policy_info?.insuranceDuration || "",
-        idvAmount: actualData.policy_info?.idvAmount || "",
-        totalPremium: actualData.policy_info?.totalPremium || "",
+        // Policy info - CRITICAL FIX: Include all expiry dates and policy type
+        policyIssued: policyInfoData.policyIssued || "",
+        insuranceCompany: policyInfoData.insuranceCompany || "",
+        policyNumber: policyInfoData.policyNumber || "",
+        covernoteNumber: policyInfoData.covernoteNumber || "",
+        issueDate: policyInfoData.issueDate || "",
+        policyStartDate: policyInfoData.policyStartDate || "",
+        dueDate: policyInfoData.dueDate || "",
+        ncbDiscount: policyInfoData.ncbDiscount || "",
+        insuranceDuration: policyInfoData.insuranceDuration || "",
+        idvAmount: policyInfoData.idvAmount || "",
+        totalPremium: policyInfoData.totalPremium || "",
+        policyType: policyInfoData.policyType || "", // FIXED: Added policyType
+        odExpiryDate: policyInfoData.odExpiryDate || "", // FIXED: Added odExpiryDate
+        tpExpiryDate: policyInfoData.tpExpiryDate || "", // FIXED: Added tpExpiryDate
         
         // Payment info
         paymentMadeBy: actualData.payment_info?.paymentMadeBy || "Customer",
@@ -8683,9 +9383,9 @@ const NewPolicyPage = () => {
         odAmount: actualData.payout?.odAmount || "",
         ncbAmount: actualData.payout?.ncbAmount || "",
         subVention: actualData.payout?.subVention || "",
-        odAddonPercentage: actualData.payout?.odAddonPercentage || 10, // ADDED
-        odAddonAmount: actualData.payout?.odAddonAmount || "", // ADDED
-        netAmount: actualData.payout?.netAmount || "", // ADDED
+        odAddonPercentage: actualData.payout?.odAddonPercentage || 10,
+        odAddonAmount: actualData.payout?.odAddonAmount || "",
+        netAmount: actualData.payout?.netAmount || "",
         
         // Documents as object
         documents: documentsObject,
@@ -8698,23 +9398,20 @@ const NewPolicyPage = () => {
       };
       
       console.log("✅ Transformed Form Data:", transformedData);
+      console.log("📋 Previous TP Expiry Date:", transformedData.previousTpExpiryDate);
+      console.log("📋 Previous Policy End Date:", transformedData.previousPolicyEndDate);
+      console.log("📋 New Policy OD Expiry Date:", transformedData.odExpiryDate);
+      console.log("📋 New Policy TP Expiry Date:", transformedData.tpExpiryDate);
+      console.log("📋 New Policy Type:", transformedData.policyType);
       console.log("📋 Previous Claim Taken:", transformedData.previousClaimTaken);
       console.log("🚗 Vehicle Type:", transformedData.vehicleType);
-      console.log("💰 Insurance Quotes after transformation:", transformedData.insuranceQuotes);
-      console.log("📄 Documents as object:", transformedData.documents);
-      console.log("💳 Payment Info:", {
-        paymentMadeBy: transformedData.paymentMadeBy,
-        paymentMode: transformedData.paymentMode,
-        paymentAmount: transformedData.paymentAmount,
-        paymentStatus: transformedData.paymentStatus,
-        totalPaidAmount: transformedData.totalPaidAmount
-      });
+      console.log("💰 Processed Insurance Quotes:", transformedData.insuranceQuotes);
       
       setForm(transformedData);
       
-      // Set accepted quote
+      // Set accepted quote from processed quotes
       if (acceptedQuoteData) {
-        console.log("✅ Setting accepted quote from data:", acceptedQuoteData);
+        console.log("✅ Setting accepted quote from processed data:", acceptedQuoteData.insuranceCompany);
         setAcceptedQuote(acceptedQuoteData);
       }
       
@@ -8741,7 +9438,7 @@ const NewPolicyPage = () => {
     }
   };
 
-  // Enhanced handleChange to properly handle all field types including vehicleType
+  // Enhanced handleChange to properly handle all field types
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (errors[name]) {
@@ -8833,12 +9530,41 @@ const NewPolicyPage = () => {
     const currentQuotes = form.insuranceQuotes || [];
     const newQuotes = quotesArray || [];
     
+    // Process quotes to ensure all required fields are present
+    const processedQuotes = newQuotes.map(quote => {
+      // Ensure NCB discount amount is calculated if missing
+      let ncbDiscountAmount = quote.ncbDiscountAmount;
+      if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
+        ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
+      }
+
+      // Ensure policy duration label is set if missing
+      let policyDurationLabel = quote.policyDurationLabel;
+      if (!policyDurationLabel && quote.policyDuration) {
+        policyDurationLabel = quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`;
+      }
+
+      return {
+        ...quote,
+        ncbDiscountAmount: ncbDiscountAmount || 0,
+        policyDurationLabel: policyDurationLabel || quote.policyDuration,
+        odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0))
+      };
+    });
+
     // Only update if quotes actually changed
-    if (JSON.stringify(currentQuotes) !== JSON.stringify(newQuotes)) {
-      console.log("💰 Insurance quotes updated in main component:", newQuotes.length, "quotes");
+    if (JSON.stringify(currentQuotes) !== JSON.stringify(processedQuotes)) {
+      console.log("💰 Insurance quotes updated in main component:", processedQuotes.length, "quotes");
+      console.log("📊 Sample quote details:", processedQuotes[0] ? {
+        ncbDiscount: processedQuotes[0].ncbDiscount,
+        ncbDiscountAmount: processedQuotes[0].ncbDiscountAmount,
+        policyDuration: processedQuotes[0].policyDuration,
+        policyDurationLabel: processedQuotes[0].policyDurationLabel
+      } : 'No quotes');
+      
       setForm((f) => ({ 
         ...f, 
-        insuranceQuotes: newQuotes 
+        insuranceQuotes: processedQuotes 
       }));
     }
   }, [form.insuranceQuotes]);
@@ -8898,7 +9624,7 @@ const NewPolicyPage = () => {
     return Object.keys(stepErrors).length === 0;
   };
 
-  // ============ FIXED DATA SANITIZATION FUNCTIONS ============
+  // ============ ENHANCED DATA SANITIZATION FUNCTIONS ============
   const sanitizeDataForAPI = (data) => {
     const sanitized = JSON.parse(JSON.stringify(data, (key, value) => {
       // Remove undefined, null, and empty strings
@@ -8912,32 +9638,50 @@ const NewPolicyPage = () => {
       return value;
     }));
 
-    // Clean up insurance quotes to remove any circular references or React components
+    // FIXED: Clean up insurance quotes to ensure NCB and policy term are properly saved
     if (sanitized.insurance_quotes && Array.isArray(sanitized.insurance_quotes)) {
-      sanitized.insurance_quotes = sanitized.insurance_quotes.map(quote => ({
-        id: quote.id || `quote_${Date.now()}`,
-        insuranceCompany: quote.insuranceCompany || '',
-        coverageType: quote.coverageType || 'comprehensive',
-        idv: parseFloat(quote.idv) || 0,
-        policyDuration: parseInt(quote.policyDuration) || 1,
-        ncbDiscount: parseInt(quote.ncbDiscount) || 0,
-        odAmount: parseFloat(quote.odAmount) || 0,
-        thirdPartyAmount: parseFloat(quote.thirdPartyAmount) || 0,
-        addOnsAmount: parseFloat(quote.addOnsAmount) || 0,
-        premium: parseFloat(quote.premium) || 0,
-        gstAmount: parseFloat(quote.gstAmount) || 0,
-        totalPremium: parseFloat(quote.totalPremium) || 0,
-        addOnsPremium: parseFloat(quote.addOnsPremium) || 0,
-        selectedAddOns: quote.selectedAddOns || {},
-        includedAddOns: quote.includedAddOns || [],
-        accepted: Boolean(quote.accepted),
-        createdAt: quote.createdAt || new Date().toISOString(),
-        // Remove any React component references
-        companyLogo: undefined,
-        companyFallbackLogo: undefined,
-        companyColor: undefined,
-        companyBgColor: undefined
-      }));
+      sanitized.insurance_quotes = sanitized.insurance_quotes.map(quote => {
+        // Calculate NCB discount amount if missing
+        let ncbDiscountAmount = quote.ncbDiscountAmount;
+        if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
+          ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
+        }
+
+        // Ensure policy duration label is set
+        let policyDurationLabel = quote.policyDurationLabel;
+        if (!policyDurationLabel && quote.policyDuration) {
+          policyDurationLabel = quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`;
+        }
+
+        return {
+          id: quote.id || `quote_${Date.now()}`,
+          insuranceCompany: quote.insuranceCompany || '',
+          coverageType: quote.coverageType || 'comprehensive',
+          idv: parseFloat(quote.idv) || 0,
+          policyDuration: quote.policyDuration || "1",
+          policyDurationLabel: policyDurationLabel || "1 Year", // FIXED: Ensure label is included
+          ncbDiscount: parseInt(quote.ncbDiscount) || 0,
+          ncbDiscountAmount: ncbDiscountAmount || 0, // FIXED: Ensure amount is included
+          odAmount: parseFloat(quote.odAmount) || 0,
+          odAmountAfterNcb: parseFloat(quote.odAmountAfterNcb) || (parseFloat(quote.odAmount) - ncbDiscountAmount),
+          thirdPartyAmount: parseFloat(quote.thirdPartyAmount) || 0,
+          addOnsAmount: parseFloat(quote.addOnsAmount) || 0,
+          premium: parseFloat(quote.premium) || 0,
+          gstAmount: parseFloat(quote.gstAmount) || 0,
+          totalPremium: parseFloat(quote.totalPremium) || 0,
+          addOnsPremium: parseFloat(quote.addOnsPremium) || 0,
+          selectedAddOns: quote.selectedAddOns || {},
+          includedAddOns: quote.includedAddOns || [],
+          accepted: Boolean(quote.accepted),
+          createdAt: quote.createdAt || new Date().toISOString(),
+          updatedAt: quote.updatedAt || new Date().toISOString(),
+          // Remove any React component references
+          companyLogo: undefined,
+          companyFallbackLogo: undefined,
+          companyColor: undefined,
+          companyBgColor: undefined
+        };
+      });
     }
 
     // Clean up payment ledger
@@ -8984,7 +9728,7 @@ const NewPolicyPage = () => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type - UPDATED with all fields
+      // Prepare customer details based on buyer type
       const customerDetails = {
         name: form.customerName || "",
         mobile: form.mobile || "",
@@ -8994,11 +9738,11 @@ const NewPolicyPage = () => {
         city: form.city || "",
         alternatePhone: form.alternatePhone || "",
         employeeName: form.employeeName || "",
-        age: form.age || "", // ADDED: age field
+        age: form.age || "",
         gender: form.gender || "",
         panNumber: form.panNumber || "",
         aadhaarNumber: form.aadhaarNumber || "",
-        companyName: form.companyName || "", // ADDED: corporate fields
+        companyName: form.companyName || "",
         contactPersonName: form.contactPersonName || "",
         companyPanNumber: form.companyPanNumber || "",
         gstNumber: form.gstNumber || ""
@@ -9006,14 +9750,14 @@ const NewPolicyPage = () => {
 
       const policyData = {
         buyer_type: form.buyer_type || "individual",
-        vehicleType: form.vehicleType || "used", // NEW: Include vehicleType
+        vehicleType: form.vehicleType || "used",
         customer_details: customerDetails,
         nominee: {
           name: form.nomineeName || "",
           relation: form.relation || "",
           age: form.nomineeAge || ""
         },
-        reference: { // FIXED: Corrected spelling from 'refrence' to 'reference'
+        reference: {
           name: form.referenceName || "",
           phone: form.referencePhone || ""
         },
@@ -9022,7 +9766,7 @@ const NewPolicyPage = () => {
         insurance_quotes: form.insuranceQuotes || [],
         ts: Date.now(),
         created_by: form.created_by || "ADMIN123",
-        policyPrefilled: form.policyPrefilled || false // ADDED: policyPrefilled field
+        policyPrefilled: form.policyPrefilled || false
       };
 
       // Sanitize data before sending
@@ -9063,10 +9807,26 @@ const NewPolicyPage = () => {
     }
   };
 
-  // ENHANCED updatePolicy function with vehicleType support and data sanitization
-  const updatePolicy = async (overrideData = null) => {
+  // FIXED: Enhanced updatePolicy function with network error prevention
+  const updatePolicy = async (overrideData = null, retryCount = 0) => {
+    // Prevent multiple simultaneous updates
+    if (isUpdating) {
+      console.log("⏳ Update already in progress, skipping...");
+      return;
+    }
+
+    // Prevent too frequent updates (min 1 second between updates)
+    const now = Date.now();
+    if (now - lastUpdateRef.current < 1000) {
+      console.log("⏰ Too frequent update, throttling...");
+      return;
+    }
+
+    const MAX_RETRIES = 3;
+    
     try {
-      setIsSaving(true);
+      setIsUpdating(true);
+      lastUpdateRef.current = now;
       
       if (!policyId && !isEditMode) {
         console.log("📝 No policy ID found, creating new policy...");
@@ -9089,10 +9849,9 @@ const NewPolicyPage = () => {
         console.log("🔄 Using override data for update:", overrideData);
         updateData = overrideData;
       } else {
-        // Standard step-based update data - UPDATED with vehicleType
+        // Standard step-based update data
         switch (step) {
           case 1:
-            // Prepare customer details based on buyer type - UPDATED with all fields
             const customerDetails = {
               name: form.customerName || "",
               mobile: form.mobile || "",
@@ -9102,11 +9861,11 @@ const NewPolicyPage = () => {
               city: form.city || "",
               alternatePhone: form.alternatePhone || "",
               employeeName: form.employeeName || "",
-              age: form.age || "", // ADDED: age field
+              age: form.age || "",
               gender: form.gender || "",
               panNumber: form.panNumber || "",
               aadhaarNumber: form.aadhaarNumber || "",
-              companyName: form.companyName || "", // ADDED: corporate fields
+              companyName: form.companyName || "",
               contactPersonName: form.contactPersonName || "",
               companyPanNumber: form.companyPanNumber || "",
               gstNumber: form.gstNumber || ""
@@ -9114,18 +9873,18 @@ const NewPolicyPage = () => {
 
             updateData = {
               buyer_type: form.buyer_type,
-              vehicleType: form.vehicleType, // NEW: Include vehicleType
+              vehicleType: form.vehicleType,
               customer_details: customerDetails,
               nominee: {
                 name: form.nomineeName || "",
                 relation: form.relation || "",
                 age: form.nomineeAge || ""
               },
-              reference: { // FIXED: Corrected spelling
+              reference: {
                 name: form.referenceName || "",
                 phone: form.referencePhone || ""
               },
-              policyPrefilled: form.policyPrefilled || false // ADDED
+              policyPrefilled: form.policyPrefilled || false
             };
             break;
           case 2:
@@ -9140,7 +9899,7 @@ const NewPolicyPage = () => {
                 makeMonth: form.makeMonth || "",
                 makeYear: form.makeYear || ""
               },
-              vehicleType: form.vehicleType // NEW: Include vehicleType in vehicle details update
+              vehicleType: form.vehicleType
             };
             break;
           case 3:
@@ -9155,6 +9914,7 @@ const NewPolicyPage = () => {
                   policyStartDate: form.previousPolicyStartDate || "",
                   policyDuration: form.previousPolicyDuration || "",
                   policyEndDate: form.previousPolicyEndDate || "",
+                  tpExpiryDate: form.previousTpExpiryDate || "",
                   dueDate: form.previousDueDate || "",
                   claimTakenLastYear: form.previousClaimTaken || "no",
                   ncbDiscount: parseFloat(form.previousNcbDiscount) || 0
@@ -9175,19 +9935,23 @@ const NewPolicyPage = () => {
             };
             break;
           case 5:
+            // FIXED: Include all new policy fields including expiry dates
             updateData = {
               policy_info: {
-                policyIssued: form.policyIssued || "", // ADDED: missing field
+                policyIssued: form.policyIssued || "",
                 insuranceCompany: form.insuranceCompany || "",
                 policyNumber: form.policyNumber || "",
-                covernoteNumber: form.covernoteNumber || "", // ADDED: missing field
+                covernoteNumber: form.covernoteNumber || "",
                 issueDate: form.issueDate || "",
-                policyStartDate: form.policyStartDate || "", // ADDED: missing field
+                policyStartDate: form.policyStartDate || "",
                 dueDate: form.dueDate || "",
                 ncbDiscount: parseFloat(form.ncbDiscount) || 0,
                 insuranceDuration: form.insuranceDuration || "",
                 idvAmount: parseFloat(form.idvAmount) || 0,
-                totalPremium: parseFloat(form.totalPremium) || 0
+                totalPremium: parseFloat(form.totalPremium) || 0,
+                policyType: form.policyType || "", // FIXED: Added policyType
+                odExpiryDate: form.odExpiryDate || "", // FIXED: Added odExpiryDate
+                tpExpiryDate: form.tpExpiryDate || "" // FIXED: Added tpExpiryDate
               }
             };
             break;
@@ -9230,9 +9994,9 @@ const NewPolicyPage = () => {
                 odAmount: parseFloat(form.odAmount) || 0,
                 ncbAmount: parseFloat(form.ncbAmount) || 0,
                 subVention: parseFloat(form.subVention) || 0,
-                odAddonPercentage: parseFloat(form.odAddonPercentage) || 10, // ADDED: missing field
-                odAddonAmount: parseFloat(form.odAddonAmount) || 0, // ADDED: missing field
-                netAmount: parseFloat(form.netAmount) || 0 // ADDED: missing field
+                odAddonPercentage: parseFloat(form.odAddonPercentage) || 10,
+                odAddonAmount: parseFloat(form.odAddonAmount) || 0,
+                netAmount: parseFloat(form.netAmount) || 0
               },
               payment_ledger: paymentLedger,
             };
@@ -9242,9 +10006,15 @@ const NewPolicyPage = () => {
         }
       }
 
-      // Always include insurance quotes in updates
+      // FIXED: Always include insurance quotes in updates with proper processing
       if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
-        updateData.insurance_quotes = form.insuranceQuotes;
+        updateData.insurance_quotes = form.insuranceQuotes.map(quote => ({
+          ...quote,
+          // Ensure NCB and policy term are properly included
+          ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
+          policyDurationLabel: quote.policyDurationLabel || (quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`),
+          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0))
+        }));
       }
       
       // Include payment ledger if it exists and not already included
@@ -9269,7 +10039,12 @@ const NewPolicyPage = () => {
         hasPaymentLedger: !!sanitizedUpdateData.payment_ledger,
         paymentLedgerLength: sanitizedUpdateData.payment_ledger?.length || 0,
         insuranceQuotesLength: sanitizedUpdateData.insurance_quotes?.length || 0,
-        vehicleType: form.vehicleType
+        vehicleType: form.vehicleType,
+        policyInfo: sanitizedUpdateData.policy_info ? {
+          policyType: sanitizedUpdateData.policy_info.policyType,
+          odExpiryDate: sanitizedUpdateData.policy_info.odExpiryDate,
+          tpExpiryDate: sanitizedUpdateData.policy_info.tpExpiryDate
+        } : 'No policy info'
       });
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedUpdateData, {
@@ -9286,6 +10061,14 @@ const NewPolicyPage = () => {
       return response.data;
     } catch (error) {
       console.error("❌ Error updating policy:", error);
+      
+      // Retry logic for network errors
+      if (error.code === 'ERR_NETWORK' && retryCount < MAX_RETRIES) {
+        console.log(`🔄 Retrying API call (${retryCount + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return updatePolicy(overrideData, retryCount + 1);
+      }
+      
       let errorMessage = "Error saving progress";
       
       if (error.response) {
@@ -9300,9 +10083,16 @@ const NewPolicyPage = () => {
       setSaveMessage(`❌ ${errorMessage}`);
       throw error;
     } finally {
-      setIsSaving(false);
+      setIsUpdating(false);
     }
   };
+
+  // FIXED: Debounced update policy for auto-saves
+  const debouncedUpdatePolicy = useRef(
+    debounce((overrideData = null) => {
+      updatePolicy(overrideData);
+    }, 2000)
+  ).current;
 
   // ENHANCED handleSave function to accept payment data
   const handleSave = async (paymentData = null) => {
@@ -9324,7 +10114,7 @@ const NewPolicyPage = () => {
     }
   };
 
-  // NEW: Handle Save and Exit
+  // Handle Save and Exit
   const handleSaveAndExit = async () => {
     try {
       setIsSaving(true);
@@ -9358,7 +10148,7 @@ const NewPolicyPage = () => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type - UPDATED with all fields
+      // Prepare customer details based on buyer type
       const customerDetails = {
         name: form.customerName,
         mobile: form.mobile,
@@ -9368,11 +10158,11 @@ const NewPolicyPage = () => {
         city: form.city,
         alternatePhone: form.alternatePhone || "",
         employeeName: form.employeeName || "",
-        age: form.age || "", // ADDED: age field
+        age: form.age || "",
         gender: form.gender,
         panNumber: form.panNumber,
         aadhaarNumber: form.aadhaarNumber,
-        companyName: form.companyName || "", // ADDED: corporate fields
+        companyName: form.companyName || "",
         contactPersonName: form.contactPersonName || "",
         companyPanNumber: form.companyPanNumber || "",
         gstNumber: form.gstNumber || ""
@@ -9391,14 +10181,14 @@ const NewPolicyPage = () => {
 
       const finalData = {
         buyer_type: form.buyer_type,
-        vehicleType: form.vehicleType, // NEW: Include vehicleType
+        vehicleType: form.vehicleType,
         customer_details: customerDetails,
         nominee: {
           name: form.nomineeName,
           relation: form.relation,
           age: form.nomineeAge
         },
-        reference: { // FIXED: Corrected spelling
+        reference: {
           name: form.referenceName,
           phone: form.referencePhone
         },
@@ -9420,6 +10210,7 @@ const NewPolicyPage = () => {
           policyStartDate: form.previousPolicyStartDate || "",
           policyDuration: form.previousPolicyDuration || "",
           policyEndDate: form.previousPolicyEndDate || "",
+          tpExpiryDate: form.previousTpExpiryDate || "",
           dueDate: form.previousDueDate || "",
           claimTakenLastYear: form.previousClaimTaken || "no",
           ncbDiscount: parseFloat(form.previousNcbDiscount) || 0
@@ -9432,19 +10223,28 @@ const NewPolicyPage = () => {
           ncb: form.ncb,
           duration: form.duration
         },
-        insurance_quotes: form.insuranceQuotes || [],
+        // FIXED: Include processed insurance quotes with NCB and policy term
+        insurance_quotes: form.insuranceQuotes.map(quote => ({
+          ...quote,
+          ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
+          policyDurationLabel: quote.policyDurationLabel || (quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`),
+          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0))
+        })),
         policy_info: {
-          policyIssued: form.policyIssued, // ADDED: missing field
+          policyIssued: form.policyIssued,
           insuranceCompany: form.insuranceCompany,
           policyNumber: form.policyNumber,
-          covernoteNumber: form.covernoteNumber, // ADDED: missing field
+          covernoteNumber: form.covernoteNumber,
           issueDate: form.issueDate,
           policyStartDate: form.policyStartDate,          
           dueDate: form.dueDate,
           ncbDiscount: parseFloat(form.ncbDiscount) || 0,
           insuranceDuration: form.insuranceDuration,
           idvAmount: parseFloat(form.idvAmount) || 0,
-          totalPremium: parseFloat(form.totalPremium) || 0
+          totalPremium: parseFloat(form.totalPremium) || 0,
+          policyType: form.policyType || "", // FIXED: Added policyType
+          odExpiryDate: form.policyType=="thirdParty"?null:form.odExpiryDate || "", // FIXED: Added odExpiryDate
+          tpExpiryDate: form.policyType=="standalone"?null:form.tpExpiryDate || "" // FIXED: Added tpExpiryDate
         },
         documents: documentsArray,
         payment_info: {
@@ -9465,15 +10265,15 @@ const NewPolicyPage = () => {
           odAmount: parseFloat(form.odAmount) || 0,
           ncbAmount: parseFloat(form.ncbAmount) || 0,
           subVention: parseFloat(form.subVention) || 0,
-          odAddonPercentage: parseFloat(form.odAddonPercentage) || 10, // ADDED: missing field
-          odAddonAmount: parseFloat(form.odAddonAmount) || 0, // ADDED: missing field
-          netAmount: parseFloat(form.netAmount) || 0 // ADDED: missing field
+          odAddonPercentage: parseFloat(form.odAddonPercentage) || 10,
+          odAddonAmount: parseFloat(form.odAddonAmount) || 0,
+          netAmount: parseFloat(form.netAmount) || 0
         },
         status: "completed",
         completed_at: Date.now(),
         ts: form.ts,
         created_by: form.created_by,
-        policyPrefilled: form.policyPrefilled || false // ADDED: missing field
+        policyPrefilled: form.policyPrefilled || false
       };
 
       // Sanitize final data
@@ -9661,7 +10461,7 @@ const NewPolicyPage = () => {
 
           <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-6">
             <div
-              className="h-2  rounded-full transition-all duration-300"
+              className="h-2 bg-purple-500 rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -9781,5 +10581,11 @@ const NewPolicyPage = () => {
     </div>
   );
 };
-
+function formatPolicyDuration(duration) {
+    if (duration.includes('yr') || duration.includes('year')) {
+        return duration;
+    }
+    const years = parseInt(duration);
+    return `${years} Year${years !== 1 ? 's' : ''}`;
+}
 export default NewPolicyPage;

@@ -1,5 +1,5 @@
 // src/pages/PoliciesPage/PolicyModal.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaCar,
@@ -23,12 +23,32 @@ import {
   FaShieldAlt,
   FaPercentage,
   FaHistory,
-  FaArrowRight
+  FaArrowRight,
+  FaDownload,
+  FaEye,
+  FaFilePdf,
+  FaFileImage,
+  FaFile,
+  FaCloudUploadAlt,
+  FaFileUpload,
+  FaSpinner,
+  FaListAlt,
+  FaTrash,
+  FaTags,
+  FaInfoCircle,
+  FaCheck,
+  FaExclamationTriangle as FaExclamation,
+  FaReceipt,
+  FaPlus,
+  FaGift
 } from 'react-icons/fa';
 import logo from "../../assets/logo.png";
+import axios from 'axios';
 
+// Main PolicyModal Component
 const PolicyModal = ({ policy, isOpen, onClose }) => {
   const navigate = useNavigate();
+  const [downloadingDocs, setDownloadingDocs] = useState({});
 
   if (!isOpen || !policy) return null;
 
@@ -88,13 +108,24 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     };
   };
 
-  // Function to format payment status display
+  // Function to format payment status display - UPDATED
   const getPaymentStatusDisplay = (policy) => {
     const totalPaid = policy.payment_info?.totalPaidAmount || 0;
-    const totalPremium = policy.policy_info?.totalPremium || policy.insurance_quote?.premium || 0;
+    const totalPremium = getPremiumInfo(policy);
+    
+    // Calculate subvention
+    const calculateTotalSubventionRefund = () => {
+      const paymentLedger = policy.payment_ledger || [];
+      return paymentLedger
+        .filter(payment => payment.type === "subvention_refund")
+        .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    };
+    
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netPremium = Math.max(totalPremium - totalSubventionRefund, 0);
     
     let paymentStatus = 'pending';
-    if (totalPaid >= totalPremium && totalPremium > 0) {
+    if (totalPaid >= netPremium && netPremium > 0) {
       paymentStatus = 'fully paid';
     } else if (totalPaid > 0) {
       paymentStatus = 'partially paid';
@@ -146,15 +177,28 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     return 0;
   };
 
-  // Function to get paid amount
+  // Function to get paid amount - UPDATED with subvention calculation
   const getPaidAmount = (policy) => {
     const totalPaid = policy.payment_info?.totalPaidAmount || 0;
     const totalPremium = getPremiumInfo(policy);
     
+    // Calculate total subvention refund from payment ledger
+    const calculateTotalSubventionRefund = () => {
+      const paymentLedger = policy.payment_ledger || [];
+      return paymentLedger
+        .filter(payment => payment.type === "subvention_refund")
+        .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    };
+    
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netPremium = Math.max(totalPremium - totalSubventionRefund, 0);
+    
     return {
       paid: totalPaid,
       total: totalPremium,
-      percentage: totalPremium > 0 ? (totalPaid / totalPremium) * 100 : 0
+      netPremium: netPremium,
+      subventionRefund: totalSubventionRefund,
+      percentage: netPremium > 0 ? Math.min((totalPaid / netPremium) * 100, 100) : 100
     };
   };
 
@@ -223,11 +267,14 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     return quotes.find(quote => quote.accepted === true) || quotes[0];
   };
 
-  // Get customer details
+  // Get customer details - ENHANCED for company information
   const getCustomerDetails = () => {
     const customer = policy.customer_details || {};
+    const isCorporate = policy.buyer_type === 'corporate';
+    
     return {
-      name: customer.name || 'N/A',
+      name: isCorporate ? customer.companyName : customer.name,
+      contactPerson: isCorporate ? customer.contactPersonName : customer.name,
       mobile: customer.mobile || 'N/A',
       email: customer.email || 'N/A',
       city: customer.city || 'N/A',
@@ -236,14 +283,19 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       buyerType: policy.buyer_type || 'individual',
       age: customer.age || 'N/A',
       gender: customer.gender || 'N/A',
-      panNumber: customer.panNumber || 'N/A',
-      aadhaarNumber: customer.aadhaarNumber || 'N/A'
+      panNumber: isCorporate ? customer.companyPanNumber : customer.panNumber,
+      aadhaarNumber: customer.aadhaarNumber || 'N/A',
+      gstNumber: customer.gstNumber || 'N/A',
+      employeeName: customer.employeeName || 'N/A',
+      isCorporate: isCorporate
     };
   };
 
-  // Get vehicle details
+  // Get vehicle details - UPDATED to show New/Used
   const getVehicleDetails = () => {
     const vehicle = policy.vehicle_details || {};
+    const vehicleType = policy.vehicleType || 'used';
+    
     return {
       make: vehicle.make || 'N/A',
       model: vehicle.model || 'N/A',
@@ -252,7 +304,8 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       engineNo: vehicle.engineNo || 'N/A',
       chassisNo: vehicle.chassisNo || 'N/A',
       makeYear: vehicle.makeYear || 'N/A',
-      makeMonth: vehicle.makeMonth || 'N/A'
+      makeMonth: vehicle.makeMonth || 'N/A',
+      vehicleType: vehicleType === 'new' ? 'New' : 'Used'
     };
   };
 
@@ -270,16 +323,286 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     };
   };
 
-  // Get payout details
+  // Get payout details - UPDATED to use correct OD amount
   const getPayoutDetails = () => {
     const payout = policy.payout || {};
+    
+    // Get OD amount from accepted quote if available
+    const acceptedQuote = getAcceptedQuote();
+    const odAmountFromQuote = acceptedQuote?.odAmount || 0;
+    
+    // Use payout OD amount if available, otherwise fallback to quote OD amount
+    const odAmount = payout.odAmount || odAmountFromQuote;
+    
     return {
       netPremium: payout.netPremium || 0,
-      odAmount: payout.odAmount || 0,
+      odAmount: odAmount,
       ncbAmount: payout.ncbAmount || 0,
       subVention: payout.subVention || 0,
-      netAmount: payout.netAmount || 0
+      netAmount: payout.netAmount || 0,
+      odAddonPercentage: payout.odAddonPercentage || 0,
+      odAddonAmount: payout.odAddonAmount || 0
     };
+  };
+
+  // Get payment details with subvention information - UPDATED to remove N/A values
+  const getPaymentDetails = () => {
+    const paymentInfo = policy.payment_info || {};
+    const paymentLedger = policy.payment_ledger || [];
+    
+    // Calculate subvention from payment ledger
+    const subventionPayments = paymentLedger.filter(payment => 
+      payment.type === 'subvention_refund' || 
+      payment.mode?.toLowerCase().includes('subvention')
+    );
+    
+    const totalSubvention = subventionPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    
+    // Filter out N/A values
+    const paymentMode = paymentInfo.paymentMode && paymentInfo.paymentMode !== 'N/A' ? paymentInfo.paymentMode : null;
+    const transactionId = paymentInfo.transactionId && paymentInfo.transactionId !== 'N/A' ? paymentInfo.transactionId : null;
+    const bankName = paymentInfo.bankName && paymentInfo.bankName !== 'N/A' ? paymentInfo.bankName : null;
+    
+    return {
+      paymentMadeBy: paymentInfo.paymentMadeBy || 'Customer',
+      paymentMode: paymentMode,
+      paymentAmount: paymentInfo.paymentAmount || 0,
+      paymentDate: paymentInfo.paymentDate || 'N/A',
+      transactionId: transactionId,
+      bankName: bankName,
+      subventionPayment: paymentInfo.subvention_payment || 'No Subvention',
+      paymentStatus: paymentInfo.paymentStatus || 'Payment Pending',
+      totalPaidAmount: paymentInfo.totalPaidAmount || 0,
+      totalSubvention: totalSubvention,
+      paymentLedger: paymentLedger
+    };
+  };
+
+  // Get documents with tagging information
+  const getDocuments = () => {
+    // Handle both array and object format documents
+    let documents = [];
+    
+    if (Array.isArray(policy.documents)) {
+      documents = policy.documents;
+    } else if (typeof policy.documents === 'object' && policy.documents !== null) {
+      // Convert object format to array
+      documents = Object.entries(policy.documents).map(([docId, doc]) => ({
+        id: docId,
+        ...doc,
+        tag: policy.documentTags?.[docId] || ''
+      }));
+    }
+    
+    return documents;
+  };
+
+  // Function to get file icon based on file type
+  const getFileIcon = (document) => {
+    const extension = getFileExtension(document);
+    
+    switch (extension) {
+      case 'pdf':
+        return <FaFilePdf className="w-4 h-4 text-red-500" />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+        return <FaFileImage className="w-4 h-4 text-green-500" />;
+      default:
+        return <FaFile className="w-4 h-4 text-blue-500" />;
+    }
+  };
+
+  // Function to get file name from URL with better detection
+  const getFileName = (document) => {
+    // Priority 1: Use document name if available
+    if (document.name && document.name.trim() !== '') {
+      return document.name;
+    }
+    
+    // Priority 2: Use originalName if available
+    if (document.originalName && document.originalName.trim() !== '') {
+      return document.originalName;
+    }
+    
+    // Priority 3: Extract from URL
+    const url = document.url || '';
+    if (url) {
+      try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        const fileNameFromUrl = pathname.split('/').pop();
+        
+        if (fileNameFromUrl && fileNameFromUrl.includes('.')) {
+          return fileNameFromUrl;
+        }
+      } catch (e) {
+        // If URL parsing fails, try simple extraction
+        const simpleFileName = url.split('/').pop();
+        if (simpleFileName && simpleFileName.includes('.')) {
+          return simpleFileName;
+        }
+      }
+    }
+    
+    // Fallback: Generate a meaningful name
+    const docType = document.tag || 'document';
+    const timestamp = Date.now();
+    return `${docType}_${timestamp}`;
+  };
+
+  const getFileExtension = (document) => {
+    if (!document) return 'pdf'; // Default to pdf
+    
+    // Priority 1: Check document extension
+    if (document.extension && document.extension.trim() !== '') {
+      return document.extension.toLowerCase();
+    }
+    
+    // Priority 2: Check document type
+    if (document.type) {
+      const type = document.fileType.toLowerCase();
+      if (type.includes('pdf')) return 'pdf';
+      if (type.includes('image')) return 'jpg';
+      if (type.includes('jpeg')) return 'jpg';
+      if (type.includes('png')) return 'png';
+    }
+    
+    // Priority 3: Extract from name
+    const fileName = getFileName(document);
+    if (fileName && fileName.includes('.')) {
+      const parts = fileName.split('.');
+      if (parts.length > 1) {
+        let ext = parts.pop().toLowerCase();
+        // Remove query parameters and fragments
+        ext = ext.split('?')[0].split('#')[0];
+        if (ext && ext.length <= 5) { // Reasonable extension length
+          return ext;
+        }
+      }
+    }
+    
+    // Priority 4: Extract from URL
+    const url = document.url || '';
+    if (url) {
+      const urlParts = url.split('.');
+      if (urlParts.length > 1) {
+        let ext = urlParts.pop().toLowerCase();
+        ext = ext.split('?')[0].split('#')[0];
+        ext = ext.split('/')[0]; // In case extension has slashes
+        if (ext && ext.length <= 5) {
+          return ext;
+        }
+      }
+    }
+    
+    return 'pdf'; // Default fallback
+  };
+
+  // Robust download function that works in all environments
+  const handleDownload = async (document) => {
+    const url = document.url;
+    if (!url) {
+      alert('No document URL available');
+      return;
+    }
+      
+    const docId = document.id || document._id || url;
+    setDownloadingDocs(prev => ({ ...prev, [docId]: true }));
+
+    try {
+      // Wait a bit to ensure React has updated the state
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || !window.document) {
+        console.warn('Browser environment not available, opening in new tab');
+        window.open(url, '_blank');
+        return;
+      }
+
+      const fileName = getFileName(document);
+      const fileExtension = getFileExtension(document);
+      
+      let downloadFileName = fileName;
+      
+      // if (!downloadFileName.includes('.')) {
+        downloadFileName = `${downloadFileName}.${fileExtension}`;
+        //      }
+        // console.log("hiiiiiiiiiiii",fileExtension,downloadFileName ,fileName);
+
+      // Method 1: Simple and reliable anchor tag approach
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = downloadFileName;
+      link.target = '_blank'; // Open in new tab as fallback
+      link.style.display = 'none';
+
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+
+      console.log(`✅ Download initiated: ${downloadFileName}`);
+
+    } catch (error) {
+      console.error('❌ Error in download process:', error);
+      
+      // Fallback: Just open in new tab
+      try {
+        if (typeof window !== 'undefined') {
+          const newWindow = window.open(url, '_blank');
+          if (!newWindow) {
+            alert('Popup blocked. Please right-click on the document link and choose "Save link as" to download.');
+          } else {
+            console.log('✅ Document opened in new tab as fallback');
+          }
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+        alert(`Unable to download automatically. Please manually visit this URL: ${url}`);
+      }
+    } finally {
+      // Ensure loading state is cleared
+      setTimeout(() => {
+        setDownloadingDocs(prev => ({ ...prev, [docId]: false }));
+      }, 500);
+    }
+  };
+
+  // Function to handle document view
+  const handleView = (document) => {
+    const url = document.url;
+    if (url && typeof window !== 'undefined') {
+      window.open(url, '_blank');
+    } else {
+      alert('No document URL available for viewing');
+    }
+  };
+
+  // Function to download all documents
+  const handleDownloadAll = async () => {
+    const documents = getDocuments();
+    if (documents.length === 0) {
+      alert('No documents available to download');
+      return;
+    }
+
+    // Show confirmation for multiple downloads
+    if (documents.length > 5) {
+      const confirmDownload = window.confirm(
+        `You are about to download ${documents.length} documents. This may take a while. Continue?`
+      );
+      if (!confirmDownload) return;
+    }
+
+    // Download each document individually
+    for (const document of documents) {
+      await handleDownload(document);
+      // Add a small delay between downloads to avoid overwhelming the browser
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   };
 
   // Data extraction
@@ -287,6 +610,8 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
   const vehicle = getVehicleDetails();
   const previousPolicy = getPreviousPolicy();
   const payout = getPayoutDetails();
+  const paymentDetails = getPaymentDetails();
+  const documents = getDocuments();
   const insuranceQuotes = getInsuranceQuotes();
   const acceptedQuote = getAcceptedQuote();
   const quoteDetails = acceptedQuote ? getQuoteDetails(acceptedQuote) : null;
@@ -304,8 +629,8 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-3">
-                <div className="w-28 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center"><img src={logo} alt="" srcset="" />
-                  <FaFileInvoiceDollar className="w-6 h-6 text-white" />
+                <div className="w-28 h-14 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                  <img src={logo} alt="Company Logo" className="h-28" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold">Policy Details</h1>
@@ -316,17 +641,27 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
               <div className="flex flex-wrap items-center gap-4 mt-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-300">Policy ID:</span>
-                  <span className="font-mono  bg-opacity-10 px-2 py-1 rounded text-sm">
+                  <span className="font-mono bg-opacity-10 px-2 py-1 rounded text-sm">
                     {policy._id || policy.id}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-300">Customer:</span>
                   <span className="font-semibold">{customer.name}</span>
+                  {customer.isCorporate && (
+                    <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">Company</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-300">Vehicle:</span>
                   <span className="font-semibold">{vehicle.make} {vehicle.model}</span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    vehicle.vehicleType === 'New' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {vehicle.vehicleType}
+                  </span>
                 </div>
               </div>
             </div>
@@ -362,23 +697,34 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                     <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                       <FaUser className="w-5 h-5 text-white" />
                     </div>
-                    Customer Information
+                    {customer.isCorporate ? 'Company Information' : 'Customer Information'}
                   </h2>
                 </div>
                 <div className="p-5 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs text-gray-500 uppercase font-semibold">Name</label>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">
+                        {customer.isCorporate ? 'Company Name' : 'Name'}
+                      </label>
                       <div className="font-semibold text-gray-900 mt-1">{customer.name}</div>
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 uppercase font-semibold">Type</label>
                       <div className="flex items-center gap-2 mt-1">
-                        <FaBuilding className={`w-4 h-4 ${customer.buyerType === 'corporate' ? 'text-blue-500' : 'text-gray-400'}`} />
-                        <span className="font-medium text-gray-900 capitalize">{customer.buyerType}</span>
+                        <FaBuilding className={`w-4 h-4 ${customer.isCorporate ? 'text-blue-500' : 'text-gray-400'}`} />
+                        <span className="font-medium text-gray-900 capitalize">
+                          {customer.isCorporate ? 'Corporate' : 'Individual'}
+                        </span>
                       </div>
                     </div>
                   </div>
+                  
+                  {customer.isCorporate && (
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Contact Person</label>
+                      <div className="font-semibold text-gray-900 mt-1">{customer.contactPerson}</div>
+                    </div>
+                  )}
                   
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -404,6 +750,14 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                     </div>
                   </div>
 
+                  {/* Employee Name */}
+                  {customer.employeeName !== 'N/A' && (
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Employee Name</label>
+                      <div className="font-medium text-gray-900">{customer.employeeName}</div>
+                    </div>
+                  )}
+
                   {(customer.age !== 'N/A' || customer.gender !== 'N/A') && (
                     <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
                       {customer.age !== 'N/A' && (
@@ -421,26 +775,33 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                     </div>
                   )}
 
-                  {(customer.panNumber !== 'N/A' || customer.aadhaarNumber !== 'N/A') && (
-                    <div className="pt-3 border-t border-gray-100 space-y-2">
-                      {customer.panNumber !== 'N/A' && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500 font-semibold">PAN Number</span>
-                          <span className="font-mono text-sm text-gray-900">{customer.panNumber}</span>
-                        </div>
-                      )}
-                      {customer.aadhaarNumber !== 'N/A' && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500 font-semibold">Aadhaar Number</span>
-                          <span className="font-mono text-sm text-gray-900">{customer.aadhaarNumber}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Document Numbers */}
+                  <div className="pt-3 border-t border-gray-100 space-y-2">
+                    {customer.panNumber !== 'N/A' && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 font-semibold">
+                          {customer.isCorporate ? 'Company PAN' : 'PAN Number'}
+                        </span>
+                        <span className="font-mono text-sm text-gray-900">{customer.panNumber}</span>
+                      </div>
+                    )}
+                    {customer.aadhaarNumber !== 'N/A' && !customer.isCorporate && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 font-semibold">Aadhaar Number</span>
+                        <span className="font-mono text-sm text-gray-900">{customer.aadhaarNumber}</span>
+                      </div>
+                    )}
+                    {customer.gstNumber !== 'N/A' && customer.isCorporate && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 font-semibold">GST Number</span>
+                        <span className="font-mono text-sm text-gray-900">{customer.gstNumber}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Vehicle Information */}
+              {/* Vehicle Information - UPDATED with New/Used */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-green-50 to-green-100 px-5 py-4 border-b border-green-200">
                   <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
@@ -477,8 +838,19 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       </div>
                     </div>
                     <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Type</label>
+                      <div className="font-medium text-gray-900 mt-1">{vehicle.vehicleType}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
                       <label className="text-xs text-gray-500 uppercase font-semibold">Year</label>
                       <div className="font-medium text-gray-900 mt-1">{vehicle.makeYear}</div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Month</label>
+                      <div className="font-medium text-gray-900 mt-1">{vehicle.makeMonth}</div>
                     </div>
                   </div>
 
@@ -517,12 +889,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                           <statusDisplay.icon className="w-3 h-3" />
                           {statusDisplay.text}
                         </span>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 uppercase font-semibold">Type</label>
-                      <div className="font-semibold text-gray-900 mt-1 capitalize">
-                        {policy.insurance_quote?.coverageType || policy.insurance_category || 'Insurance'}
                       </div>
                     </div>
                   </div>
@@ -574,7 +940,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Payment Information */}
+              {/* Payment Information - UPDATED: Removed balance and N/A values */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-amber-50 to-amber-100 px-5 py-4 border-b border-amber-200">
                   <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
@@ -600,20 +966,57 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       <span className="text-sm text-gray-600">Total Premium</span>
                       <span className="font-semibold text-gray-900">₹{premiumInfo.toLocaleString('en-IN')}</span>
                     </div>
+                    {paidInfo.subventionRefund > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Subvention Discount</span>
+                        <span className="font-semibold text-green-600">-₹{paidInfo.subventionRefund.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Paid Amount</span>
-                      <span className="font-semibold text-green-600">₹{paidInfo.paid.toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Balance</span>
-                      <span className="font-semibold text-red-600">₹{(premiumInfo - paidInfo.paid).toLocaleString('en-IN')}</span>
+                      <span className="text-sm text-gray-600">Net Premium</span>
+                      <span className="font-semibold text-purple-600">₹{paidInfo.netPremium.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
 
-                  {/* Payment Progress */}
+                  {/* Payment Details - UPDATED: Only show non-N/A values */}
+                  <div className="pt-3 border-t border-gray-100 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">Payment Made By</span>
+                      <span className="text-sm font-medium text-gray-900">{paymentDetails.paymentMadeBy}</span>
+                    </div>
+                    {paymentDetails.paymentMode && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Payment Mode</span>
+                        <span className="text-sm font-medium text-gray-900">{paymentDetails.paymentMode}</span>
+                      </div>
+                    )}
+                    {paymentDetails.transactionId && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Transaction ID</span>
+                        <span className="font-mono text-sm text-gray-900">{paymentDetails.transactionId}</span>
+                      </div>
+                    )}
+                    {paymentDetails.bankName && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Bank Name</span>
+                        <span className="text-sm font-medium text-gray-900">{paymentDetails.bankName}</span>
+                      </div>
+                    )}
+                    {/* Subvention Information */}
+                    {paidInfo.subventionRefund > 0 && (
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                        <span className="text-xs text-gray-500 font-semibold">Subvention Applied</span>
+                        <span className="text-sm font-semibold text-green-600">
+                          ₹{paidInfo.subventionRefund.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Progress - UPDATED: Simplified without progress text */}
                   <div className="pt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>Payment Progress</span>
+                      <span>Payment Progress {paidInfo.subventionRefund > 0 ? '(After Subvention)' : ''}</span>
                       <span>{paidInfo.percentage.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -622,26 +1025,10 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                           paidInfo.percentage === 100 ? 'bg-green-500' : 
                           paidInfo.percentage > 0 ? 'bg-yellow-500' : 'bg-red-500'
                         }`}
-                        style={{ width: `${paidInfo.percentage}%` }}
+                        style={{ width: `${Math.min(paidInfo.percentage, 100)}%` }}
                       ></div>
                     </div>
                   </div>
-
-                  {/* Payment Details */}
-                  {policy.payment_info && (
-                    <div className="pt-3 border-t border-gray-100 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">Payment Mode</span>
-                        <span className="text-sm font-medium text-gray-900">{policy.payment_info.paymentMode || 'N/A'}</span>
-                      </div>
-                      {policy.payment_info.transactionId && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">Transaction ID</span>
-                          <span className="font-mono text-sm text-gray-900">{policy.payment_info.transactionId}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -684,7 +1071,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
               )}
             </div>
 
-            {/* Right Column - Quotes & Payout */}
+            {/* Right Column - Quotes, Documents & Payout */}
             <div className="space-y-6">
               {/* Insurance Quotes */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -755,7 +1142,107 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Payout Details */}
+              {/* Documents Section - ENHANCED with Download All and Better Download Handling */}
+              {documents.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 px-5 py-4 border-b border-indigo-200">
+                    <div className="flex justify-between items-center">
+                      <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
+                          <FaFileAlt className="w-5 h-5 text-white" />
+                        </div>
+                        Documents
+                        <span className="bg-indigo-500 text-white text-xs px-2 py-1 rounded-full">
+                          {documents.length} Files
+                        </span>
+                      </h2>
+                      <button
+                        onClick={handleDownloadAll}
+                        disabled={Object.values(downloadingDocs).some(status => status)}
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors text-sm"
+                      >
+                        {Object.values(downloadingDocs).some(status => status) ? (
+                          <>
+                            <FaSpinner className="w-3 h-3 animate-spin" />
+                            Downloading...
+                          </>
+                        ) : (
+                          <>
+                            <FaDownload className="w-3 h-3" />
+                            Download All
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <div className="space-y-3">
+                      {documents.map((document, index) => {
+                        const fileName = getFileName(document);
+                        const fileExtension = getFileExtension(document);
+                        const isDownloading = downloadingDocs[document.id || document._id || document.url];
+                        
+                        return (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {getFileIcon(document)}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 text-sm truncate" title={fileName}>
+                                  {fileName}
+                                </div>
+                                {document.tag && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <FaTag className="w-3 h-3 text-gray-400" />
+                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                      {document.tag}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-gray-500 bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">
+                                    {fileExtension.toUpperCase()}
+                                  </span>
+                                  {document.size && (
+                                    <span className="text-xs text-gray-500">
+                                      {formatFileSize(document.size)}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-gray-400">
+                                    Click to download
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleView(document)}
+                                className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                title="View document"
+                              >
+                                <FaEye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDownload(document)}
+                                disabled={isDownloading}
+                                className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded disabled:opacity-50 transition-colors"
+                                title={`Download ${fileName}`}
+                              >
+                                {isDownloading ? (
+                                  <FaSpinner className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <FaDownload className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payout Details - UPDATED with correct OD amount */}
               {(payout.netPremium > 0 || payout.odAmount > 0) && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                   <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-5 py-4 border-b border-emerald-200">
@@ -785,6 +1272,12 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Subvention</span>
                         <span className="font-semibold text-blue-600">₹{payout.subVention.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    {payout.odAddonPercentage > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">OD+Addon %</span>
+                        <span className="font-semibold text-purple-600">{payout.odAddonPercentage}%</span>
                       </div>
                     )}
                     {payout.netAmount !== 0 && (
@@ -856,6 +1349,14 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       </div>
     </div>
   );
+};
+
+// Helper function to format file size
+const formatFileSize = (bytes) => {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes + ' bytes';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 };
 
 export default PolicyModal;

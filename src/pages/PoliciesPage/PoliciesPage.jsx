@@ -349,9 +349,9 @@ const PoliciesPage = () => {
       )}
 
       {/* Search + Filters */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6">
+      {/* <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          {/* Search */}
+          
           <div className="relative flex-1">
             <input
               type="text"
@@ -362,7 +362,7 @@ const PoliciesPage = () => {
             />
           </div>
 
-          {/* Status Filter */}
+        
           <div className="flex items-center gap-2">
             <select
               value={statusFilter}
@@ -379,7 +379,7 @@ const PoliciesPage = () => {
             </select>
           </div>
 
-          {/* Type Filter */}
+       
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
@@ -393,7 +393,7 @@ const PoliciesPage = () => {
             ))}
           </select>
 
-          {/* Clear All Filters */}
+         
           {isFilterActive && (
             <button
               onClick={clearAllFilters}
@@ -404,7 +404,7 @@ const PoliciesPage = () => {
           )}
         </div>
 
-        {/* Active Filters Display */}
+        
         {isFilterActive && (
           <div className="mt-3 flex flex-wrap gap-2">
             {search && (
@@ -442,7 +442,7 @@ const PoliciesPage = () => {
             )}
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Policy Table */}
       <PolicyTable 
