@@ -439,6 +439,43 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   const [relationshipSuggestions, setRelationshipSuggestions] = useState([]);
   const [showRelationshipSuggestions, setShowRelationshipSuggestions] = useState(false);
 
+  // Format text to have first letter uppercase and other letters lowercase
+  const formatName = (text) => {
+    return text.replace(/\w\S*/g, (txt) => {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+  };
+
+  // Handle text input change with formatting
+  const handleTextChange = (e, shouldFormat = false) => {
+    const { name, value } = e.target;
+    
+    if (shouldFormat) {
+      const formattedValue = formatName(value);
+      handleChange({
+        target: {
+          name: name,
+          value: formattedValue
+        }
+      });
+    } else {
+      handleChange(e);
+    }
+  };
+
+  // Handle phone number input (numbers only)
+  const handlePhoneChange = (e) => {
+    const { name, value } = e.target;
+    // Allow only numbers
+    const numbersOnly = value.replace(/[^\d]/g, '');
+    handleChange({
+      target: {
+        name: name,
+        value: numbersOnly
+      }
+    });
+  };
+
   // Handle relationship input change for auto-suggest
   const handleRelationshipChange = (e) => {
     const value = e.target.value;
@@ -601,7 +638,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="employeeName"
                   value={form.employeeName || ""}
-                  onChange={handleChange}
+                  onChange={(e) => handleTextChange(e, true)}
                   placeholder="Enter employee name"
                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                     errors.employeeName ? "border-red-500" : "border-gray-300"
@@ -622,7 +659,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="customerName"
                   value={form.customerName || ""}
-                  onChange={handleChange}
+                  onChange={(e) => handleTextChange(e, true)}
                   placeholder="Enter customer name"
                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                     errors.customerName ? "border-red-500" : "border-gray-300"
@@ -645,8 +682,8 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="mobile"
                   value={form.mobile || ""}
-                  onChange={handleChange} 
-                  maxLength = '10'
+                  onChange={handlePhoneChange}
+                  maxLength='10'
                   placeholder="Enter 10-digit mobile number"
                   className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                     errors.mobile ? "border-red-500" : "border-gray-300"
@@ -670,7 +707,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   name="alternatePhone"
                   value={form.alternatePhone || ""}
                   maxLength='10'
-                  onChange={handleChange}
+                  onChange={handlePhoneChange}
                   placeholder="Enter alternate number"
                   className="w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
@@ -721,24 +758,23 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
 
             {/* PAN */}
             <div>
-  <label className="block mb-1 text-sm font-medium text-gray-600">
-    PAN Number
-  </label>
-  <input
-    type="text"
-    name="panNumber"
-    value={form.panNumber || ""}
-    onChange={handleChange}
-    placeholder="ABCDE1234F"
-    maxLength={10} // PAN is always 10 characters
-    style={{ textTransform: "uppercase" }} // display input as uppercase
-    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-      errors.panNumber ? "border-red-500" : "border-gray-300"
-    }`}
-  />
-  {errors.panNumber && <p className="text-red-500 text-xs mt-1">{errors.panNumber}</p>}
-</div>
-
+              <label className="block mb-1 text-sm font-medium text-gray-600">
+                PAN Number
+              </label>
+              <input
+                type="text"
+                name="panNumber"
+                value={form.panNumber || ""}
+                onChange={handleChange}
+                placeholder="ABCDE1234F"
+                maxLength={10}
+                style={{ textTransform: "uppercase" }}
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.panNumber ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.panNumber && <p className="text-red-500 text-xs mt-1">{errors.panNumber}</p>}
+            </div>
 
             {/* Aadhaar */}
             <div>
@@ -775,7 +811,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="employeeName"
                   value={form.employeeName || ""}
-                  onChange={handleChange}
+                  onChange={(e) => handleTextChange(e, true)}
                   placeholder="Enter employee name"
                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                     errors.employeeName ? "border-red-500" : "border-gray-300"
@@ -796,7 +832,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="companyName"
                   value={form.companyName || ""}
-                  onChange={handleChange}
+                  onChange={(e) => handleTextChange(e, true)}
                   placeholder="Enter company name"
                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                     errors.companyName ? "border-red-500" : "border-gray-300"
@@ -815,7 +851,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 type="text"
                 name="contactPersonName"
                 value={form.contactPersonName || ""}
-                onChange={handleChange}
+                onChange={(e) => handleTextChange(e, true)}
                 placeholder="Enter contact person name"
                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                   errors.contactPersonName ? "border-red-500" : "border-gray-300"
@@ -837,7 +873,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="mobile"
                   value={form.mobile || ""}
-                  onChange={handleChange}
+                  onChange={handlePhoneChange}
                   maxLength='10'
                   placeholder="Enter 10-digit mobile number"
                   className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
@@ -861,7 +897,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   type="text"
                   name="alternatePhone"
                   value={form.alternatePhone || ""}
-                  onChange={handleChange}
+                  onChange={handlePhoneChange}
                   placeholder="Enter alternate number"
                   maxLength="10"
                   className="w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -891,45 +927,44 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
             </div>
 
             {/* PAN Number */}
-           <div>
-  <label className="block mb-1 text-sm font-medium text-gray-600">
-    PAN Number *
-  </label>
-  <input
-    type="text"
-    name="companyPanNumber"
-    value={form.companyPanNumber || ""}
-    onChange={handleChange}
-    placeholder="ABCDE1234F"
-    maxLength={10} // PAN is always 10 characters
-    style={{ textTransform: "uppercase" }} // display input as uppercase
-    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-      errors.companyPanNumber ? "border-red-500" : "border-gray-300"
-    }`}
-  />
-  {errors.companyPanNumber && <p className="text-red-500 text-xs mt-1">{errors.companyPanNumber}</p>}
-</div>
-
+            <div>
+              <label className="block mb-1 text-sm font-medium text-gray-600">
+                PAN Number *
+              </label>
+              <input
+                type="text"
+                name="companyPanNumber"
+                value={form.companyPanNumber || ""}
+                onChange={handleChange}
+                placeholder="ABCDE1234F"
+                maxLength={10}
+                style={{ textTransform: "uppercase" }}
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.companyPanNumber ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.companyPanNumber && <p className="text-red-500 text-xs mt-1">{errors.companyPanNumber}</p>}
+            </div>
 
             {/* GST Number */}
             <div>
-  <label className="block mb-1 text-sm font-medium text-gray-600">
-    GST Number *
-  </label>
-  <input
-    type="text"
-    name="gstNumber"
-    value={form.gstNumber || ""}
-    onChange={handleChange}
-    placeholder="Enter GST number"
-    maxLength={15} // GST is always 15 characters
-    style={{ textTransform: "uppercase" }} // display as uppercase
-    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-      errors.gstNumber ? "border-red-500" : "border-gray-300"
-    }`}
-  />
-  {errors.gstNumber && <p className="text-red-500 text-xs mt-1">{errors.gstNumber}</p>}
-</div>
+              <label className="block mb-1 text-sm font-medium text-gray-600">
+                GST Number *
+              </label>
+              <input
+                type="text"
+                name="gstNumber"
+                value={form.gstNumber || ""}
+                onChange={handleChange}
+                placeholder="Enter GST number"
+                maxLength={15}
+                style={{ textTransform: "uppercase" }}
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.gstNumber ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.gstNumber && <p className="text-red-500 text-xs mt-1">{errors.gstNumber}</p>}
+            </div>
           </>
         )}
 
@@ -976,7 +1011,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
             type="text"
             name="city"
             value={form.city || ""}
-            onChange={handleChange}
+            onChange={(e) => handleTextChange(e, true)}
             placeholder="Enter city"
             className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
               errors.city ? "border-red-500" : "border-gray-300"
@@ -997,7 +1032,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 type="text"
                 name="nomineeName"
                 value={form.nomineeName || ""}
-                onChange={handleChange}
+                onChange={(e) => handleTextChange(e, true)}
                 placeholder="Nominee Name"
                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                   errors.nomineeName ? "border-red-500" : "border-gray-300"
@@ -1087,7 +1122,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 type="text"
                 name="referenceName"
                 value={form.referenceName || ""}
-                onChange={handleChange}
+                onChange={(e) => handleTextChange(e, true)}
                 placeholder="Reference Name"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
@@ -1100,8 +1135,9 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 type="text"
                 name="referencePhone"
                 value={form.referencePhone || ""}
-                onChange={handleChange}
+                onChange={handlePhoneChange}
                 placeholder="Reference Phone Number"
+                maxLength="10"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
             </div>
@@ -2364,25 +2400,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     }
   }, [manualQuote.coverageType]);
 
-  // ============ FIXED CALCULATION FUNCTIONS ============
-
-  // FIXED: Calculate NCB discount amount (on OD amount only)
-  const calculateNcbDiscount = (odAmount = null, ncbDiscount = null) => {
-    const odAmt = odAmount !== null ? parseFloat(odAmount || 0) : parseFloat(manualQuote.odAmount || 0);
-    const ncbDisc = ncbDiscount !== null ? parseFloat(ncbDiscount || 0) : parseFloat(manualQuote.ncbDiscount || 0);
-    
-    if (odAmt > 0 && ncbDisc > 0) {
-      return Math.round(odAmt * (ncbDisc / 100));
-    }
-    return 0;
-  };
-
-  // FIXED: Calculate OD amount after NCB discount
-  const calculateOdAfterNcb = (odAmount = null, ncbDiscount = null) => {
-    const odAmt = odAmount !== null ? parseFloat(odAmount || 0) : parseFloat(manualQuote.odAmount || 0);
-    const ncbDiscountAmount = calculateNcbDiscount(odAmount, ncbDiscount);
-    return Math.max(0, odAmt - ncbDiscountAmount);
-  };
+  // ============ CORRECTED CALCULATION FUNCTIONS ============
 
   // Calculate add-ons total
   const calculateAddOnsTotal = () => {
@@ -2406,19 +2424,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       .map(([key, addOn]) => addOnDescriptions[key]);
   };
 
-  // Calculate total premium with GST
-  const calculateTotalPremium = () => {
-    const odAmountAfterNcb = calculateOdAfterNcb();
-    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
-    const addOnsTotal = calculateAddOnsTotal();
-    
-    const baseAmount = odAmountAfterNcb + thirdPartyAmount + addOnsTotal;
-    const gstAmount = baseAmount * 0.18;
-    const totalWithGst = baseAmount + gstAmount;
-    
-    return Math.round(totalWithGst);
-  };
-
   // Calculate base premium without GST for display
   const calculateBasePremium = () => {
     const odAmount = parseFloat(manualQuote.odAmount || 0) || 0;
@@ -2428,13 +2433,18 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     return odAmount + thirdPartyAmount + addOnsTotal;
   };
 
-  // Calculate GST amount for display
+  // Calculate GST amount for display - precise calculation
   const calculateGstAmount = () => {
-    const odAmountAfterNcb = calculateOdAfterNcb();
-    const thirdPartyAmount = parseFloat(manualQuote.thirdPartyAmount || 0) || 0;
-    const addOnsTotal = calculateAddOnsTotal();
-    const taxableAmount = odAmountAfterNcb + thirdPartyAmount + addOnsTotal;
-    return Math.round(taxableAmount * 0.18);
+    const basePremium = calculateBasePremium();
+    const gstAmount = basePremium * 0.18;
+    return Math.round(gstAmount);
+  };
+
+  // Calculate total premium with GST - precise calculation
+  const calculateTotalPremium = () => {
+    const basePremium = calculateBasePremium();
+    const gstAmount = calculateGstAmount();
+    return basePremium + gstAmount;
   };
 
   // Calculate current totals for display
@@ -2442,10 +2452,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
   const currentGstAmount = calculateGstAmount();
   const currentTotalPremium = calculateTotalPremium();
   const currentAddOnsTotal = calculateAddOnsTotal();
-  const currentNcbDiscountAmount = calculateNcbDiscount();
-  const currentOdAfterNcb = calculateOdAfterNcb();
 
-  // ============ END FIXED CALCULATION FUNCTIONS ============
+  // ============ END CORRECTED CALCULATION FUNCTIONS ============
 
   // FIXED: Enhanced function to load quotes in edit mode with proper NCB and policy term
   const loadQuotesInEditMode = useCallback(() => {
@@ -2464,13 +2472,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           accepted: quote.accepted // Check if accepted flag exists
         });
 
-        // Ensure NCB discount amount is calculated if missing
-        let ncbDiscountAmount = quote.ncbDiscountAmount;
-        if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
-          ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
-          console.log("🔢 Calculated missing NCB discount:", ncbDiscountAmount);
-        }
-
         // Ensure policy duration label is set if missing
         let policyDurationLabel = quote.policyDurationLabel;
         if (!policyDurationLabel && quote.policyDuration) {
@@ -2483,10 +2484,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
         return {
           ...quote,
-          ncbDiscountAmount: ncbDiscountAmount || 0,
           policyDurationLabel: policyDurationLabel || quote.policyDuration,
-          // Ensure OD after NCB is calculated
-          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0))
         };
       });
 
@@ -2508,8 +2506,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         }
       } else {
         console.log("❌ No accepted quote found in edit mode");
-        // If no quote is marked as accepted, check if we should accept the first one
-        // or leave it as null based on your business logic
       }
 
       setQuotes(processedQuotes);
@@ -2526,7 +2522,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     });
     
     loadQuotesInEditMode();
-  }, [loadQuotesInEditMode, isEditMode, form.insuranceQuotes]); // Add form.insuranceQuotes as dependency
+  }, [loadQuotesInEditMode, isEditMode, form.insuranceQuotes]);
 
   // Update manualQuote when claim status OR vehicle type changes
   useEffect(() => {
@@ -2705,11 +2701,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       };
     });
 
-    // FIXED: Calculate NCB discount amount when loading quote for editing
-    const odAmount = quote.odAmount?.toString() || '0';
-    const ncbDiscount = quote.ncbDiscount?.toString() || getDefaultNcb();
-    const ncbDiscountAmount = calculateNcbDiscount(odAmount, ncbDiscount);
-
     // FIXED: Use the actual policy duration from the quote, not default
     const policyDuration = quote.policyDuration || getDefaultPolicyDuration(quote.coverageType);
 
@@ -2718,8 +2709,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       coverageType: quote.coverageType || 'comprehensive',
       idv: quote.idv?.toString() || '',
       policyDuration: policyDuration,
-      ncbDiscount: ncbDiscount,
-      odAmount: odAmount,
+      ncbDiscount: quote.ncbDiscount?.toString() || getDefaultNcb(),
+      odAmount: quote.odAmount?.toString() || '0',
       thirdPartyAmount: quote.thirdPartyAmount?.toString() || '0',
       addOnsAmount: quote.addOnsAmount?.toString() || '0',
       premium: quote.premium?.toString() || '',
@@ -2728,9 +2719,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
     console.log("✅ Manual quote set for editing:", {
       insuranceCompany: quote.insuranceCompany,
-      ncbDiscount: ncbDiscount,
+      ncbDiscount: quote.ncbDiscount,
       policyDuration: policyDuration,
-      odAmount: odAmount
+      odAmount: quote.odAmount
     });
   };
 
@@ -2750,9 +2741,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     const company = insuranceCompanies.find(c => c.name === manualQuote.insuranceCompany);
     const addOnsPremium = calculateAddOnsTotal();
     
-    // FIXED: Calculate NCB discount amount using current manualQuote values
-    const ncbDiscountAmount = calculateNcbDiscount();
-    const odAmountAfterNcb = calculateOdAfterNcb();
     const totalPremium = calculateTotalPremium();
     const basePremium = calculateBasePremium();
     const gstAmount = calculateGstAmount();
@@ -2787,9 +2775,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       policyDuration: manualQuote.policyDuration,
       policyDurationLabel: policyDurationLabel,
       ncbDiscount: parseInt(manualQuote.ncbDiscount),
-      ncbDiscountAmount: ncbDiscountAmount,
+      ncbDiscountAmount: 0, // Set to 0 since we're not calculating NCB discount
       odAmount: parseFloat(manualQuote.odAmount || 0) || 0,
-      odAmountAfterNcb: odAmountAfterNcb,
       thirdPartyAmount: parseFloat(manualQuote.thirdPartyAmount || 0) || 0,
       addOnsAmount: parseFloat(manualQuote.addOnsAmount || 0) || 0,
       premium: basePremium,
@@ -2880,8 +2867,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
     const company = insuranceCompanies.find(c => c.name === manualQuote.insuranceCompany);
     const addOnsPremium = calculateAddOnsTotal();
-    const ncbDiscountAmount = calculateNcbDiscount();
-    const odAmountAfterNcb = calculateOdAfterNcb();
     const totalPremium = calculateTotalPremium();
     const basePremium = calculateBasePremium();
     const gstAmount = calculateGstAmount();
@@ -2916,9 +2901,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       policyDuration: manualQuote.policyDuration,
       policyDurationLabel: policyDurationLabel,
       ncbDiscount: parseInt(manualQuote.ncbDiscount),
-      ncbDiscountAmount: ncbDiscountAmount,
+      ncbDiscountAmount: 0, // Set to 0 since we're not calculating NCB discount
       odAmount: parseFloat(manualQuote.odAmount || 0) || 0,
-      odAmountAfterNcb: odAmountAfterNcb,
       thirdPartyAmount: parseFloat(manualQuote.thirdPartyAmount || 0) || 0,
       addOnsAmount: parseFloat(manualQuote.addOnsAmount || 0) || 0,
       premium: basePremium,
@@ -3614,13 +3598,17 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
             </div>
           )}
 
-          {/* Premium Summary */}
+          {/* CORRECTED Premium Summary */}
           <div className="col-span-full bg-purple-50 p-4 rounded-lg border border-purple-200">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Base Premium:</span>
                 <div className="font-semibold text-lg">₹{currentBasePremium.toLocaleString('en-IN')}</div>
-                <div className="text-xs text-gray-500">(OD + 3rd Party + Add-ons)</div>
+                <div className="text-xs text-gray-500">
+                  OD: ₹{(parseFloat(manualQuote.odAmount || 0) || 0).toLocaleString('en-IN')} + 
+                  3P: ₹{(parseFloat(manualQuote.thirdPartyAmount || 0) || 0).toLocaleString('en-IN')} + 
+                  Add-ons: ₹{currentAddOnsTotal.toLocaleString('en-IN')}
+                </div>
               </div>
               <div>
                 <span className="text-gray-600">Add-ons Total:</span>
@@ -3629,16 +3617,22 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               </div>
               <div>
                 <span className="text-gray-600">NCB Discount:</span>
-                <div className="font-semibold text-lg text-green-600">-₹{currentNcbDiscountAmount.toLocaleString('en-IN')}</div>
-                <div className="text-xs text-gray-500">(On OD Amount only)</div>
+                <div className="font-semibold text-lg text-green-600">-₹0</div>
+                <div className="text-xs text-gray-500">(NCB percentage shown for reference only)</div>
               </div>
               <div>
                 <span className="text-gray-600">GST (18%):</span>
                 <div className="font-semibold text-lg text-blue-600">₹{currentGstAmount.toLocaleString('en-IN')}</div>
+                <div className="text-xs text-gray-500">
+                  On ₹{currentBasePremium.toLocaleString('en-IN')}
+                </div>
               </div>
               <div>
                 <span className="text-gray-600">Total Premium:</span>
                 <div className="font-semibold text-lg text-green-600">₹{currentTotalPremium.toLocaleString('en-IN')}</div>
+                <div className="text-xs text-gray-500">
+                  (₹{currentBasePremium.toLocaleString('en-IN')} + ₹{currentGstAmount.toLocaleString('en-IN')})
+                </div>
               </div>
             </div>
             
@@ -3650,16 +3644,16 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                   <div>₹{(parseFloat(manualQuote.odAmount || 0) || 0).toLocaleString('en-IN')}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">OD After NCB:</span>
-                  <div>₹{currentOdAfterNcb.toLocaleString('en-IN')}</div>
-                </div>
-                <div>
                   <span className="text-gray-500">3rd Party Amount:</span>
                   <div>₹{(parseFloat(manualQuote.thirdPartyAmount || 0) || 0).toLocaleString('en-IN')}</div>
                 </div>
                 <div>
+                  <span className="text-gray-500">Add-ons Total:</span>
+                  <div>₹{currentAddOnsTotal.toLocaleString('en-IN')}</div>
+                </div>
+                <div>
                   <span className="text-gray-500">Taxable Amount:</span>
-                  <div>₹{(currentOdAfterNcb + (parseFloat(manualQuote.thirdPartyAmount || 0) || 0) + currentAddOnsTotal).toLocaleString('en-IN')}</div>
+                  <div>₹{((parseFloat(manualQuote.odAmount || 0) || 0) + (parseFloat(manualQuote.thirdPartyAmount || 0) || 0) + currentAddOnsTotal).toLocaleString('en-IN')}</div>
                 </div>
               </div>
             </div>
@@ -3845,17 +3839,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                               <span className="font-semibold">₹{quote.odAmount?.toLocaleString('en-IN')}</span>
                             </div>
                             
-                            {/* FIXED: NCB Discount Amount Display */}
-                            <div className="flex justify-between items-center text-green-600">
-                              <span>NCB Discount {quote.ncbDiscount}% (on OD)</span>
-                              <span>-₹{(quote.ncbDiscountAmount || 0).toLocaleString('en-IN')}</span>
-                            </div>
-
-                            <div className="flex justify-between items-center border-b pb-2">
-                              <span className="text-gray-600">OD After NCB</span>
-                              <span className="font-semibold">₹{(quote.odAmountAfterNcb || 0).toLocaleString('en-IN')}</span>
-                            </div>
-                            
                             <div className="flex justify-between items-center">
                               <span className="text-gray-600">3rd Party Amount</span>
                               <span className="font-semibold">₹{quote.thirdPartyAmount?.toLocaleString('en-IN')}</span>
@@ -3891,7 +3874,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                             
                             <div className="flex justify-between items-center pt-2 border-t">
                               <span className="text-gray-600">Taxable Amount</span>
-                              <span className="font-semibold">₹{((quote.odAmountAfterNcb || 0) + (quote.thirdPartyAmount || 0) + (quote.addOnsPremium || 0)).toLocaleString('en-IN')}</span>
+                              <span className="font-semibold">₹{(quote.odAmount + quote.thirdPartyAmount + quote.addOnsPremium).toLocaleString('en-IN')}</span>
                             </div>
 
                             <div className="flex justify-between items-center">
@@ -3926,6 +3909,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                             <div className="flex justify-between">
                               <span className="text-gray-600">IDV</span>
                               <span className="font-semibold">₹{quote.idv?.toLocaleString('en-IN')}</span>
+                            </div>
+
+                            {/* NCB Information in Coverage Details - Only show the percentage, not the amount */}
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">NCB Discount</span>
+                              <span className="font-semibold text-green-600">{quote.ncbDiscount}%</span>
                             </div>
 
                             {/* Add-ons Amount Field Display */}
@@ -8220,6 +8209,56 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
   const [showLossWarning, setShowLossWarning] = useState(false);
   const [calculatedNetAmount, setCalculatedNetAmount] = useState(null);
 
+  // CRITICAL FIX: React to acceptedQuote changes in real-time
+  useEffect(() => {
+    console.log("🔄 PayoutDetails - Accepted quote changed:", acceptedQuote);
+    
+    if (acceptedQuote) {
+      console.log("💰 Auto-updating payout from NEW accepted quote:", {
+        insuranceCompany: acceptedQuote.insuranceCompany,
+        totalPremium: acceptedQuote.totalPremium,
+        odAmount: acceptedQuote.odAmount,
+        addOnsPremium: acceptedQuote.addOnsPremium,
+        odAddonTotal: calculateOdAddonTotal()
+      });
+      
+      // Update net premium from new accepted quote (only if different)
+      if (acceptedQuote.totalPremium && parseFloat(form.netPremium || 0) !== parseFloat(acceptedQuote.totalPremium)) {
+        const premiumValue = parseFloat(acceptedQuote.totalPremium);
+        console.log("💰 Setting net premium from NEW quote:", premiumValue);
+        handleChange({
+          target: {
+            name: 'netPremium',
+            value: premiumValue
+          }
+        });
+      }
+      
+      // Update OD + Addon amount from new accepted quote (only if different)
+      const odAddonTotal = calculateOdAddonTotal();
+      if (odAddonTotal > 0 && parseFloat(form.odAddonAmount || 0) !== odAddonTotal) {
+        console.log("💰 Setting OD + Addon amount from NEW quote:", odAddonTotal);
+        handleChange({
+          target: {
+            name: 'odAddonAmount',
+            value: odAddonTotal
+          }
+        });
+      }
+      
+      // Update insurer from new accepted quote (only if different)
+      if (acceptedQuote.insuranceCompany && form.insuranceCompany !== acceptedQuote.insuranceCompany) {
+        console.log("🏢 Setting insurer from NEW quote:", acceptedQuote.insuranceCompany);
+        handleChange({
+          target: {
+            name: 'insuranceCompany',
+            value: acceptedQuote.insuranceCompany
+          }
+        });
+      }
+    }
+  }, [acceptedQuote]); // This dependency ensures it runs when acceptedQuote changes
+
   // Calculate subvention from payment ledger
   const calculateSubventionFromLedger = (ledger) => {
     if (!ledger || !Array.isArray(ledger)) return 0;
@@ -8258,14 +8297,16 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
 
   // Debug: Log the accepted quote to see what data we're receiving
   useEffect(() => {
-    console.log("🔍 PayoutDetails - Accepted Quote:", acceptedQuote);
+    console.log("🔍 PayoutDetails - Accepted Quote (REACTIVE):", acceptedQuote);
     console.log("🔍 PayoutDetails - OD Amount from quote:", acceptedQuote?.odAmount);
     console.log("🔍 PayoutDetails - Addons from quote:", acceptedQuote?.addOnsPremium);
     console.log("🔍 PayoutDetails - Insurer from quote:", acceptedQuote?.insuranceCompany);
     console.log("🔍 PayoutDetails - Subvention from ledger:", subventionFromLedger);
-  }, [acceptedQuote, subventionFromLedger]);
+    console.log("🔍 PayoutDetails - Current OD+Addon in form:", form.odAddonAmount);
+    console.log("🔍 PayoutDetails - Current Net Premium in form:", form.netPremium);
+  }, [acceptedQuote, form.odAddonAmount, form.netPremium, subventionFromLedger]);
 
-  // Calculate OD + Addon total from accepted quote
+  // Calculate OD + Addon total from accepted quote - REACTIVE VERSION
   const calculateOdAddonTotal = () => {
     if (!acceptedQuote) return 0;
     
@@ -8273,7 +8314,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
     const addOnsPremium = acceptedQuote.addOnsPremium || 0;
     const odAddonTotal = odAmount + addOnsPremium;
     
-    console.log("💰 OD + Addon Calculation:", { odAmount, addOnsPremium, odAddonTotal });
+    console.log("💰 OD + Addon Calculation (REACTIVE):", { odAmount, addOnsPremium, odAddonTotal });
     return odAddonTotal;
   };
 
@@ -8355,7 +8396,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
 
   // Also populate from total premium if available
   useEffect(() => {
-    if (acceptedQuote.totalPremium && totalPremium > 0 && !form.netPremium) {
+    if (acceptedQuote && acceptedQuote.totalPremium && totalPremium > 0 && !form.netPremium) {
       console.log("💰 Setting net premium from totalPremium:", acceptedQuote.totalPremium);
       handleChange({
         target: {
@@ -8364,7 +8405,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
         }
       });
     }
-  }, [totalPremium]);
+  }, [totalPremium, acceptedQuote]);
 
   // Check for loss condition and show warning
   const checkForLoss = (netAmount) => {
@@ -8497,9 +8538,48 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
         </div>
       </div>
 
+      {/* Real-time Debug Information */}
+      {/* <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+        <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+          <FaInfoCircle className="mr-2" />
+          Real-time Quote Data
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div>
+            <span className="text-blue-600">Accepted Quote:</span>
+            <div className="font-semibold">{acceptedQuote ? acceptedQuote.insuranceCompany : 'None'}</div>
+          </div>
+          <div>
+            <span className="text-blue-600">Total Premium:</span>
+            <div className="font-semibold">₹{acceptedQuote?.totalPremium?.toLocaleString('en-IN') || '0'}</div>
+          </div>
+          <div>
+            <span className="text-blue-600">OD Amount:</span>
+            <div>₹{acceptedQuote?.odAmount?.toLocaleString('en-IN') || '0'}</div>
+          </div>
+          <div>
+            <span className="text-blue-600">Add-ons:</span>
+            <div>₹{acceptedQuote?.addOnsPremium?.toLocaleString('en-IN') || '0'}</div>
+          </div>
+          <div className="md:col-span-2">
+            <span className="text-blue-600">Calculated OD+Addon:</span>
+            <div className="font-semibold">₹{calculateOdAddonTotal().toLocaleString('en-IN')}</div>
+          </div>
+          <div className="md:col-span-2">
+            <span className="text-blue-600">Current Form OD+Addon:</span>
+            <div className="font-semibold">₹{parseFloat(form.odAddonAmount || 0).toLocaleString('en-IN')}</div>
+          </div>
+        </div>
+        {acceptedQuote && (
+          <div className="mt-2 text-xs text-blue-600">
+            ✅ Auto-updating from: <strong>{acceptedQuote.insuranceCompany}</strong>
+          </div>
+        )}
+      </div> */}
+
       {/* Loss Warning Modal */}
       {showLossWarning && (
-        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md mx-4">
             <div className="flex items-center mb-4">
               <div className="p-2 rounded-full bg-red-100 text-red-600 mr-3">
@@ -8548,7 +8628,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
       )}
 
       {/* Quote Information Card */}
-      {acceptedQuote && (
+      {/* {acceptedQuote && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
           <h4 className="text-md font-semibold text-blue-700 mb-3 flex items-center">
             <FaInfoCircle className="mr-2" />
@@ -8584,12 +8664,15 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
               </div>
             )}
           </div>
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <div className="text-sm text-blue-600 font-medium">
+              OD + Addon Total: ₹{calculateOdAddonTotal().toLocaleString('en-IN')}
+            </div>
+          </div>
         </div>
-      )}
+      )} */}
 
-      {/* Payment Ledger Information */}
-     
-
+      
       {/* Show warning if no accepted quote */}
       {!acceptedQuote && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-6">
@@ -8618,7 +8701,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
               type="number"
               step="0.01"
               name="netPremium"
-              value={acceptedQuote.totalPremium || ""}
+              value={form.netPremium || ""}
               onChange={handleChange}
               placeholder="Enter net premium amount"
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
@@ -8628,7 +8711,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
             {errors.netPremium && <p className="text-red-500 text-xs mt-1">{errors.netPremium}</p>}
             {acceptedQuote?.totalPremium && (
               <p className="text-xs text-blue-500 mt-1">
-                From quote: ₹{parseFloat(acceptedQuote.totalPremium).toLocaleString('en-IN')}
+                From accepted quote: ₹{parseFloat(acceptedQuote.totalPremium).toLocaleString('en-IN')}
               </p>
             )}
           </div>
@@ -8652,7 +8735,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
             {errors.odAddonAmount && <p className="text-red-500 text-xs mt-1">{errors.odAddonAmount}</p>}
             {odAddonTotalFromQuote > 0 && (
               <p className="text-xs text-blue-500 mt-1">
-                From quote: ₹{odAddonTotalFromQuote.toLocaleString('en-IN')} 
+                From accepted quote: ₹{odAddonTotalFromQuote.toLocaleString('en-IN')} 
                 (OD: ₹{parseFloat(acceptedQuote.odAmount|| 0).toLocaleString('en-IN')} + 
                 Add-ons: ₹{parseFloat(acceptedQuote.addOnsPremium || 0).toLocaleString('en-IN')})
               </p>

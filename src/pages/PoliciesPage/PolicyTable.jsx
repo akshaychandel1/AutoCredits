@@ -43,28 +43,9 @@ import {
 
 // ================== PAYMENT BREAKDOWN CALCULATION ==================
 
-// Calculate NCB discount on OD amount only
-const calculateNcbOnOd = (odAmount, ncbPercent) => {
-  return odAmount * (ncbPercent / 100);
-};
-
-// Calculate payment components function
+// Calculate payment components function - FIXED: NCB calculation removed from payment flow
 const calculatePaymentComponents = (policy, paymentLedger = []) => {
   const totalPremium = policy.policy_info?.totalPremium || policy.insurance_quote?.premium || 0;
-  
-  // Get OD amount from accepted quote or calculate from components
-  const odAmount = policy.insurance_quote?.odAmount || 
-                  (policy.policy_info?.odPremium || 0) || 
-                  (policy.policy_info?.totalPremium ? policy.policy_info.totalPremium * 0.7 : 0); // Fallback calculation
-  
-  // Get TP amount if available
-  const tpAmount = policy.insurance_quote?.tpAmount || 
-                   (policy.policy_info?.tpPremium || 0) || 
-                   (totalPremium - odAmount);
-  
-  // Extract NCB discount from policy and calculate on OD amount only
-  const ncbDiscountPercent = policy.policy_info?.ncbDiscount || policy.insurance_quote?.ncb || 0;
-  const ncbDiscountAmount = calculateNcbOnOd(odAmount, ncbDiscountPercent);
   
   // Calculate subvention refunds from payment ledger
   const subventionRefundAmount = paymentLedger
@@ -81,8 +62,8 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
     )
     .reduce((sum, payment) => sum + (payment.amount || 0), 0);
   
-  // Calculate effective amount payable after discounts
-  const effectivePayable = Math.max(totalPremium - ncbDiscountAmount - subventionRefundAmount, 0);
+  // Calculate effective amount payable after subvention refunds only
+  const effectivePayable = Math.max(totalPremium - subventionRefundAmount, 0);
   
   // Calculate remaining amount to be paid by customer
   const remainingCustomerAmount = Math.max(effectivePayable - customerPaidAmount, 0);
@@ -104,10 +85,6 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
 
   return {
     totalPremium,
-    odAmount,
-    tpAmount,
-    ncbDiscountPercent,
-    ncbDiscountAmount,
     subventionRefundAmount,
     customerPaidAmount,
     remainingCustomerAmount,
@@ -173,15 +150,6 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
           <span className="text-gray-600">Premium:</span>
           <span className="font-medium">₹{components.totalPremium.toLocaleString('en-IN')}</span>
         </div>
-        
-        {components.ncbDiscountAmount > 0 && (
-          <div className="flex justify-between">
-            <span className="text-gray-600">NCB ({components.ncbDiscountPercent}%):</span>
-            <span className="text-yellow-600 font-medium">
-              -₹{components.ncbDiscountAmount.toLocaleString('en-IN')}
-            </span>
-          </div>
-        )}
         
         {components.subventionRefundAmount > 0 && (
           <div className="flex justify-between">
@@ -566,7 +534,7 @@ const exportToCSV = (policies, selectedRows = []) => {
       policy.status || 'N/A',
       getPaymentStatus(policy),
       new Date(policy.created_at || policy.ts).toLocaleDateString('en-IN'),
-      policyInfo.dueDate ? new Date(policyInfo.dueDate).toLocaleDateString('en-IN') : 'N/A',
+      getExpiryDate(policy),
       policy.buyer_type || 'individual',
       customer.contactPersonName || 'N/A',
       customer.companyName || 'N/A'
@@ -979,11 +947,18 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     return policy.insurance_category || 'Insurance';
   };
 
+  // UPDATED: Get expiry date based on policy type - clean single expiry date for status column
   const getExpiryDate = (policy) => {
-    if (policy.policy_info?.dueDate) {
-      return policy.policy_info.dueDate;
+    const policyInfo = policy.policy_info || {};
+    const policyType = getPolicyType(policy).toLowerCase();
+    
+    // For Third Party policies, use tpExpiryDate
+    if (policyType.includes('third party') || policyType.includes('tp')) {
+      return policyInfo.tpExpiryDate || policyInfo.dueDate || 'N/A';
     }
-    return 'N/A';
+    
+    // For Standalone OD, Comprehensive, and all other policies, use odExpiryDate
+    return policyInfo.odExpiryDate || policyInfo.dueDate || 'N/A';
   };
 
   const getInsuranceCompany = (policy) => {
@@ -1637,10 +1612,35 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                   <span className="text-gray-600">Created Date:</span>
                                   <span className="font-medium">{formatDate(policy.created_at || policy.ts)}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Expiry Date:</span>
-                                  <span className="font-medium">{formatDate(expiryDate)}</span>
-                                </div>
+                                
+                                {/* UPDATED: Show proper expiry dates based on policy type */}
+                                {policy.policy_info && (
+                                  <>
+                                    {/* Show single expiry date for status display */}
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Policy Expiry:</span>
+                                      <span className="font-medium">{formatDate(expiryDate)}</span>
+                                    </div>
+                                    
+                                    {/* Show detailed expiry information in expanded view */}
+                                    {policyType.toLowerCase().includes('comprehensive') && (
+                                      <>
+                                        {policy.policy_info.odExpiryDate && (
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600 text-xs">OD Expiry:</span>
+                                            <span className="font-medium text-xs">{formatDate(policy.policy_info.odExpiryDate)}</span>
+                                          </div>
+                                        )}
+                                        {policy.policy_info.tpExpiryDate && (
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600 text-xs">TP Expiry:</span>
+                                            <span className="font-medium text-xs">{formatDate(policy.policy_info.tpExpiryDate)}</span>
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
