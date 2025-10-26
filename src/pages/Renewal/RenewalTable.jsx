@@ -54,7 +54,9 @@ import {
   FaUserPlus,
   FaFileAlt,
   FaPercentage,
-  FaReceipt
+  FaReceipt,
+  FaWrench,
+  FaExclamation
 } from 'react-icons/fa';
 
 // ================== API CONFIGURATION ==================
@@ -92,37 +94,115 @@ api.interceptors.response.use(
 
 // ================== ENHANCED RENEWAL UTILITY FUNCTIONS ==================
 
-// FIXED: Enhanced expiry date calculation from policy data - MATCHES POLICY TABLE LOGIC
+// NEW: Enhanced date validation function
+const isValidDate = (dateString) => {
+  if (!dateString) return false;
+  if (dateString === 'N/A' || dateString === 'null' || dateString === 'undefined') return false;
+  
+  try {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date) && date.toString() !== 'Invalid Date';
+  } catch {
+    return false;
+  }
+};
+
+// FIXED: ENHANCED expiry date calculation with comprehensive field checking
 const getExpiryDate = (policy) => {
   const policyInfo = policy.policy_info || {};
-  const policyType = getPolicyType(policy).toLowerCase();
+  const insuranceQuote = policy.insurance_quote || {};
   
-  // For Third Party policies, use tpExpiryDate
-  if (policyType.includes('third party') || policyType.includes('tp')) {
-    return policyInfo.tpExpiryDate || policyInfo.dueDate || null;
+  // Debug logging for problematic policies
+  const policyId = policy._id || policy.id;
+  
+  // Try multiple possible expiry date fields in order of priority
+  const possibleExpiryFields = [
+    policyInfo.odExpiryDate,        // Comprehensive policies - OD expiry
+    policyInfo.tpExpiryDate,        // Third Party policies - TP expiry  
+    policyInfo.dueDate,             // General due date
+    policyInfo.expiryDate,          // Direct expiry date
+    policyInfo.policyExpiry,        // Alternative field name
+    policyInfo.endDate,             // End date
+    policyInfo.validUpto,           // Valid upto field
+    policyInfo.policyEnd,           // Policy end
+    insuranceQuote.expiryDate,      // From insurance quote
+    insuranceQuote.policyEndDate,   // From insurance quote alternative
+    insuranceQuote.validUpto,       // Insurance quote valid upto
+    policyInfo.coverageUpto         // Coverage upto date
+  ];
+
+  // Find the first valid date
+  for (const dateField of possibleExpiryFields) {
+    if (isValidDate(dateField)) {
+      console.log(`✅ Found expiry date for policy ${policyId}:`, {
+        field: Object.keys(policyInfo).find(key => policyInfo[key] === dateField) || 
+               Object.keys(insuranceQuote).find(key => insuranceQuote[key] === dateField),
+        value: dateField,
+        policyType: getPolicyType(policy)
+      });
+      return dateField;
+    }
   }
-  
-  // For Standalone OD, Comprehensive, and all other policies, use odExpiryDate
-  return policyInfo.odExpiryDate || policyInfo.dueDate || null;
+
+  // Log detailed debug info for missing expiry dates
+  console.warn(`❌ No expiry date found for policy ${policyId}`, {
+    policyType: getPolicyType(policy),
+    policyNumber: policyInfo.policyNumber,
+    availablePolicyInfoFields: Object.keys(policyInfo),
+    availableInsuranceQuoteFields: Object.keys(insuranceQuote),
+    fieldValues: {
+      odExpiryDate: policyInfo.odExpiryDate,
+      tpExpiryDate: policyInfo.tpExpiryDate,
+      dueDate: policyInfo.dueDate,
+      expiryDate: policyInfo.expiryDate,
+      insuranceQuoteExpiry: insuranceQuote.expiryDate
+    }
+  });
+
+  return null;
 };
 
 // FIXED: Get detailed expiry information for expanded view
 const getDetailedExpiryInfo = (policy) => {
   const policyInfo = policy.policy_info || {};
+  const insuranceQuote = policy.insurance_quote || {};
   const policyType = getPolicyType(policy).toLowerCase();
   
+  // Collect all possible date fields for debugging
+  const allDateFields = {
+    odExpiryDate: policyInfo.odExpiryDate,
+    tpExpiryDate: policyInfo.tpExpiryDate,
+    dueDate: policyInfo.dueDate,
+    expiryDate: policyInfo.expiryDate,
+    policyExpiry: policyInfo.policyExpiry,
+    endDate: policyInfo.endDate,
+    validUpto: policyInfo.validUpto,
+    policyEnd: policyInfo.policyEnd,
+    coverageUpto: policyInfo.coverageUpto,
+    insuranceQuoteExpiry: insuranceQuote.expiryDate,
+    insuranceQuotePolicyEnd: insuranceQuote.policyEndDate,
+    insuranceQuoteValidUpto: insuranceQuote.validUpto
+  };
+
+  // Filter valid dates
+  const validDates = Object.entries(allDateFields)
+    .filter(([key, value]) => isValidDate(value))
+    .reduce((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {});
+
   return {
-    odExpiryDate: policyInfo.odExpiryDate || null,
-    tpExpiryDate: policyInfo.tpExpiryDate || null,
-    dueDate: policyInfo.dueDate || null,
+    ...validDates,
     policyType: policyType,
-    primaryExpiry: getExpiryDate(policy)
+    primaryExpiry: getExpiryDate(policy),
+    hasAnyExpiryDate: Object.keys(validDates).length > 0
   };
 };
 
 // FIXED: Calculate actual days until expiry (removes Infinity)
 const calculateDaysUntilExpiry = (expiryDate) => {
-  if (!expiryDate) return null;
+  if (!expiryDate || !isValidDate(expiryDate)) return null;
   
   try {
     const today = new Date();
@@ -143,7 +223,7 @@ const calculateDaysUntilExpiry = (expiryDate) => {
 
 // NEW: Calculate days until next year renewal reminder
 const calculateDaysUntilNextYearRenewal = (policy) => {
-  if (!policy.next_renewal_date) return null;
+  if (!policy.next_renewal_date || !isValidDate(policy.next_renewal_date)) return null;
   
   try {
     const today = new Date();
@@ -237,7 +317,7 @@ const getBatchInfo = (batch) => {
     'no_expiry': {
       text: 'No Expiry',
       class: 'bg-purple-100 text-purple-800 border border-purple-200',
-      icon: FaBan,
+      icon: FaExclamation,
       priority: 6,
       badgeClass: 'bg-purple-500 text-white',
       color: 'purple'
@@ -483,7 +563,7 @@ const getStatusDisplay = (status) => {
 };
 
 const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
+  if (!dateString || !isValidDate(dateString)) return 'N/A';
   try {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -619,6 +699,151 @@ const generatePolicySummary = (policy) => {
   }
   
   return parts.join(' ');
+};
+
+// ================== DATA REPAIR FUNCTIONS ==================
+
+// NEW: Enhanced policy data repair function
+const repairPolicyExpiryData = async (policy) => {
+  const policyInfo = policy.policy_info || {};
+  const policyId = policy._id || policy.id;
+  
+  console.log(`🔧 Attempting to repair policy ${policyId}`, {
+    currentPolicyInfo: policyInfo,
+    hasPremium: !!policyInfo.totalPremium,
+    createdDate: policy.created_at
+  });
+
+  // If policy has premium but no expiry, estimate expiry (1 year from creation or current date)
+  if (policyInfo.totalPremium && !getExpiryDate(policy)) {
+    let estimatedExpiry;
+    
+    // Try to use creation date first
+    if (policy.created_at && isValidDate(policy.created_at)) {
+      estimatedExpiry = new Date(policy.created_at);
+      estimatedExpiry.setFullYear(estimatedExpiry.getFullYear() + 1);
+    } else {
+      // Fallback to current date + 1 year
+      estimatedExpiry = new Date();
+      estimatedExpiry.setFullYear(estimatedExpiry.getFullYear() + 1);
+    }
+    
+    // Determine which field to use based on policy type
+    const policyType = getPolicyType(policy).toLowerCase();
+    const updateData = {
+      policy_info: {
+        ...policyInfo
+      }
+    };
+    
+    if (policyType.includes('third party') || policyType.includes('tp')) {
+      updateData.policy_info.tpExpiryDate = estimatedExpiry.toISOString();
+    } else {
+      updateData.policy_info.odExpiryDate = estimatedExpiry.toISOString();
+    }
+    
+    // Also set dueDate as fallback
+    updateData.policy_info.dueDate = estimatedExpiry.toISOString();
+    
+    try {
+      const response = await api.put(`/policies/${policyId}`, updateData);
+      if (response.data && response.data.success) {
+        console.log(`✅ Successfully repaired policy ${policyId} with estimated expiry:`, estimatedExpiry.toISOString());
+        return true;
+      }
+    } catch (error) {
+      console.error(`❌ Error repairing policy ${policyId}:`, error);
+      return false;
+    }
+  }
+  
+  console.log(`ℹ️ Policy ${policyId} doesn't need repair or missing premium data`);
+  return false;
+};
+
+// NEW: Batch repair function for all no-expiry policies
+const repairAllNoExpiryPolicies = async (policies, onComplete) => {
+  const noExpiryPolicies = policies.filter(policy => {
+    const expiryDate = getExpiryDate(policy);
+    return expiryDate === null;
+  });
+  
+  if (noExpiryPolicies.length === 0) {
+    alert('🎉 No policies need repair! All policies have expiry dates.');
+    return;
+  }
+
+  if (!confirm(`🔧 Repair ${noExpiryPolicies.length} policies with missing expiry dates?\n\nThis will estimate expiry dates based on policy creation dates + 1 year.`)) {
+    return;
+  }
+
+  try {
+    let repairedCount = 0;
+    let errorCount = 0;
+
+    for (const policy of noExpiryPolicies) {
+      const repaired = await repairPolicyExpiryData(policy);
+      if (repaired) {
+        repairedCount++;
+      } else {
+        errorCount++;
+      }
+      
+      // Small delay to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    const message = `✅ Successfully repaired ${repairedCount} out of ${noExpiryPolicies.length} policies\n${errorCount > 0 ? `❌ ${errorCount} policies could not be repaired` : ''}`;
+    alert(message);
+    
+    if (onComplete) {
+      onComplete();
+    }
+  } catch (error) {
+    console.error('Error in batch repair:', error);
+    alert('❌ Error repairing policies. Check console for details.');
+  }
+};
+
+// NEW: Diagnostic function to analyze no-expiry policies
+const diagnoseNoExpiryPolicies = (policies) => {
+  const noExpiryPolicies = policies.filter(policy => {
+    const expiryDate = getExpiryDate(policy);
+    return expiryDate === null;
+  });
+
+  console.group('🔍 NO EXPIRY POLICY DIAGNOSIS REPORT');
+  console.log(`📊 Total policies: ${policies.length}`);
+  console.log(`❌ No expiry policies: ${noExpiryPolicies.length}`);
+  
+  noExpiryPolicies.forEach((policy, index) => {
+    const policyInfo = policy.policy_info || {};
+    const insuranceQuote = policy.insurance_quote || {};
+    const policyType = getPolicyType(policy);
+    
+    console.log(`\n--- Policy ${index + 1} ---`);
+    console.log('Policy ID:', policy._id);
+    console.log('Policy Type:', policyType);
+    console.log('Policy Number:', policyInfo.policyNumber);
+    console.log('Insurance Company:', policyInfo.insuranceCompany);
+    console.log('Premium:', policyInfo.totalPremium);
+    console.log('Status:', policy.status);
+    
+    console.log('Available expiry fields:');
+    console.log('- odExpiryDate:', policyInfo.odExpiryDate, isValidDate(policyInfo.odExpiryDate) ? '✅ VALID' : '❌ INVALID');
+    console.log('- tpExpiryDate:', policyInfo.tpExpiryDate, isValidDate(policyInfo.tpExpiryDate) ? '✅ VALID' : '❌ INVALID');
+    console.log('- dueDate:', policyInfo.dueDate, isValidDate(policyInfo.dueDate) ? '✅ VALID' : '❌ INVALID');
+    console.log('- expiryDate:', policyInfo.expiryDate, isValidDate(policyInfo.expiryDate) ? '✅ VALID' : '❌ INVALID');
+    
+    console.log('All policy_info fields:', Object.keys(policyInfo));
+    if (Object.keys(insuranceQuote).length > 0) {
+      console.log('Insurance quote fields:', Object.keys(insuranceQuote));
+    }
+  });
+  
+  console.groupEnd();
+
+  return noExpiryPolicies;
 };
 
 // ================== ADVANCED COMPONENTS ==================
@@ -985,7 +1210,7 @@ const ActionButton = ({
 
 // ================== BATCH STATISTICS COMPONENT ==================
 
-const BatchStatistics = ({ stats, onBatchClick, activeFilter }) => {
+const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }) => {
   const batchConfig = [
     { key: '7_days', label: '7 Days', subLabel: 'Urgent', color: 'red' },
     { key: '14_days', label: '14 Days', subLabel: 'High Priority', color: 'orange' },
@@ -1027,72 +1252,112 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter }) => {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-3">
-      {batchConfig.map((batch) => (
-        <button
-          key={batch.key}
-          onClick={() => onBatchClick(batch.key)}
-          className={`text-center p-3 transition-all duration-200 transform hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-opacity-50 ${getActiveStyles(batch.key)} ${
-            batch.color === 'red' ? 'bg-red-50 border-red-200 hover:bg-red-100 focus:ring-red-500' :
-            batch.color === 'orange' ? 'bg-orange-50 border-orange-200 hover:bg-orange-100 focus:ring-orange-500' :
-            batch.color === 'yellow' ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100 focus:ring-yellow-500' :
-            batch.color === 'blue' ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 focus:ring-blue-500' :
-            batch.color === 'green' ? 'bg-green-50 border-green-200 hover:bg-green-100 focus:ring-green-500' :
-            batch.color === 'gray' ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 focus:ring-gray-500' :
-            batch.color === 'purple' ? 'bg-purple-50 border-purple-200 hover:bg-purple-100 focus:ring-purple-500' :
-            batch.color === 'teal' ? 'bg-teal-50 border-teal-200 hover:bg-teal-100 focus:ring-teal-500' :
-            batch.color === 'indigo' ? 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100 focus:ring-indigo-500' :
-            batch.color === 'pink' ? 'bg-pink-50 border-pink-200 hover:bg-pink-100 focus:ring-pink-500' :
-            'bg-indigo-50 border-indigo-200 hover:bg-indigo-100 focus:ring-indigo-500'
-          } border rounded-lg cursor-pointer`}
-        >
-          <div className={`text-xl font-bold ${
-            batch.color === 'red' ? 'text-red-600' :
-            batch.color === 'orange' ? 'text-orange-600' :
-            batch.color === 'yellow' ? 'text-yellow-600' :
-            batch.color === 'blue' ? 'text-blue-600' :
-            batch.color === 'green' ? 'text-green-600' :
-            batch.color === 'gray' ? 'text-gray-600' :
-            batch.color === 'purple' ? 'text-purple-600' :
-            batch.color === 'teal' ? 'text-teal-600' :
-            batch.color === 'indigo' ? 'text-indigo-600' :
-            batch.color === 'pink' ? 'text-pink-600' :
-            'text-indigo-600'
-          }`}>
-            {stats[batch.key] || 0}
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-3">
+        {batchConfig.map((batch) => (
+          <button
+            key={batch.key}
+            onClick={() => onBatchClick(batch.key)}
+            className={`text-center p-3 transition-all duration-200 transform hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-opacity-50 ${getActiveStyles(batch.key)} ${
+              batch.color === 'red' ? 'bg-red-50 border-red-200 hover:bg-red-100 focus:ring-red-500' :
+              batch.color === 'orange' ? 'bg-orange-50 border-orange-200 hover:bg-orange-100 focus:ring-orange-500' :
+              batch.color === 'yellow' ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100 focus:ring-yellow-500' :
+              batch.color === 'blue' ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 focus:ring-blue-500' :
+              batch.color === 'green' ? 'bg-green-50 border-green-200 hover:bg-green-100 focus:ring-green-500' :
+              batch.color === 'gray' ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 focus:ring-gray-500' :
+              batch.color === 'purple' ? 'bg-purple-50 border-purple-200 hover:bg-purple-100 focus:ring-purple-500' :
+              batch.color === 'teal' ? 'bg-teal-50 border-teal-200 hover:bg-teal-100 focus:ring-teal-500' :
+              batch.color === 'indigo' ? 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100 focus:ring-indigo-500' :
+              batch.color === 'pink' ? 'bg-pink-50 border-pink-200 hover:bg-pink-100 focus:ring-pink-500' :
+              'bg-indigo-50 border-indigo-200 hover:bg-indigo-100 focus:ring-indigo-500'
+            } border rounded-lg cursor-pointer`}
+          >
+            <div className={`text-xl font-bold ${
+              batch.color === 'red' ? 'text-red-600' :
+              batch.color === 'orange' ? 'text-orange-600' :
+              batch.color === 'yellow' ? 'text-yellow-600' :
+              batch.color === 'blue' ? 'text-blue-600' :
+              batch.color === 'green' ? 'text-green-600' :
+              batch.color === 'gray' ? 'text-gray-600' :
+              batch.color === 'purple' ? 'text-purple-600' :
+              batch.color === 'teal' ? 'text-teal-600' :
+              batch.color === 'indigo' ? 'text-indigo-600' :
+              batch.color === 'pink' ? 'text-pink-600' :
+              'text-indigo-600'
+            }`}>
+              {stats[batch.key] || 0}
+            </div>
+            <div className={`text-xs font-medium ${
+              batch.color === 'red' ? 'text-red-700' :
+              batch.color === 'orange' ? 'text-orange-700' :
+              batch.color === 'yellow' ? 'text-yellow-700' :
+              batch.color === 'blue' ? 'text-blue-700' :
+              batch.color === 'green' ? 'text-green-700' :
+              batch.color === 'gray' ? 'text-gray-700' :
+              batch.color === 'purple' ? 'text-purple-700' :
+              batch.color === 'teal' ? 'text-teal-700' :
+              batch.color === 'indigo' ? 'text-indigo-700' :
+              batch.color === 'pink' ? 'text-pink-700' :
+              'text-indigo-700'
+            }`}>
+              {batch.label}
+            </div>
+            <div className={`text-xs ${
+              batch.color === 'red' ? 'text-red-500' :
+              batch.color === 'orange' ? 'text-orange-500' :
+              batch.color === 'yellow' ? 'text-yellow-500' :
+              batch.color === 'blue' ? 'text-blue-500' :
+              batch.color === 'green' ? 'text-green-500' :
+              batch.color === 'gray' ? 'text-gray-500' :
+              batch.color === 'purple' ? 'text-purple-500' :
+              batch.color === 'teal' ? 'text-teal-500' :
+              batch.color === 'indigo' ? 'text-indigo-500' :
+              batch.color === 'pink' ? 'text-pink-500' :
+              'text-indigo-500'
+            }`}>
+              {batch.subLabel}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* NEW: No Expiry Repair Section */}
+      {stats.no_expiry > 0 && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <FaExclamation className="text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-purple-900">No Expiry Policies Detected</h3>
+                <p className="text-sm text-purple-700">
+                  {stats.no_expiry} policies are missing expiry dates. This affects renewal tracking.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  console.log('Diagnosing no-expiry policies...');
+                  // This will be connected in the main component
+                }}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+              >
+                <FaSearch className="text-xs" />
+                Diagnose
+              </button>
+              <button
+                onClick={onRepairNoExpiry}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors"
+              >
+                <FaWrench className="text-xs" />
+                Repair All ({stats.no_expiry})
+              </button>
+            </div>
           </div>
-          <div className={`text-xs font-medium ${
-            batch.color === 'red' ? 'text-red-700' :
-            batch.color === 'orange' ? 'text-orange-700' :
-            batch.color === 'yellow' ? 'text-yellow-700' :
-            batch.color === 'blue' ? 'text-blue-700' :
-            batch.color === 'green' ? 'text-green-700' :
-            batch.color === 'gray' ? 'text-gray-700' :
-            batch.color === 'purple' ? 'text-purple-700' :
-            batch.color === 'teal' ? 'text-teal-700' :
-            batch.color === 'indigo' ? 'text-indigo-700' :
-            batch.color === 'pink' ? 'text-pink-700' :
-            'text-indigo-700'
-          }`}>
-            {batch.label}
-          </div>
-          <div className={`text-xs ${
-            batch.color === 'red' ? 'text-red-500' :
-            batch.color === 'orange' ? 'text-orange-500' :
-            batch.color === 'yellow' ? 'text-yellow-500' :
-            batch.color === 'blue' ? 'text-blue-500' :
-            batch.color === 'green' ? 'text-green-500' :
-            batch.color === 'gray' ? 'text-gray-500' :
-            batch.color === 'purple' ? 'text-purple-500' :
-            batch.color === 'teal' ? 'text-teal-500' :
-            batch.color === 'indigo' ? 'text-indigo-500' :
-            batch.color === 'pink' ? 'text-pink-500' :
-            'text-indigo-500'
-          }`}>
-            {batch.subLabel}
-          </div>
-        </button>
-      ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -1496,6 +1761,7 @@ const RenewalTable = () => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [nextYearFilter, setNextYearFilter] = useState('all'); // NEW: Next year filter state
   const [activeBatchFilter, setActiveBatchFilter] = useState('all'); // NEW: Active batch filter state
+  const [repairLoading, setRepairLoading] = useState(false); // NEW: Repair loading state
 
   const navigate = useNavigate();
 
@@ -1515,7 +1781,7 @@ const RenewalTable = () => {
         
         // Process all policies for renewal tracking with CORRECT expiry date logic
         const processedPolicies = allPolicies.map(policy => {
-          const expiryDate = getExpiryDate(policy); // Uses the same logic as PolicyTable
+          const expiryDate = getExpiryDate(policy); // Uses the enhanced logic
           const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
           const batch = categorizeRenewalBatch(daysUntilExpiry);
           const batchInfo = getBatchInfo(batch);
@@ -1542,6 +1808,14 @@ const RenewalTable = () => {
         
         setPolicies(processedPolicies);
         console.log(`Processed ${processedPolicies.length} policies for renewal tracking`);
+        
+        // Run diagnosis on no-expiry policies
+        const noExpiryCount = processedPolicies.filter(p => p.expiryDate === null).length;
+        if (noExpiryCount > 0) {
+          console.log(`🔍 ${noExpiryCount} policies with no expiry date detected`);
+          diagnoseNoExpiryPolicies(processedPolicies);
+        }
+        
         console.log('Expiry date breakdown:', {
           withExpiry: processedPolicies.filter(p => p.expiryDate !== null).length,
           withoutExpiry: processedPolicies.filter(p => p.expiryDate === null).length,
@@ -1612,6 +1886,27 @@ const RenewalTable = () => {
 
   const handleStatusUpdate = () => {
     fetchAllPolicies();
+  };
+
+  // NEW: Enhanced repair function with loading state
+  const handleRepairNoExpiryPolicies = async () => {
+    setRepairLoading(true);
+    try {
+      await repairAllNoExpiryPolicies(policies, () => {
+        // Refresh policies after repair
+        setTimeout(() => {
+          fetchAllPolicies();
+        }, 1000);
+      });
+    } finally {
+      setRepairLoading(false);
+    }
+  };
+
+  // NEW: Handle diagnose action
+  const handleDiagnoseNoExpiry = () => {
+    diagnoseNoExpiryPolicies(policies);
+    alert(`Diagnosis complete! Check browser console for detailed report on ${policies.filter(p => getExpiryDate(p) === null).length} no-expiry policies.`);
   };
 
   // ================== BATCH CLICK HANDLER ==================
@@ -2608,25 +2903,46 @@ const RenewalTable = () => {
                                 </div>
                               )}
                               
-                              {/* Detailed Expiry Information */}
-                              {detailedExpiryInfo.odExpiryDate && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600 text-xs">OD Expiry:</span>
-                                  <span className="font-medium text-xs">{formatDate(detailedExpiryInfo.odExpiryDate)}</span>
+                              {/* Enhanced Expiry Information */}
+                              <div className="pt-2 border-t border-gray-200 mt-2">
+                                <h5 className="font-semibold text-gray-700 mb-1">Expiry Date Analysis</h5>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Primary Expiry:</span>
+                                    <span className="font-medium">{formatDate(detailedExpiryInfo.primaryExpiry)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Has Any Expiry Date:</span>
+                                    <span className={`font-medium ${detailedExpiryInfo.hasAnyExpiryDate ? 'text-green-600' : 'text-red-600'}`}>
+                                      {detailedExpiryInfo.hasAnyExpiryDate ? 'Yes' : 'No'}
+                                    </span>
+                                  </div>
+                                  {detailedExpiryInfo.odExpiryDate && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">OD Expiry:</span>
+                                      <span className="font-medium">{formatDate(detailedExpiryInfo.odExpiryDate)}</span>
+                                    </div>
+                                  )}
+                                  {detailedExpiryInfo.tpExpiryDate && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">TP Expiry:</span>
+                                      <span className="font-medium">{formatDate(detailedExpiryInfo.tpExpiryDate)}</span>
+                                    </div>
+                                  )}
+                                  {detailedExpiryInfo.dueDate && detailedExpiryInfo.dueDate !== policy.expiryDate && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Due Date:</span>
+                                      <span className="font-medium">{formatDate(detailedExpiryInfo.dueDate)}</span>
+                                    </div>
+                                  )}
+                                  {detailedExpiryInfo.expiryDate && detailedExpiryInfo.expiryDate !== policy.expiryDate && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Expiry Date Field:</span>
+                                      <span className="font-medium">{formatDate(detailedExpiryInfo.expiryDate)}</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              {detailedExpiryInfo.tpExpiryDate && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600 text-xs">TP Expiry:</span>
-                                  <span className="font-medium text-xs">{formatDate(detailedExpiryInfo.tpExpiryDate)}</span>
-                                </div>
-                              )}
-                              {detailedExpiryInfo.dueDate && detailedExpiryInfo.dueDate !== policy.expiryDate && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600 text-xs">Due Date:</span>
-                                  <span className="font-medium text-xs">{formatDate(detailedExpiryInfo.dueDate)}</span>
-                                </div>
-                              )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -2749,11 +3065,12 @@ const RenewalTable = () => {
           <ViewToggle />
         </div>
 
-        {/* Batch Statistics */}
+        {/* Batch Statistics with Repair Functionality */}
         <BatchStatistics 
           stats={batchStats} 
           onBatchClick={handleBatchClick}
           activeFilter={activeBatchFilter}
+          onRepairNoExpiry={handleRepairNoExpiryPolicies}
         />
       </div>
 
@@ -2862,6 +3179,17 @@ const RenewalTable = () => {
           </div>
 
           <div className="flex gap-2">
+            {/* NEW: Diagnostic Button */}
+            {batchStats.no_expiry > 0 && (
+              <button
+                onClick={handleDiagnoseNoExpiry}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+              >
+                <FaSearch className="text-xs" />
+                Diagnose ({batchStats.no_expiry})
+              </button>
+            )}
+
             {/* NEW: Next Year Renewal Filter Button */}
             <NextYearRenewalFilter 
               onFilterChange={handleNextYearFilterChange}
@@ -2994,6 +3322,22 @@ const RenewalTable = () => {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Repair Loading Overlay */}
+      {repairLoading && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Repairing Policies</h3>
+            <p className="text-gray-600 text-sm">
+              Estimating expiry dates for policies with missing data...
+            </p>
+            <p className="text-gray-500 text-xs mt-2">
+              This may take a few moments depending on the number of policies.
+            </p>
           </div>
         </div>
       )}
