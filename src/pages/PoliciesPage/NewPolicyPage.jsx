@@ -8717,7 +8717,7 @@ const PayoutDetails = ({ form, handleChange, handleSave, isSaving, errors, accep
 
       {/* Loss Warning Modal */}
       {showLossWarning && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md mx-4">
             <div className="flex items-center mb-4">
               <div className="p-2 rounded-full bg-red-100 text-red-600 mr-3">
