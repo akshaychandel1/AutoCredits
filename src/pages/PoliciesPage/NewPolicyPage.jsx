@@ -49,152 +49,144 @@ import INRCurrencyInput from "../../components/INRCurrencyInput";
 const validationRules = {
   // Step 1: Case Details validation
    // Step 1: Case Details validation - UPDATED
-  validateStep1: (form) => {
-    const errors = {};
+ validateStep1: (form) => {
+  const errors = {};
 
-    // Buyer Type validation
-    if (!form.buyer_type) {
-      errors.buyer_type = "Buyer type is required";
+  // Buyer Type validation
+  if (!form.buyer_type) {
+    errors.buyer_type = "Buyer type is required";
+  }
+
+  // Employee Name validation (common for both types)
+  if (!form.employeeName) {
+    errors.employeeName = "Employee name is required";
+  } else if (form.employeeName.length < 2) {
+    errors.employeeName = "Employee name must be at least 2 characters";
+  }
+
+  // Mobile validation (common for both types)
+  if (!form.mobile) {
+    errors.mobile = "Mobile number is required";
+  } else if (!/^\d{10}$/.test(form.mobile)) {
+    errors.mobile = "Mobile number must be 10 digits";
+  }
+
+  // Email validation (common for both types)
+  if (!form.email) {
+    errors.email = "Email address is required";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    errors.email = "Please enter a valid email address";
+  }
+
+  // Individual buyer validations
+  if (form.buyer_type === "individual") {
+    // Customer Name validation
+    if (!form.customerName) {
+      errors.customerName = "Customer name is required";
+    } else if (form.customerName.length < 2) {
+      errors.customerName = "Customer name must be at least 2 characters";
     }
 
-    // Employee Name validation (common for both types)
-    if (!form.employeeName) {
-      errors.employeeName = "Employee name is required";
-    } else if (form.employeeName.length < 2) {
-      errors.employeeName = "Employee name must be at least 2 characters";
+    // Gender validation
+    if (!form.gender) {
+      errors.gender = "Gender is required";
     }
 
-    // Mobile validation (common for both types)
-    if (!form.mobile) {
-      errors.mobile = "Mobile number is required";
-    } else if (!/^\d{10}$/.test(form.mobile)) {
-      errors.mobile = "Mobile number must be 10 digits";
+    // Aadhaar validation (if provided)
+    if (form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.replace(/\s/g, ''))) {
+      errors.aadhaarNumber = "Aadhaar number must be 12 digits";
+    }
+    // PAN validation removed - now completely optional without validation
+  }
+
+  // Corporate buyer validations
+  if (form.buyer_type === "corporate") {
+    // Company Name validation
+    if (!form.companyName) {
+      errors.companyName = "Company name is required";
+    } else if (form.companyName.length < 2) {
+      errors.companyName = "Company name must be at least 2 characters";
     }
 
-    // Email validation (common for both types)
-    if (!form.email) {
-      errors.email = "Email address is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      errors.email = "Please enter a valid email address";
+    // Contact Person Name validation
+    if (!form.contactPersonName) {
+      errors.contactPersonName = "Contact person name is required";
+    } else if (form.contactPersonName.length < 2) {
+      errors.contactPersonName = "Contact person name must be at least 2 characters";
     }
 
-    // Individual buyer validations
-    if (form.buyer_type === "individual") {
-      // Customer Name validation
-      if (!form.customerName) {
-        errors.customerName = "Customer name is required";
-      } else if (form.customerName.length < 2) {
-        errors.customerName = "Customer name must be at least 2 characters";
-      }
-
-      // Gender validation
-      if (!form.gender) {
-        errors.gender = "Gender is required";
-      }
-
-      // PAN validation (if provided)
-      if (form.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.panNumber)) {
-        errors.panNumber = "Please enter a valid PAN number";
-      }
-
-      // Aadhaar validation (if provided)
-      if (form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.replace(/\s/g, ''))) {
-        errors.aadhaarNumber = "Aadhaar number must be 12 digits";
-      }
+    // Company PAN validation
+    if (!form.companyPanNumber) {
+      errors.companyPanNumber = "Company PAN number is required";
     }
 
-    // Corporate buyer validations
-    if (form.buyer_type === "corporate") {
-      // Company Name validation
-      if (!form.companyName) {
-        errors.companyName = "Company name is required";
-      } else if (form.companyName.length < 2) {
-        errors.companyName = "Company name must be at least 2 characters";
-      }
+    // GST Number validation (optional - only validate if provided)
+    // if (form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber)) {
+    //   errors.gstNumber = "Please enter a valid GST number";
+    // }
+  }
 
-      // Contact Person Name validation
-      if (!form.contactPersonName) {
-        errors.contactPersonName = "Contact person name is required";
-      } else if (form.contactPersonName.length < 2) {
-        errors.contactPersonName = "Contact person name must be at least 2 characters";
-      }
+  // Common validations for both buyer types
+  // Address validation
+  if (!form.residenceAddress) {
+    errors.residenceAddress = form.buyer_type === "corporate" 
+      ? "Office address is required" 
+      : "Residence address is required";
+  } else if (form.residenceAddress.length < 10) {
+    errors.residenceAddress = "Please enter a complete address";
+  }
 
-      // Company PAN validation
-      if (!form.companyPanNumber) {
-        errors.companyPanNumber = "Company PAN number is required";
-      } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.companyPanNumber)) {
-        errors.companyPanNumber = "Please enter a valid PAN number";
-      }
+  // Pincode validation
+  if (!form.pincode) {
+    errors.pincode = "Pincode is required";
+  } else if (!/^\d{6}$/.test(form.pincode)) {
+    errors.pincode = "Pincode must be 6 digits";
+  }
 
-      // GST Number validation
-      if (!form.gstNumber) {
-        errors.gstNumber = "GST number is required";
-      } else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber)) {
-        errors.gstNumber = "Please enter a valid GST number";
-      }
+  // City validation
+  if (!form.city) {
+    errors.city = "City is required";
+  } else if (form.city.length < 2) {
+    errors.city = "Please enter a valid city name";
+  }
+
+  // Alternate Phone validation (if provided)
+  if (form.alternatePhone && !/^\d{10}$/.test(form.alternatePhone)) {
+    errors.alternatePhone = "Alternate phone number must be 10 digits";
+  }
+
+  // Nominee validation (if any nominee field is filled)
+  if (form.nomineeName || form.relation || form.nomineeAge) {
+    if (!form.nomineeName) {
+      errors.nomineeName = "Nominee name is required when adding nominee details";
+    } else if (form.nomineeName.length < 2) {
+      errors.nomineeName = "Nominee name must be at least 2 characters";
     }
-
-    // Common validations for both buyer types
-    // Address validation
-    if (!form.residenceAddress) {
-      errors.residenceAddress = form.buyer_type === "corporate" 
-        ? "Office address is required" 
-        : "Residence address is required";
-    } else if (form.residenceAddress.length < 10) {
-      errors.residenceAddress = "Please enter a complete address";
+    
+    if (!form.relation) {
+      errors.relation = "Nominee relation is required";
     }
-
-    // Pincode validation
-    if (!form.pincode) {
-      errors.pincode = "Pincode is required";
-    } else if (!/^\d{6}$/.test(form.pincode)) {
-      errors.pincode = "Pincode must be 6 digits";
+    
+    if (!form.nomineeAge) {
+      errors.nomineeAge = "Nominee age is required";
+    } else if (form.nomineeAge < 1 || form.nomineeAge > 130) {
+      errors.nomineeAge = "Nominee age must be between 1 and 130 years";
     }
+  }
 
-    // City validation
-    if (!form.city) {
-      errors.city = "City is required";
-    } else if (form.city.length < 2) {
-      errors.city = "Please enter a valid city name";
+  // Reference validation (if any reference field is filled)
+  if (form.referenceName || form.referencePhone) {
+    if (form.referenceName && form.referenceName.length < 2) {
+      errors.referenceName = "Reference name must be at least 2 characters";
     }
-
-    // Alternate Phone validation (if provided)
-    if (form.alternatePhone && !/^\d{10}$/.test(form.alternatePhone)) {
-      errors.alternatePhone = "Alternate phone number must be 10 digits";
+    
+    if (form.referencePhone && !/^\d{10}$/.test(form.referencePhone)) {
+      errors.referencePhone = "Reference phone number must be 10 digits";
     }
+  }
 
-    // Nominee validation (if any nominee field is filled)
-    if (form.nomineeName || form.relation || form.nomineeAge) {
-      if (!form.nomineeName) {
-        errors.nomineeName = "Nominee name is required when adding nominee details";
-      } else if (form.nomineeName.length < 2) {
-        errors.nomineeName = "Nominee name must be at least 2 characters";
-      }
-      
-      if (!form.relation) {
-        errors.relation = "Nominee relation is required";
-      }
-      
-      if (!form.nomineeAge) {
-        errors.nomineeAge = "Nominee age is required";
-      } else if (form.nomineeAge < 1 || form.nomineeAge > 130) {
-        errors.nomineeAge = "Nominee age must be between 1 and 130 years";
-      }
-    }
-
-    // Reference validation (if any reference field is filled)
-    if (form.referenceName || form.referencePhone) {
-      if (form.referenceName && form.referenceName.length < 2) {
-        errors.referenceName = "Reference name must be at least 2 characters";
-      }
-      
-      if (form.referencePhone && !/^\d{10}$/.test(form.referencePhone)) {
-        errors.referencePhone = "Reference phone number must be 10 digits";
-      }
-    }
-
-    return errors;
-  },
+  return errors;
+},
 
   // Step 2: Vehicle Details validation
   validateStep2: (form) => {
@@ -472,6 +464,19 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
       target: {
         name: name,
         value: numbersOnly
+      }
+    });
+  };
+
+  // Handle uppercase input (for PAN, GST, etc.)
+  const handleUppercaseChange = (e) => {
+    const { name, value } = e.target;
+    // Convert to uppercase for display but store original value
+    const uppercaseValue = value.toUpperCase();
+    handleChange({
+      target: {
+        name: name,
+        value: value // Store original case for backend
       }
     });
   };
@@ -765,15 +770,12 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 type="text"
                 name="panNumber"
                 value={form.panNumber || ""}
-                onChange={handleChange}
+                onChange={handleUppercaseChange}
                 placeholder="ABCDE1234F"
                 maxLength={10}
                 style={{ textTransform: "uppercase" }}
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.panNumber ? "border-red-500" : "border-gray-300"
-                }`}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
-              {errors.panNumber && <p className="text-red-500 text-xs mt-1">{errors.panNumber}</p>}
             </div>
 
             {/* Aadhaar */}
@@ -935,7 +937,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 type="text"
                 name="companyPanNumber"
                 value={form.companyPanNumber || ""}
-                onChange={handleChange}
+                onChange={handleUppercaseChange}
                 placeholder="ABCDE1234F"
                 maxLength={10}
                 style={{ textTransform: "uppercase" }}
@@ -949,21 +951,18 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
             {/* GST Number */}
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-600">
-                GST Number *
+                GST Number
               </label>
               <input
                 type="text"
                 name="gstNumber"
                 value={form.gstNumber || ""}
-                onChange={handleChange}
+                onChange={handleUppercaseChange}
                 placeholder="Enter GST number"
                 maxLength={15}
                 style={{ textTransform: "uppercase" }}
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.gstNumber ? "border-red-500" : "border-gray-300"
-                }`}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
-              {errors.gstNumber && <p className="text-red-500 text-xs mt-1">{errors.gstNumber}</p>}
             </div>
           </>
         )}
@@ -1184,16 +1183,99 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
 const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Vehicle make options for auto-suggest
   const vehicleMakes = [
-    "Maruti Suzuki", "Hyundai", "Honda", "Tata", "Mahindra", "Toyota",
-    "Kia", "Volkswagen", "Skoda", "Renault", "Ford", "MG Motor",
-    "Nissan", "BMW", "Mercedes-Benz", "Audi", "Volvo", "Jeep",
-    "Land Rover", "Jaguar", "Porsche", "Fiat", "Chevrolet", "Mitsubishi",
-    "Force Motors", "Isuzu", "Lexus", "Mini", "Citroen", "Peugeot"
+    "Tata Motors", "Mahindra & Mahindra", "Maruti Suzuki", "Force Motors", "Hindustan Motors",
+    "Hyundai", "Kia", "Toyota", "Honda", "Renault", "Nissan", "Volkswagen", "Skoda", "MG Motor",
+    "BMW", "Mercedes-Benz", "Audi", "Volvo", "Jeep", "Land Rover", "Jaguar", "Porsche", "Isuzu",
+    "Lexus", "Mini", "Citroen", "Peugeot", "Fiat", "Mitsubishi", "Chevrolet", "BYD",
+    "Hero MotoCorp", "Bajaj Auto", "TVS Motor", "Royal Enfield", "Mahindra Two Wheelers",
+    "Honda Motorcycle & Scooter India", "Yamaha Motor India", "Suzuki Motorcycle India", "KTM",
+    "Husqvarna", "BMW Motorrad", "Triumph Motorcycles", "Harley-Davidson", "Benelli", "CFMoto",
+    "Ducati", "Aprilia", "Vespa", "Keeway", "Ashok Leyland", "Eicher Motors", "Tata Motors Commercial",
+    "Mahindra Electric", "Piaggio Vehicles", "Olectra Greentech", "Omega Seiki Mobility", "Euler Motors",
+    "Switch Mobility", "JBM Auto", "VE Commercial Vehicles", "Ola Electric", "Ather Energy",
+    "Simple Energy", "Revolt Motors", "Ultraviolette Automotive", "Tork Motors", "PURE EV",
+    "Matter Motors", "Ampere Vehicles", "Okaya EV", "Greaves Electric Mobility", "Hero Electric",
+    "TVS iQube", "Bajaj Chetak Electric"
   ];
+
+  // Vehicle models organized by make
+  const vehicleModels = {
+    "Tata Motors": ["Nexon", "Punch", "Harrier", "Safari", "Tiago", "Altroz", "Tigor", "Nexon EV", "Tigor EV", "Nexon iCNG"],
+    "Mahindra & Mahindra": ["Thar", "Scorpio", "XUV700", "Bolero", "XUV300", "Scorpio N", "Bolero Neo", "XUV400 EV"],
+    "Maruti Suzuki": ["Swift", "Baleno", "Brezza", "WagonR", "Dzire", "Alto", "Ertiga", "XL6", "Ciaz", "Jimny", "Invicto", "Fronx"],
+    "Hyundai": ["Creta", "Venue", "i20", "Verna", "Exter", "Tucson", "Aura", "Alcazar", "Ioniq 5", "Kona Electric"],
+    "Kia": ["Seltos", "Sonet", "Carens", "EV6", "Carnival"],
+    "Toyota": ["Innova Crysta", "Fortuner", "Camry", "Glanza", "Hyryder", "Innova Hycross", "Vellfire", "Urban Cruiser Hyryder"],
+    "Honda": ["City", "Amaze", "Elevate", "WR-V", "Jazz"],
+    "Renault": ["Kwid", "Triber", "Kiger"],
+    "Nissan": ["Magnite", "Kicks"],
+    "Volkswagen": ["Virtus", "Taigun", "Polo", "Tiguan", "T-Roc"],
+    "Skoda": ["Slavia", "Kushaq", "Kodiaq", "Superb"],
+    "MG Motor": ["Hector", "Astor", "ZS EV", "Gloster", "Comet EV"],
+    "Jeep": ["Compass", "Meridian", "Wrangler", "Grand Cherokee"],
+    "BMW": ["X1", "X3", "3 Series", "5 Series", "7 Series", "X5", "X7", "i4", "iX"],
+    "Mercedes-Benz": ["C-Class", "E-Class", "GLA", "GLC", "GLE", "S-Class", "A-Class", "EQB", "EQS"],
+    "Audi": ["A4", "A6", "Q3", "Q5", "Q7", "Q8", "e-tron", "RS5"],
+    "Volvo": ["XC40", "XC60", "XC90", "S90", "C40 Recharge"],
+    "Hero MotoCorp": ["Splendor", "HF Deluxe", "Xpulse 200", "Passion Pro", "Glamour", "Xtreme 160R"],
+    "Bajaj Auto": ["Pulsar", "Dominar", "Platina", "Avenger", "CT100", "Pulsar NS", "Pulsar RS"],
+    "TVS Motor": ["Apache RTR", "Raider", "Jupiter", "NTorq", "XL100", "Apache RR 310"],
+    "Royal Enfield": ["Classic 350", "Hunter 350", "Himalayan 450", "Meteor 350", "Bullet 350", "Interceptor 650", "Shotgun 650"],
+    "Ola Electric": ["S1 Pro", "S1 Air", "S1 X"],
+    "Ather Energy": ["450X", "450S", "450 Apex"],
+    "Tata Motors Commercial": ["Ace", "Intra", "Ultra", "Signa", "Winger", "Mint"],
+    "Ashok Leyland": ["Dost", "Boss", "Partner", "Captain", "1616", "3520"],
+    "Force Motors": ["Gurkha", "Urbania", "Traveller", "One"],
+    "Hindustan Motors": ["Ambassador"],
+    "Yamaha Motor India": ["MT-15", "R15", "FZ", "Fascino", "RayZR", "Aerox"],
+    "Suzuki Motorcycle India": ["Access 125", "Burgman Street", "Gixxer", "Avenis"],
+    "KTM": ["Duke", "RC", "Adventure", "390 Duke", "250 Duke"],
+    "Harley-Davidson": ["Sportster", "Softail", "Touring", "Street"],
+    "Ducati": ["Panigale", "Monster", "Scrambler", "Multistrada", "Diavel"],
+    "Aprilia": ["RS 457", "Tuono", "SR 160"],
+    "Vespa": ["VXL", "SXL", "Zx", "Primavera"],
+    "Eicher Motors": ["Pro 2000", "Pro 3000", "Pro 6000"],
+    "Mahindra Electric": ["eVerito", "eSupro", "Treo", "eAlfa Mini"],
+    "Piaggio Vehicles": ["Ape", "Ape Xtra", "Ape E-City"],
+    "Simple Energy": ["One"],
+    "Revolt Motors": ["RV400", "RV300"],
+    "Ultraviolette Automotive": ["F77"],
+    "Tork Motors": ["Kratos", "Kratos R"],
+    "PURE EV": ["EcoDryft", "EPluto 7G"],
+    "Matter Motors": ["Aera"],
+    "Ampere Vehicles": ["Zeal", "Reo", "Nitro"],
+    "Okaya EV": ["Freedum", "Faast", "ClassIQ"],
+    "Greaves Electric Mobility": ["Ampere Magnus", "Ampere Primus", "Ampere REO"],
+    "Hero Electric": ["Optima", "Photon", "NYX", "Flash"],
+    "TVS iQube": ["iQube S", "iQube ST"],
+    "Bajaj Chetak Electric": ["Chetak", "Chetak Urbane"]
+  };
 
   // State for vehicle make suggestions
   const [vehicleMakeSuggestions, setVehicleMakeSuggestions] = useState([]);
   const [showVehicleMakeSuggestions, setShowVehicleMakeSuggestions] = useState(false);
+  
+  // State for vehicle model suggestions
+  const [vehicleModelSuggestions, setVehicleModelSuggestions] = useState([]);
+  const [showVehicleModelSuggestions, setShowVehicleModelSuggestions] = useState(false);
+
+  // Get available models based on selected make
+  const getAvailableModels = () => {
+    if (!form.make || !vehicleModels[form.make]) {
+      return [];
+    }
+    return vehicleModels[form.make];
+  };
+
+  // Filter models based on input
+  const filterModels = (inputValue) => {
+    const availableModels = getAvailableModels();
+    if (!inputValue) return availableModels;
+    
+    return availableModels.filter(model =>
+      model.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  };
 
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
@@ -1215,29 +1297,29 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         <div className="md:col-span-2">
-  <label className="block mb-1 text-sm font-medium text-gray-600">
-    Registration Number *
-  </label>
-  <input
-    type="text"
-    name="regNo"
-    value={form.regNo || ""}
-    onChange={(e) => {
-      handleChange({
-        target: {
-          name: e.target.name,
-          value: e.target.value.toUpperCase()
-        }
-      });
-    }}
-    placeholder="Enter Vehicle Number"
-    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-      errors.regNo ? "border-red-500" : "border-gray-300"
-    }`}
-    style={{ textTransform: 'uppercase' }}
-  />
-  {errors.regNo && <p className="text-red-500 text-xs mt-1">{errors.regNo}</p>}
-</div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Registration Number *
+          </label>
+          <input
+            type="text"
+            name="regNo"
+            value={form.regNo || ""}
+            onChange={(e) => {
+              handleChange({
+                target: {
+                  name: e.target.name,
+                  value: e.target.value.toUpperCase()
+                }
+              });
+            }}
+            placeholder="Enter Vehicle Number"
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              errors.regNo ? "border-red-500" : "border-gray-300"
+            }`}
+            style={{ textTransform: 'uppercase' }}
+          />
+          {errors.regNo && <p className="text-red-500 text-xs mt-1">{errors.regNo}</p>}
+        </div>
 
         {/* Vehicle Make with Auto-suggest */}
         <div>
@@ -1308,21 +1390,76 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           {errors.make && <p className="text-red-500 text-xs mt-1">{errors.make}</p>}
         </div>
 
+        {/* Vehicle Model with Auto-suggest */}
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Vehicle Model *
           </label>
-          <input
-            type="text"
-            name="model"
-            value={form.model || ""}
-            onChange={handleChange}
-            placeholder="Select model"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.model ? "border-red-500" : "border-gray-300"
-            }`}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              name="model"
+              value={form.model || ""}
+              onChange={(e) => {
+                handleChange(e);
+                // Show suggestions when user starts typing and make is selected
+                if (e.target.value.length > 0 && form.make) {
+                  const filtered = filterModels(e.target.value);
+                  setVehicleModelSuggestions(filtered);
+                  setShowVehicleModelSuggestions(true);
+                } else {
+                  setShowVehicleModelSuggestions(false);
+                }
+              }}
+              onFocus={() => {
+                if (form.make) {
+                  const availableModels = getAvailableModels();
+                  if (form.model) {
+                    const filtered = filterModels(form.model);
+                    setVehicleModelSuggestions(filtered);
+                  } else {
+                    setVehicleModelSuggestions(availableModels);
+                  }
+                  setShowVehicleModelSuggestions(true);
+                }
+              }}
+              onBlur={() => {
+                setTimeout(() => setShowVehicleModelSuggestions(false), 200);
+              }}
+              placeholder={form.make ? "Type vehicle model" : "Select make first"}
+              disabled={!form.make}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.model ? "border-red-500" : "border-gray-300"
+              } ${!form.make ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            />
+            
+            {/* Vehicle Model Suggestions Dropdown */}
+            {showVehicleModelSuggestions && vehicleModelSuggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {vehicleModelSuggestions.map((model, index) => (
+                  <div
+                    key={index}
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                    onClick={() => {
+                      handleChange({
+                        target: {
+                          name: 'model',
+                          value: model
+                        }
+                      });
+                      setShowVehicleModelSuggestions(false);
+                    }}
+                  >
+                    {model}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           {errors.model && <p className="text-red-500 text-xs mt-1">{errors.model}</p>}
+          {!form.make && (
+            <p className="text-gray-500 text-xs mt-1">Please select vehicle make first</p>
+          )}
         </div>
 
         <div>
@@ -1342,41 +1479,42 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           {errors.variant && <p className="text-red-500 text-xs mt-1">{errors.variant}</p>}
         </div>
 
-       <div>
-  <label className="block mb-1 text-sm font-medium text-gray-600">
-    Engine Number *
-  </label>
-  <input
-    type="text"
-    name="engineNo"
-    value={form.engineNo || ""}
-    onChange={handleChange}
-    placeholder="Enter engine number"
-    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase ${
-      errors.engineNo ? "border-red-500" : "border-gray-300"
-    }`}
-    style={{ textTransform: 'uppercase' }}
-  />
-  {errors.engineNo && <p className="text-red-500 text-xs mt-1">{errors.engineNo}</p>}
-</div>
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Engine Number *
+          </label>
+          <input
+            type="text"
+            name="engineNo"
+            value={form.engineNo || ""}
+            onChange={handleChange}
+            placeholder="Enter engine number"
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase ${
+              errors.engineNo ? "border-red-500" : "border-gray-300"
+            }`}
+            style={{ textTransform: 'uppercase' }}
+          />
+          {errors.engineNo && <p className="text-red-500 text-xs mt-1">{errors.engineNo}</p>}
+        </div>
 
-<div>
-  <label className="block mb-1 text-sm font-medium text-gray-600">
-    Chassis Number *
-  </label>
-  <input
-    type="text"
-    name="chassisNo"
-    value={form.chassisNo || ""}
-    onChange={handleChange}
-    placeholder="Enter chassis number"
-    className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase ${
-      errors.chassisNo ? "border-red-500" : "border-gray-300"
-    }`}
-    style={{ textTransform: 'uppercase' }}
-  />
-  {errors.chassisNo && <p className="text-red-500 text-xs mt-1">{errors.chassisNo}</p>}
-</div>
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Chassis Number *
+          </label>
+          <input
+            type="text"
+            name="chassisNo"
+            value={form.chassisNo || ""}
+            onChange={handleChange}
+            placeholder="Enter chassis number"
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase ${
+              errors.chassisNo ? "border-red-500" : "border-gray-300"
+            }`}
+            style={{ textTransform: 'uppercase' }}
+          />
+          {errors.chassisNo && <p className="text-red-500 text-xs mt-1">{errors.chassisNo}</p>}
+        </div>
+
         <div className="md:col-span-2">
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Manufacture Date *
@@ -5012,7 +5150,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
         optional: []
       },
       usedCar: {
-        mandatory: ["RC", "Form 29", "Form 30 page 1", "Form 30 page 2", "Pan Number", "GST/Adhaar Card"],
+        mandatory: ["RC", "Form 29", "Form 30 page 1", "Form 30 page 2", "Pan Number", "GST/Adhaar Card","Previous Year Policy"],
         optional: []
       },
       usedCarRenewal: {

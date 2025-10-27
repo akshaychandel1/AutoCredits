@@ -370,6 +370,23 @@ const getBatchInfo = (batch) => {
       priority: 5,
       badgeClass: 'bg-gray-500 text-white',
       color: 'gray'
+    },
+    // NEW: Closed and External statuses
+    'closed': {
+      text: 'Closed',
+      class: 'bg-gray-100 text-gray-800 border border-gray-200',
+      icon: FaBan,
+      priority: 7,
+      badgeClass: 'bg-gray-500 text-white',
+      color: 'gray'
+    },
+    'external': {
+      text: 'External',
+      class: 'bg-gray-100 text-gray-800 border border-gray-200',
+      icon: FaExternalLinkAlt,
+      priority: 8,
+      badgeClass: 'bg-gray-500 text-white',
+      color: 'gray'
     }
   };
   
@@ -1219,6 +1236,9 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
     { key: 'beyond_60_days', label: 'Future', subLabel: 'Beyond 60', color: 'green' },
     { key: 'expired', label: 'Expired', subLabel: 'Overdue', color: 'gray' },
     { key: 'no_expiry', label: 'No Expiry', subLabel: 'Check Required', color: 'purple' },
+    // NEW: Closed and External tabs
+    { key: 'closed', label: 'Closed', subLabel: 'Inactive', color: 'gray' },
+    { key: 'external', label: 'External', subLabel: 'Other Source', color: 'gray' },
     // NEW: Next year renewal stats
     { key: 'next_year_30_days', label: 'Next Year', subLabel: '30 Days', color: 'teal' },
     { key: 'next_year_14_days', label: 'Next Year', subLabel: '14 Days', color: 'indigo' },
@@ -1244,6 +1264,8 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
       batchKey === 'beyond_60_days' ? 'ring-green-500' :
       batchKey === 'expired' ? 'ring-gray-500' :
       batchKey === 'no_expiry' ? 'ring-purple-500' :
+      batchKey === 'closed' ? 'ring-gray-500' :
+      batchKey === 'external' ? 'ring-gray-500' :
       batchKey === 'next_year_30_days' ? 'ring-teal-500' :
       batchKey === 'next_year_14_days' ? 'ring-indigo-500' :
       batchKey === 'next_year_7_days' ? 'ring-pink-500' :
@@ -1253,7 +1275,7 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-13 gap-3">
         {batchConfig.map((batch) => (
           <button
             key={batch.key}
@@ -1584,6 +1606,8 @@ const AdvancedSearch = ({
                 <option value="beyond_60_days">Beyond 60 Days (Future)</option>
                 <option value="expired">Expired (Overdue)</option>
                 <option value="no_expiry">No Expiry Date</option>
+                <option value="closed">Closed</option>
+                <option value="external">External</option>
               </select>
             </div>
 
@@ -1948,6 +1972,17 @@ const RenewalTable = () => {
         }));
         break;
         
+      case 'closed':
+      case 'external':
+        // Handle closed and external policies
+        setBatchFilter(batchKey);
+        setSearchFilters(prev => ({
+          ...prev,
+          batch: batchKey,
+          nextYearRenewal: 'all'
+        }));
+        break;
+        
       default:
         // Handle regular renewal batches
         setBatchFilter(batchKey);
@@ -1999,7 +2034,13 @@ const RenewalTable = () => {
 
     // Apply batch filter
     if (batchFilter !== 'all') {
-      filtered = filtered.filter(policy => policy.batch === batchFilter);
+      if (batchFilter === 'closed') {
+        filtered = filtered.filter(policy => policy.status === 'closed');
+      } else if (batchFilter === 'external') {
+        filtered = filtered.filter(policy => policy.status === 'external' || policy.policy_source === 'external');
+      } else {
+        filtered = filtered.filter(policy => policy.batch === batchFilter);
+      }
     }
 
     // NEW: Apply next year renewal filter
@@ -2071,7 +2112,9 @@ const RenewalTable = () => {
           customer.city.toLowerCase().includes(searchFilters.city.toLowerCase());
         
         const matchesBatch = !searchFilters.batch || searchFilters.batch === 'all' || 
-          policy.batch === searchFilters.batch;
+          (searchFilters.batch === 'closed' ? policy.status === 'closed' :
+           searchFilters.batch === 'external' ? (policy.status === 'external' || policy.policy_source === 'external') :
+           policy.batch === searchFilters.batch);
 
         const matchesNextYearRenewal = !searchFilters.nextYearRenewal || searchFilters.nextYearRenewal === 'all' ||
           (searchFilters.nextYearRenewal === 'has_reminder' && policy.renewal_scheduled) ||
@@ -2134,6 +2177,9 @@ const RenewalTable = () => {
       'beyond_60_days': 0,
       'expired': 0,
       'no_expiry': 0,
+      // NEW: Closed and External counts
+      'closed': 0,
+      'external': 0,
       // NEW: Next year renewal stats
       'next_year_7_days': 0,
       'next_year_14_days': 0,
@@ -2144,6 +2190,14 @@ const RenewalTable = () => {
     renewalPolicies.forEach(policy => {
       if (stats.hasOwnProperty(policy.batch)) {
         stats[policy.batch]++;
+      }
+      
+      // Count closed and external policies
+      if (policy.status === 'closed') {
+        stats['closed']++;
+      }
+      if (policy.status === 'external' || policy.policy_source === 'external') {
+        stats['external']++;
       }
       
       // Count next year renewal policies
@@ -3147,6 +3201,8 @@ const RenewalTable = () => {
                 <option value="beyond_60_days">Beyond 60 Days</option>
                 <option value="expired">Expired</option>
                 <option value="no_expiry">No Expiry Date</option>
+                <option value="closed">Closed</option>
+                <option value="external">External</option>
               </select>
             </div>
 
