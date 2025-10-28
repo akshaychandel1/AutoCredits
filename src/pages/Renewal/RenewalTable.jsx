@@ -2291,7 +2291,7 @@ const RenewalTable = () => {
 
   const handleEditClick = (policy) => {
     const policyId = policy._id || policy.id;
-    navigate(`/new-policy/${policyId}`);
+    navigate(`/new-policy/${policyId}?renewal=true`);
   };
 
   const handleDeleteClick = (policy) => {
@@ -2751,7 +2751,7 @@ const RenewalTable = () => {
                           className="flex items-center gap-1 text-green-600 hover:text-green-800 text-xs font-medium hover:bg-green-50 px-1.5 py-1 rounded transition-colors border border-green-200 justify-center"
                         >
                           <FaEdit className="text-xs" />
-                          Edit
+                          Renew
                         </button>
                         
                         <ActionButton 

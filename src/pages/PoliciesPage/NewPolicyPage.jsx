@@ -33,6 +33,7 @@ import {
   AlertTriangle // ADD THIS
 } from 'lucide-react';
 import PDFGenerationService from "./PDFGenerationService";
+import { useLocation } from 'react-router-dom';
 
 import icici from './logos/ICICI.jpeg'
 import hdfc from './logos/hdfc.jpeg'
@@ -93,9 +94,9 @@ const validationRules = {
     }
 
     // Aadhaar validation (if provided)
-    if (form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.replace(/\s/g, ''))) {
-      errors.aadhaarNumber = "Aadhaar number must be 12 digits";
-    }
+    // if (form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.replace(/\s/g, ''))) {
+    //   errors.aadhaarNumber = "Aadhaar number must be 12 digits";
+    // }
     // PAN validation removed - now completely optional without validation
   }
 
@@ -116,9 +117,9 @@ const validationRules = {
     }
 
     // Company PAN validation
-    if (!form.companyPanNumber) {
-      errors.companyPanNumber = "Company PAN number is required";
-    }
+    // if (!form.companyPanNumber) {
+    //   errors.companyPanNumber = "Company PAN number is required";
+    // }
 
     // GST Number validation (optional - only validate if provided)
     // if (form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber)) {
@@ -2091,7 +2092,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
               name="previousPolicyStartDate"
               value={form.previousPolicyStartDate || ""}
               onChange={handlePolicyStartDateChange}
-              min={getMinPolicyStartDate()}
+              // min={getMinPolicyStartDate()}
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.previousPolicyStartDate ? "border-red-500" : "border-gray-300"
               }`}
@@ -2281,53 +2282,6 @@ const previousPolicyValidation = (form) => {
 
   return errors;
 };
-
-// Updated validation function
-// const previousPolicyValidation = (form) => {
-//   const errors = {};
-
-//   if (!form.previousInsuranceCompany) {
-//     errors.previousInsuranceCompany = "Previous insurance company is required";
-//   }
-
-//   if (!form.previousPolicyNumber) {
-//     errors.previousPolicyNumber = "Previous policy number is required";
-//   }
-
-//   if (!form.previousPolicyType) {
-//     errors.previousPolicyType = "Previous policy type is required";
-//   }
-
-//   if (!form.previousIssueDate) {
-//     errors.previousIssueDate = "Previous issue date is required";
-//   }
-
-//   if (!form.previousPolicyStartDate) {
-//     errors.previousPolicyStartDate = "Previous policy start date is required";
-//   }
-
-//   if (!form.previousPolicyDuration) {
-//     errors.previousPolicyDuration = "Previous policy duration is required";
-//   }
-
-//   if (!form.previousPolicyEndDate) {
-//     errors.previousPolicyEndDate = "Previous policy end date is required";
-//   }
-
-//   if (!form.previousClaimTaken) {
-//     errors.previousClaimTaken = "Claim history is required";
-//   }
-
-//   if (!form.previousNcbDiscount) {
-//     errors.previousNcbDiscount = "Previous NCB discount is required";
-//   } else if (parseFloat(form.previousNcbDiscount) < 0 || parseFloat(form.previousNcbDiscount) > 100) {
-//     errors.previousNcbDiscount = "NCB discount must be between 0% and 100%";
-//   }
-
-//   return errors;
-// };
-// ================== STEP 4: Insurance Quotes ==================
-// Alternative: If you don't have actual images, use this placeholder approach:
 
 // ================== STEP 4: Insurance Quotes ==================
 const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onInsuranceQuotesUpdate, onQuoteAccepted, isEditMode = false }) => {
@@ -4217,6 +4171,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 // ================== STEP 5: New Policy Details ==================
 const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, acceptedQuote }) => {
   // Insurance companies dropdown options (same as InsuranceQuotes)
+  const [insuranceCompanySuggestions, setInsuranceCompanySuggestions] = useState([]);
+const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = useState(false);
   const insuranceCompanies = [
     "ICICI Lombard",
     "HDFC Ergo", 
@@ -4579,6 +4535,37 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     return fallbackValue;
   };
 
+
+
+
+
+
+
+
+   // ⭐ ADD THESE HANDLER FUNCTIONS ⭐
+  const handleInsuranceCompanyChange = (e) => {
+    const value = e.target.value;
+    handleChange(e);
+    
+    if (value) {
+      const filtered = insuranceCompanies.filter(company =>
+        company.toLowerCase().includes(value.toLowerCase())
+      );
+      setInsuranceCompanySuggestions(filtered);
+      setShowInsuranceCompanySuggestions(true);
+    } else {
+      setShowInsuranceCompanySuggestions(false);
+    }
+  };
+
+  const selectInsuranceCompany = (company) => {
+    handleChange({ target: { name: 'insuranceCompany', value: company } });
+    setShowInsuranceCompanySuggestions(false);
+  };
+
+
+
+
   // ENHANCED: Auto-fill effect with better quote handling
   useEffect(() => {
     if (acceptedQuote) {
@@ -4797,35 +4784,59 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
           )}
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Insurance Company - Dropdown */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Insurance Company *
-            </label>
-            <select
-              name="insuranceCompany"
-              value={form.insuranceCompany || ""}
-              onChange={handleChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.insuranceCompany ? "border-red-500" : "border-gray-300"
-              }`}
-            >
-              <option value="">Select Insurance Company</option>
-              {insuranceCompanies.map((company, index) => (
-                <option key={index} value={company}>
-                  {company}
-                </option>
-              ))}
-            </select>
-            {acceptedQuote && form.insuranceCompany === acceptedQuote.insuranceCompany && (
-              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <FaCheckCircle className="w-3 h-3" />
-                From accepted quote
-                {lastAcceptedQuoteId !== acceptedQuote.id && <span className="text-orange-500"> (Updating...)</span>}
-              </p>
-            )}
-            {errors.insuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.insuranceCompany}</p>}
+         
+         {/* Insurance Company - Auto-suggestion */}
+<div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Insurance Company *
+  </label>
+  <div className="relative">
+    <input
+      type="text"
+      name="insuranceCompany"
+      value={form.insuranceCompany || ""}
+      onChange={handleInsuranceCompanyChange}
+      onFocus={() => {
+        if (form.insuranceCompany) {
+          const filtered = insuranceCompanies.filter(company =>
+            company.toLowerCase().includes(form.insuranceCompany.toLowerCase())
+          );
+          setInsuranceCompanySuggestions(filtered);
+        } else {
+          setInsuranceCompanySuggestions(insuranceCompanies);
+        }
+        setShowInsuranceCompanySuggestions(true);
+      }}
+      onBlur={() => setTimeout(() => setShowInsuranceCompanySuggestions(false), 200)}
+      placeholder="Type insurance company"
+      className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+        errors.insuranceCompany ? "border-red-500" : "border-gray-300"
+      }`}
+    />
+    
+    {showInsuranceCompanySuggestions && insuranceCompanySuggestions.length > 0 && (
+      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        {insuranceCompanySuggestions.map((company, index) => (
+          <div
+            key={index}
+            className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+            onMouseDown={(e) => e.preventDefault()} // Prevent input blur
+            onClick={() => selectInsuranceCompany(company)}
+          >
+            {company}
           </div>
+        ))}
+      </div>
+    )}
+  </div>
+  {acceptedQuote && form.insuranceCompany === acceptedQuote.insuranceCompany && (
+    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+      <FaCheckCircle className="w-3 h-3" />
+      From accepted quote
+    </p>
+  )}
+  {errors.insuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.insuranceCompany}</p>}
+</div>
 
           {/* Policy Type */}
           <div>
@@ -5121,7 +5132,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
         optional: []
       },
       usedCar: {
-        mandatory: ["RC", "Form 29", "Form 30 page 1", "Form 30 page 2", "Pan Number", "GST/Adhaar Card","Previous Year Policy"],
+        mandatory: ["RC", "Form 29", "Form 30 page 1", "Form 30 page 2", "Pan Number", "GST/Adhaar Card","Previous Year Policy","New Year Policy"],
         optional: []
       },
       usedCarRenewal: {
@@ -9079,7 +9090,7 @@ const NewPolicyPage = () => {
     idv: "",
     ncb: "",
     duration: "",
-    // New Policy fields - FIXED: Added missing expiry date fields
+    // New Policy fields
     policyIssued: "",
     insuranceCompany: "",
     policyNumber: "",
@@ -9091,10 +9102,10 @@ const NewPolicyPage = () => {
     insuranceDuration: "",
     idvAmount: "",
     totalPremium: "",
-    policyType: "", // FIXED: Added policyType field
-    odExpiryDate: "", // FIXED: Added this missing field
-    tpExpiryDate: "", // FIXED: Added this missing field
-    // Documents - changed to object for tagging
+    policyType: "",
+    odExpiryDate: "",
+    tpExpiryDate: "",
+    // Documents
     documents: {},
     documentTags: {},
     // Payment fields
@@ -9117,7 +9128,10 @@ const NewPolicyPage = () => {
     ncbAmount: "",
     subVention: "",
     // Additional fields
-    policyPrefilled: false
+    policyPrefilled: false,
+    // Renewal fields
+    renewal_id: "",
+    isRenewal: false
   });
   const [policyId, setPolicyId] = useState(id || null);
   const [isSaving, setIsSaving] = useState(false);
@@ -9132,6 +9146,241 @@ const NewPolicyPage = () => {
   // FIXED: Add debounce utility and update prevention
   const [isUpdating, setIsUpdating] = useState(false);
   const lastUpdateRef = useRef(0);
+
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  
+  // Get individual parameters
+  const isRenewal = queryParams.get('renewal') === 'true';
+  const renewalPolicyId = queryParams.get('renewal_id');
+
+  // ============ COMPREHENSIVE POLICY DURATION UTILITIES ============
+  
+  // Unified duration mappings for ALL components
+  const policyDurationMappings = {
+    // Comprehensive policies - simple numbers to comprehensive labels
+    "1": { 
+      value: "1", 
+      label: "1yr OD + 3yr TP",
+      odYears: 1,
+      tpYears: 3,
+      type: "comprehensive"
+    },
+    "2": { 
+      value: "2", 
+      label: "2yr OD + 3yr TP",
+      odYears: 2,
+      tpYears: 3,
+      type: "comprehensive"
+    },
+    "3": { 
+      value: "3", 
+      label: "3yr OD + 3yr TP",
+      odYears: 3,
+      tpYears: 3,
+      type: "comprehensive"
+    },
+    
+    // Specific comprehensive formats
+    "1yr_od_1yr_tp": { 
+      value: "1yr_od_1yr_tp", 
+      label: "1yr OD + 1yr TP",
+      odYears: 1,
+      tpYears: 1,
+      type: "comprehensive"
+    },
+    
+    // Standalone OD policies
+    "1_od": { 
+      value: "1_od", 
+      label: "1 Year",
+      odYears: 1,
+      tpYears: 0,
+      type: "standalone"
+    },
+    "2_od": { 
+      value: "2_od", 
+      label: "2 Years",
+      odYears: 2,
+      tpYears: 0,
+      type: "standalone"
+    },
+    "3_od": { 
+      value: "3_od", 
+      label: "3 Years",
+      odYears: 3,
+      tpYears: 0,
+      type: "standalone"
+    },
+    
+    // Third Party policies
+    "1_tp": { 
+      value: "1_tp", 
+      label: "1 Year",
+      odYears: 0,
+      tpYears: 1,
+      type: "thirdParty"
+    },
+    "2_tp": { 
+      value: "2_tp", 
+      label: "2 Years",
+      odYears: 0,
+      tpYears: 2,
+      type: "thirdParty"
+    },
+    "3_tp": { 
+      value: "3_tp", 
+      label: "3 Years",
+      odYears: 0,
+      tpYears: 3,
+      type: "thirdParty"
+    },
+    
+    // Simple year formats (backward compatibility)
+    "1 Year": { 
+      value: "1 Year", 
+      label: "1 Year",
+      odYears: 1,
+      tpYears: 1,
+      type: "simple"
+    },
+    "2 Years": { 
+      value: "2 Years", 
+      label: "2 Years",
+      odYears: 2,
+      tpYears: 2,
+      type: "simple"
+    },
+    "3 Years": { 
+      value: "3 Years", 
+      label: "3 Years",
+      odYears: 3,
+      tpYears: 3,
+      type: "simple"
+    }
+  };
+
+  // Format policy duration for display (used everywhere)
+  const formatPolicyDuration = (duration) => {
+    if (!duration) return '';
+    
+    // If it's already a properly formatted label, return as is
+    if (typeof duration === 'string' && (duration.includes('OD') || duration.includes('Year') || duration.includes('Years'))) {
+      return duration;
+    }
+
+    // Convert to string for consistent comparison
+    const durationStr = String(duration).trim();
+    
+    // Look up in mappings
+    const mapping = policyDurationMappings[durationStr];
+    if (mapping) {
+      return mapping.label;
+    }
+    
+    // Fallback: return as is
+    return durationStr;
+  };
+
+  // Get duration options based on policy type (used in PreviousPolicy and NewPolicy)
+  const getPolicyDurationOptions = (policyType) => {
+    const options = [];
+    
+    switch (policyType) {
+      case "comprehensive":
+        options.push(
+          { value: "1yr_od_1yr_tp", label: "1yr OD + 1yr TP" },
+          { value: "1", label: "1yr OD + 3yr TP" },
+          { value: "2", label: "2yr OD + 3yr TP" },
+          { value: "3", label: "3yr OD + 3yr TP" }
+        );
+        break;
+        
+      case "standalone":
+        options.push(
+          { value: "1_od", label: "1 Year" },
+          { value: "2_od", label: "2 Years" },
+          { value: "3_od", label: "3 Years" }
+        );
+        break;
+        
+      case "thirdParty":
+        options.push(
+          { value: "1_tp", label: "1 Year" },
+          { value: "2_tp", label: "2 Years" },
+          { value: "3_tp", label: "3 Years" }
+        );
+        break;
+        
+      default:
+        // Default comprehensive options
+        options.push(
+          { value: "1yr_od_1yr_tp", label: "1yr OD + 1yr TP" },
+          { value: "1", label: "1yr OD + 3yr TP" },
+          { value: "2", label: "2yr OD + 3yr TP" },
+          { value: "3", label: "3yr OD + 3yr TP" }
+        );
+    }
+    
+    return options;
+  };
+
+  // Map quote duration to form duration (used in NewPolicyDetails)
+  const mapQuoteDurationToForm = (quoteDuration, policyType) => {
+    if (!quoteDuration) return '';
+    
+    const durationStr = String(quoteDuration).trim();
+    
+    // First, try exact match
+    const exactMatch = Object.values(policyDurationMappings).find(
+      mapping => mapping.value === durationStr || mapping.label === durationStr
+    );
+    
+    if (exactMatch) {
+      return exactMatch.value;
+    }
+    
+    // For comprehensive policies, handle simple numbers
+    if (policyType === "comprehensive" && ["1", "2", "3"].includes(durationStr)) {
+      return durationStr; // Use simple numbers for comprehensive
+    }
+    
+    // Try partial matching for labels
+    const partialMatch = Object.values(policyDurationMappings).find(mapping => 
+      durationStr.includes(mapping.value) || mapping.label.includes(durationStr)
+    );
+    
+    if (partialMatch) {
+      return partialMatch.value;
+    }
+    
+    // Fallback: return the first option for the policy type
+    const options = getPolicyDurationOptions(policyType);
+    return options.length > 0 ? options[0].value : '';
+  };
+
+  // Calculate expiry dates based on duration (used in PreviousPolicy and NewPolicy)
+  const calculateExpiryDates = (startDate, durationValue, policyType) => {
+    if (!startDate || !durationValue) return { odExpiry: '', tpExpiry: '' };
+    
+    const mapping = policyDurationMappings[durationValue];
+    if (!mapping) return { odExpiry: '', tpExpiry: '' };
+    
+    const start = new Date(startDate);
+    
+    const calculateDate = (years) => {
+      if (years === 0) return '';
+      const date = new Date(start);
+      date.setFullYear(date.getFullYear() + years);
+      date.setDate(date.getDate() - 1); // Subtract 1 day
+      return date.toISOString().split('T')[0];
+    };
+    
+    return {
+      odExpiry: calculateDate(mapping.odYears),
+      tpExpiry: calculateDate(mapping.tpYears)
+    };
+  };
 
   // Debounce utility function
   const debounce = (func, wait) => {
@@ -9265,14 +9514,67 @@ const NewPolicyPage = () => {
     });
   }, [paymentLedger]);
 
-  // FIXED: Optimized quote acceptance handler
+  // FIXED: Optimized quote acceptance handler with renewal reset logic
   const handleQuoteAccepted = useCallback((quote) => {
     console.log("✅ Quote accepted in parent:", quote);
-    setAcceptedQuote(quote);
     
-    // Don't auto-update policy immediately to prevent network overload
-    // User can manually save when ready
-  }, []);
+    // If this is a renewal case and we're accepting a new quote, clear all subsequent steps
+    if (form.isRenewal) {
+      console.log("🔄 Renewal case - clearing subsequent steps data");
+      
+      // Reset all fields from Insurance Quotes onward
+      setForm(prev => ({
+        ...prev,
+        // Reset insurance quote legacy fields
+        insurer: "",
+        coverageType: "",
+        premium: "",
+        idv: "",
+        ncb: "",
+        duration: "",
+        // Reset new policy fields
+        policyIssued: "",
+        insuranceCompany: "",
+        policyNumber: "",
+        covernoteNumber: "",
+        issueDate: "",
+        policyStartDate: "",
+        dueDate: "",
+        ncbDiscount: "",
+        insuranceDuration: "",
+        idvAmount: "",
+        totalPremium: "",
+        policyType: "",
+        odExpiryDate: "",
+        tpExpiryDate: "",
+        // Reset payment fields
+        paymentMadeBy: "Customer",
+        paymentMode: "",
+        paymentAmount: "",
+        paymentDate: "",
+        transactionId: "",
+        receiptDate: "",
+        bankName: "",
+        subvention_payment: "No Subvention",
+        paymentStatus: "Payment Pending",
+        totalPaidAmount: 0,
+        // Reset payout fields
+        netPremium: "",
+        odAddonAmount: "",
+        netAmount: "",
+        odAmount: "",
+        ncbAmount: "",
+        subVention: ""
+      }));
+      
+      // Clear payment ledger
+      setPaymentLedger([]);
+      
+      setSaveMessage("🔄 Renewal case: New quote accepted. Subsequent steps have been reset for new policy data.");
+    }
+    
+    setAcceptedQuote(quote);
+  }, [form.isRenewal]);
 
   // ENHANCED: Function to update payment ledger from Payment component
   const handlePaymentLedgerUpdate = (ledger) => {
@@ -9324,13 +9626,250 @@ const NewPolicyPage = () => {
     console.log("Component mounted - Edit Mode:", isEditMode, "Policy ID:", id);
   }, [isEditMode, id]);
 
+  // FIXED: Initialize renewal state on component mount with proper handling
+  useEffect(() => {
+    if (isRenewal) {
+      console.log("🔄 Initializing renewal case:", {
+        isRenewal,
+        renewalPolicyId,
+        currentPolicyId: id,
+        location: window.location.href
+      });
+      
+      // Set renewal flags and convert vehicle type to used for renewals
+      setForm(prev => ({
+        ...prev,
+        isRenewal: true,
+        renewal_id: renewalPolicyId || "",
+        vehicleType: "used" // Renewals are always for used vehicles
+      }));
+
+      // If we have a renewal policy ID and NO current ID, fetch its data for NEW renewal
+      if (renewalPolicyId && !id) {
+        console.log("📋 Fetching renewal source policy data for NEW renewal:", renewalPolicyId);
+        fetchRenewalPolicyData(renewalPolicyId);
+      }
+      // If we have both renewalPolicyId and id, we're editing an existing renewal
+      else if (renewalPolicyId && id) {
+        console.log("📝 Editing existing renewal policy:", id);
+        // The main useEffect below will handle this case
+      }
+    }
+  }, [isRenewal, renewalPolicyId, id]);
+
+  // FIXED: Handle both regular edit and renewal cases
   useEffect(() => {
     if (id) {
-      fetchPolicyData(id);
+      if (isRenewal) {
+        console.log("🔄 Renewal edit mode - fetching renewal policy data for ID:", id);
+        fetchRenewalPolicyData(id);
+      } else {
+        console.log("📝 Regular edit mode - fetching policy data for ID:", id);
+        fetchPolicyData(id);
+      }
     }
-  }, [id]);
+  }, [id, isRenewal]);
 
-  // ENHANCED: Function to fetch policy data with proper expiry date handling
+  // DEBUG: Track renewal state changes
+  useEffect(() => {
+    console.log("🔍 Renewal State Debug:", {
+      isRenewal,
+      renewalPolicyId,
+      id,
+      step,
+      formIsRenewal: form.isRenewal,
+      formRenewalId: form.renewal_id,
+      loadingPolicy
+    });
+  }, [isRenewal, renewalPolicyId, id, step, form.isRenewal, form.renewal_id, loadingPolicy]);
+
+  // NEW: Effect to handle initial step setting for renewal cases
+  useEffect(() => {
+    if (form.isRenewal && !loadingPolicy) {
+      // For renewal cases, start directly on step 3 (Previous Policy)
+      if (step === 1) {
+        console.log("🔄 Renewal case detected - navigating directly to Previous Policy step");
+        setStep(3);
+        
+        // Clear any accepted quote for renewal cases
+        if (acceptedQuote) {
+          console.log("🔄 Clearing accepted quote for renewal case");
+          setAcceptedQuote(null);
+        }
+      }
+    }
+  }, [form.isRenewal, loadingPolicy, step, acceptedQuote]);
+
+  // ENHANCED: Function to fetch renewal policy data for both new renewals and editing existing renewals
+  const fetchRenewalPolicyData = async (policyId) => {
+    setLoadingPolicy(true);
+    try {
+      console.log("🔍 Fetching renewal policy data for ID:", policyId);
+      const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
+      const policyData = response.data;
+      
+      console.log("📦 Full Renewal API Response:", policyData);
+      
+      if (!policyData || !policyData.data) {
+        console.error("❌ No renewal policy data received from API");
+        setSaveMessage("❌ No renewal policy data found for this ID");
+        return;
+      }
+
+      const renewalData = policyData.data;
+      console.log("📊 Renewal Policy Data:", renewalData);
+      
+      // Check if this is a new renewal (creating from existing policy) 
+      // or editing an existing renewal policy
+      const isNewRenewal = !renewalData.isRenewal; // If the source policy is not already a renewal
+      
+      if (isNewRenewal) {
+        console.log("🔄 Creating NEW renewal from existing policy");
+        // Map renewal policy data to current form for NEW renewal case
+        // Only populate Case Details, Vehicle Details, and Previous Policy
+        const renewalFormData = {
+          // Basic info
+          buyer_type: renewalData.buyer_type || "individual",
+          vehicleType: "used", // Renewals are always used vehicles
+          insurance_category: renewalData.insurance_category || "motor",
+          status: "draft",
+          
+          // Customer details
+          customerName: renewalData.customer_details?.name || "",
+          mobile: renewalData.customer_details?.mobile || "",
+          email: renewalData.customer_details?.email || "",
+          employeeName: renewalData.customer_details?.employeeName || "",
+          age: renewalData.customer_details?.age || "",
+          gender: renewalData.customer_details?.gender || "",
+          panNumber: renewalData.customer_details?.panNumber || "",
+          aadhaarNumber: renewalData.customer_details?.aadhaarNumber || "",
+          residenceAddress: renewalData.customer_details?.residenceAddress || "",
+          pincode: renewalData.customer_details?.pincode || "",
+          city: renewalData.customer_details?.city || "",
+          alternatePhone: renewalData.customer_details?.alternatePhone || "",
+          
+          // Corporate fields
+          companyName: renewalData.customer_details?.companyName || "",
+          contactPersonName: renewalData.customer_details?.contactPersonName || "",
+          companyPanNumber: renewalData.customer_details?.companyPanNumber || "",
+          gstNumber: renewalData.customer_details?.gstNumber || "",
+          
+          // Nominee
+          nomineeName: renewalData.nominee?.name || "",
+          relation: renewalData.nominee?.relation || "",
+          nomineeAge: renewalData.nominee?.age || "",
+          
+          // Reference
+          referenceName: renewalData.reference?.name || renewalData.refrence?.name || "",
+          referencePhone: renewalData.reference?.phone || renewalData.refrence?.phone || "",
+          
+          // Vehicle details
+          regNo: renewalData.vehicle_details?.regNo || "",
+          make: renewalData.vehicle_details?.make || "",
+          model: renewalData.vehicle_details?.model || "",
+          variant: renewalData.vehicle_details?.variant || "",
+          engineNo: renewalData.vehicle_details?.engineNo || "",
+          chassisNo: renewalData.vehicle_details?.chassisNo || "",
+          makeMonth: renewalData.vehicle_details?.makeMonth || "",
+          makeYear: renewalData.vehicle_details?.makeYear || "",
+          
+          // Map new policy data from renewal to previous policy for the renewal case
+          previousInsuranceCompany: renewalData.policy_info?.insuranceCompany || "",
+          previousPolicyNumber: renewalData.policy_info?.policyNumber || "",
+          previousPolicyType: renewalData.policy_info?.policyType || "",
+          previousIssueDate: renewalData.policy_info?.issueDate || "",
+          previousPolicyStartDate: renewalData.policy_info?.policyStartDate || "",
+          previousPolicyDuration: renewalData.policy_info?.insuranceDuration || "",
+          previousPolicyEndDate: renewalData.policy_info?.odExpiryDate || renewalData.policy_info?.tpExpiryDate || "",
+          previousTpExpiryDate: renewalData.policy_info?.tpExpiryDate || "",
+          previousDueDate: renewalData.policy_info?.dueDate || "",
+          previousClaimTaken: renewalData.previous_policy?.claimTakenLastYear || "no",
+          previousNcbDiscount: renewalData.policy_info?.ncbDiscount || renewalData.previous_policy?.ncbDiscount || "",
+          
+          // Renewal fields
+          renewal_id: policyId,
+          isRenewal: true,
+          
+          // CRITICAL: Reset all subsequent steps for new renewal
+          insuranceQuotes: [],
+          insurer: "",
+          coverageType: "",
+          premium: "",
+          idv: "",
+          ncb: "",
+          duration: "",
+          policyIssued: "",
+          insuranceCompany: "",
+          policyNumber: "",
+          covernoteNumber: "",
+          issueDate: "",
+          policyStartDate: "",
+          dueDate: "",
+          ncbDiscount: "",
+          insuranceDuration: "",
+          idvAmount: "",
+          totalPremium: "",
+          policyType: "",
+          odExpiryDate: "",
+          tpExpiryDate: "",
+          documents: {},
+          documentTags: {},
+          paymentMadeBy: "Customer",
+          paymentMode: "",
+          paymentAmount: "",
+          paymentDate: "",
+          transactionId: "",
+          receiptDate: "",
+          bankName: "",
+          subvention_payment: "No Subvention",
+          paymentStatus: "Payment Pending",
+          totalPaidAmount: 0,
+          netPremium: "",
+          odAddonPercentage: 10,
+          odAddonAmount: "",
+          netAmount: "",
+          odAmount: "",
+          ncbAmount: "",
+          subVention: "",
+          policyPrefilled: true
+        };
+        
+        console.log("✅ NEW Renewal Form Data Prepared:", renewalFormData);
+        setForm(renewalFormData);
+        
+        // CRITICAL: Clear accepted quote for new renewal
+        setAcceptedQuote(null);
+        setPaymentLedger([]);
+        
+        setSaveMessage("✅ Renewal case initialized! Previous policy data has been populated. Please proceed with new insurance quotes.");
+        
+      } else {
+        console.log("📝 Editing EXISTING renewal policy");
+        // This is editing an existing renewal policy - use the regular fetchPolicyData logic
+        // but ensure renewal flags are preserved and accepted quote is cleared
+        await fetchPolicyData(policyId);
+        
+        // Ensure renewal flags are set and clear accepted quote
+        setForm(prev => ({
+          ...prev,
+          isRenewal: true,
+          renewal_id: renewalData.renewal_id || policyId
+        }));
+        
+        // Clear accepted quote for renewal edit
+        setAcceptedQuote(null);
+        console.log("🔄 Cleared accepted quote for renewal edit case");
+      }
+      
+    } catch (error) {
+      console.error("❌ Error fetching renewal policy data:", error);
+      setSaveMessage(`❌ Error loading renewal data: ${error.message}`);
+    } finally {
+      setLoadingPolicy(false);
+    }
+  };
+
+  // ENHANCED: Function to fetch policy data with consistent duration handling
   const fetchPolicyData = async (policyId) => {
     setLoadingPolicy(true);
     try {
@@ -9349,7 +9888,7 @@ const NewPolicyPage = () => {
       const actualData = policyData.data;
       console.log("📊 Actual Policy Data:", actualData);
       
-      // FIXED: Process insurance quotes to ensure NCB and policy term are properly set
+      // FIXED: Process insurance quotes with consistent duration handling
       let processedInsuranceQuotes = [];
       if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
         processedInsuranceQuotes = actualData.insurance_quotes.map(quote => {
@@ -9357,15 +9896,12 @@ const NewPolicyPage = () => {
           let ncbDiscountAmount = quote.ncbDiscountAmount;
           if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
             ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
-            console.log("🔢 Calculated missing NCB discount in fetch:", ncbDiscountAmount);
           }
 
-          // Ensure policy duration label is set if missing
+          // ENHANCED: Use consistent policy duration formatting
           let policyDurationLabel = quote.policyDurationLabel;
           if (!policyDurationLabel && quote.policyDuration) {
-            // Create basic label if missing
-            policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString())//quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`;
-            console.log("📅 Set policy duration label in fetch:", policyDurationLabel);
+            policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
           }
 
           return {
@@ -9376,7 +9912,7 @@ const NewPolicyPage = () => {
           };
         });
         
-        console.log("✅ Processed insurance quotes in fetch:", processedInsuranceQuotes);
+        console.log("✅ Processed insurance quotes with consistent duration:", processedInsuranceQuotes);
       }
 
       // CRITICAL FIX: Properly map previous policy data including TP expiry date
@@ -9411,6 +9947,12 @@ const NewPolicyPage = () => {
         if (!acceptedQuoteData && processedInsuranceQuotes.length > 0) {
           acceptedQuoteData = processedInsuranceQuotes[0];
         }
+      }
+
+      // NEW: Clear accepted quote if this is a renewal case
+      if (actualData.isRenewal) {
+        console.log("🔄 Renewal case detected - clearing accepted quote");
+        acceptedQuoteData = null;
       }
 
       // Create a clean transformed data object with ALL fields properly mapped
@@ -9525,28 +10067,27 @@ const NewPolicyPage = () => {
         documents: documentsObject,
         documentTags: documentTagsObject,
         
+        // Renewal fields
+        renewal_id: actualData.renewal_id || "",
+        isRenewal: actualData.isRenewal || false,
+        
         // System fields
         ts: actualData.ts || Date.now(),
         created_by: actualData.created_by || "ADMIN123",
         policyPrefilled: true
       };
       
-      console.log("✅ Transformed Form Data:", transformedData);
-      console.log("📋 Previous TP Expiry Date:", transformedData.previousTpExpiryDate);
-      console.log("📋 Previous Policy End Date:", transformedData.previousPolicyEndDate);
-      console.log("📋 New Policy OD Expiry Date:", transformedData.odExpiryDate);
-      console.log("📋 New Policy TP Expiry Date:", transformedData.tpExpiryDate);
-      console.log("📋 New Policy Type:", transformedData.policyType);
-      console.log("📋 Previous Claim Taken:", transformedData.previousClaimTaken);
-      console.log("🚗 Vehicle Type:", transformedData.vehicleType);
-      console.log("💰 Processed Insurance Quotes:", transformedData.insuranceQuotes);
+      console.log("✅ Transformed Form Data with consistent duration handling:", transformedData);
       
       setForm(transformedData);
       
-      // Set accepted quote from processed quotes
-      if (acceptedQuoteData) {
+      // Set accepted quote from processed quotes (only if not renewal)
+      if (acceptedQuoteData && !actualData.isRenewal) {
         console.log("✅ Setting accepted quote from processed data:", acceptedQuoteData.insuranceCompany);
         setAcceptedQuote(acceptedQuoteData);
+      } else if (actualData.isRenewal) {
+        console.log("🔄 Renewal case - not setting accepted quote");
+        setAcceptedQuote(null);
       }
       
       // Set payment ledger from payment history if available
@@ -9658,7 +10199,7 @@ const NewPolicyPage = () => {
     }));
   };
 
-  // ============ FIXED INSURANCE QUOTES UPDATE ============
+  // ============ ENHANCED INSURANCE QUOTES UPDATE ============
   const handleInsuranceQuotesUpdate = useCallback((quotesArray) => {
     // Prevent infinite loop by checking if quotes actually changed
     const currentQuotes = form.insuranceQuotes || [];
@@ -9672,10 +10213,10 @@ const NewPolicyPage = () => {
         ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
       }
 
-      // Ensure policy duration label is set if missing
+      // ENHANCED: Use consistent policy duration formatting
       let policyDurationLabel = quote.policyDurationLabel;
       if (!policyDurationLabel && quote.policyDuration) {
-        policyDurationLabel = quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`;
+        policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
       }
 
       return {
@@ -9688,13 +10229,7 @@ const NewPolicyPage = () => {
 
     // Only update if quotes actually changed
     if (JSON.stringify(currentQuotes) !== JSON.stringify(processedQuotes)) {
-      console.log("💰 Insurance quotes updated in main component:", processedQuotes.length, "quotes");
-      console.log("📊 Sample quote details:", processedQuotes[0] ? {
-        ncbDiscount: processedQuotes[0].ncbDiscount,
-        ncbDiscountAmount: processedQuotes[0].ncbDiscountAmount,
-        policyDuration: processedQuotes[0].policyDuration,
-        policyDurationLabel: processedQuotes[0].policyDurationLabel
-      } : 'No quotes');
+      console.log("💰 Insurance quotes updated with consistent duration formatting:", processedQuotes.length, "quotes");
       
       setForm((f) => ({ 
         ...f, 
@@ -9772,7 +10307,7 @@ const NewPolicyPage = () => {
       return value;
     }));
 
-    // FIXED: Clean up insurance quotes to ensure NCB and policy term are properly saved
+    // FIXED: Clean up insurance quotes with consistent duration handling
     if (sanitized.insurance_quotes && Array.isArray(sanitized.insurance_quotes)) {
       sanitized.insurance_quotes = sanitized.insurance_quotes.map(quote => {
         // Calculate NCB discount amount if missing
@@ -9781,10 +10316,10 @@ const NewPolicyPage = () => {
           ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
         }
 
-        // Ensure policy duration label is set
+        // ENHANCED: Use consistent policy duration formatting
         let policyDurationLabel = quote.policyDurationLabel;
         if (!policyDurationLabel && quote.policyDuration) {
-          policyDurationLabel = quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`;
+          policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
         }
 
         return {
@@ -9793,9 +10328,9 @@ const NewPolicyPage = () => {
           coverageType: quote.coverageType || 'comprehensive',
           idv: parseFloat(quote.idv) || 0,
           policyDuration: quote.policyDuration || "1",
-          policyDurationLabel: policyDurationLabel || "1 Year", // FIXED: Ensure label is included
+          policyDurationLabel: policyDurationLabel || formatPolicyDuration(quote.policyDuration || "1"),
           ncbDiscount: parseInt(quote.ncbDiscount) || 0,
-          ncbDiscountAmount: ncbDiscountAmount || 0, // FIXED: Ensure amount is included
+          ncbDiscountAmount: ncbDiscountAmount || 0,
           odAmount: parseFloat(quote.odAmount) || 0,
           odAmountAfterNcb: parseFloat(quote.odAmountAfterNcb) || (parseFloat(quote.odAmount) - ncbDiscountAmount),
           thirdPartyAmount: parseFloat(quote.thirdPartyAmount) || 0,
@@ -9809,13 +10344,18 @@ const NewPolicyPage = () => {
           accepted: Boolean(quote.accepted),
           createdAt: quote.createdAt || new Date().toISOString(),
           updatedAt: quote.updatedAt || new Date().toISOString(),
-          // Remove any React component references
-          companyLogo: undefined,
-          companyFallbackLogo: undefined,
-          companyColor: undefined,
-          companyBgColor: undefined
         };
       });
+    }
+
+    // Clean up previous policy data with consistent duration handling
+    if (sanitized.previous_policy && sanitized.previous_policy.policyDuration) {
+      sanitized.previous_policy.policyDurationLabel = formatPolicyDuration(sanitized.previous_policy.policyDuration);
+    }
+
+    // Clean up new policy data with consistent duration handling
+    if (sanitized.policy_info && sanitized.policy_info.insuranceDuration) {
+      sanitized.policy_info.insuranceDurationLabel = formatPolicyDuration(sanitized.policy_info.insuranceDuration);
     }
 
     // Clean up payment ledger
@@ -9900,7 +10440,10 @@ const NewPolicyPage = () => {
         insurance_quotes: form.insuranceQuotes || [],
         ts: Date.now(),
         created_by: form.created_by || "ADMIN123",
-        policyPrefilled: form.policyPrefilled || false
+        policyPrefilled: form.policyPrefilled || false,
+        // Add renewal fields if this is a renewal
+        renewal_id: form.renewal_id || "",
+        isRenewal: form.isRenewal || false
       };
 
       // Sanitize data before sending
@@ -9941,7 +10484,7 @@ const NewPolicyPage = () => {
     }
   };
 
-  // FIXED: Enhanced updatePolicy function with network error prevention
+  // FIXED: Enhanced updatePolicy function with network error prevention and renewal support
   const updatePolicy = async (overrideData = null, retryCount = 0) => {
     // Prevent multiple simultaneous updates
     if (isUpdating) {
@@ -10018,7 +10561,10 @@ const NewPolicyPage = () => {
                 name: form.referenceName || "",
                 phone: form.referencePhone || ""
               },
-              policyPrefilled: form.policyPrefilled || false
+              policyPrefilled: form.policyPrefilled || false,
+              // Include renewal fields
+              renewal_id: form.renewal_id || "",
+              isRenewal: form.isRenewal || false
             };
             break;
           case 2:
@@ -10033,7 +10579,10 @@ const NewPolicyPage = () => {
                 makeMonth: form.makeMonth || "",
                 makeYear: form.makeYear || ""
               },
-              vehicleType: form.vehicleType
+              vehicleType: form.vehicleType,
+              // Include renewal fields
+              renewal_id: form.renewal_id || "",
+              isRenewal: form.isRenewal || false
             };
             break;
           case 3:
@@ -10052,7 +10601,10 @@ const NewPolicyPage = () => {
                   dueDate: form.previousDueDate || "",
                   claimTakenLastYear: form.previousClaimTaken || "no",
                   ncbDiscount: parseFloat(form.previousNcbDiscount) || 0
-                }
+                },
+                // Include renewal fields
+                renewal_id: form.renewal_id || "",
+                isRenewal: form.isRenewal || false
               };
             }
             break;
@@ -10065,7 +10617,10 @@ const NewPolicyPage = () => {
                 idv: parseFloat(form.idv) || 0,
                 ncb: form.ncb || "",
                 duration: form.duration || ""
-              }
+              },
+              // Include renewal fields
+              renewal_id: form.renewal_id || "",
+              isRenewal: form.isRenewal || false
             };
             break;
           case 5:
@@ -10086,7 +10641,10 @@ const NewPolicyPage = () => {
                 policyType: form.policyType || "", // FIXED: Added policyType
                 odExpiryDate: form.odExpiryDate || "", // FIXED: Added odExpiryDate
                 tpExpiryDate: form.tpExpiryDate || "" // FIXED: Added tpExpiryDate
-              }
+              },
+              // Include renewal fields
+              renewal_id: form.renewal_id || "",
+              isRenewal: form.isRenewal || false
             };
             break;
           case 6:
@@ -10097,7 +10655,10 @@ const NewPolicyPage = () => {
               tag: form.documentTags?.[docId] || ""
             }));
             updateData = {
-              documents: documentsArray
+              documents: documentsArray,
+              // Include renewal fields
+              renewal_id: form.renewal_id || "",
+              isRenewal: form.isRenewal || false
             };
             break;
           case 7:
@@ -10118,7 +10679,10 @@ const NewPolicyPage = () => {
                 paymentStatus: paymentStatus,
                 totalPaidAmount: totalPaid
               },
-              payment_ledger: paymentLedger
+              payment_ledger: paymentLedger,
+              // Include renewal fields
+              renewal_id: form.renewal_id || "",
+              isRenewal: form.isRenewal || false
             };
             break;
           case 8:
@@ -10133,20 +10697,27 @@ const NewPolicyPage = () => {
                 netAmount: parseFloat(form.netAmount) || 0
               },
               payment_ledger: paymentLedger,
+              // Include renewal fields
+              renewal_id: form.renewal_id || "",
+              isRenewal: form.isRenewal || false
             };
             break;
           default:
-            updateData = {};
+            updateData = {
+              // Include renewal fields in all updates
+              renewal_id: form.renewal_id || "",
+              isRenewal: form.isRenewal || false
+            };
         }
       }
 
-      // FIXED: Always include insurance quotes in updates with proper processing
+      // FIXED: Always include insurance quotes in updates with consistent duration handling
       if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
         updateData.insurance_quotes = form.insuranceQuotes.map(quote => ({
           ...quote,
-          // Ensure NCB and policy term are properly included
+          // ENHANCED: Use consistent policy duration formatting
           ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
-          policyDurationLabel: quote.policyDurationLabel || (quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`),
+          policyDurationLabel: quote.policyDurationLabel || formatPolicyDuration(quote.policyDuration.toString()),
           odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0))
         }));
       }
@@ -10174,6 +10745,8 @@ const NewPolicyPage = () => {
         paymentLedgerLength: sanitizedUpdateData.payment_ledger?.length || 0,
         insuranceQuotesLength: sanitizedUpdateData.insurance_quotes?.length || 0,
         vehicleType: form.vehicleType,
+        isRenewal: form.isRenewal,
+        renewal_id: form.renewal_id,
         policyInfo: sanitizedUpdateData.policy_info ? {
           policyType: sanitizedUpdateData.policy_info.policyType,
           odExpiryDate: sanitizedUpdateData.policy_info.odExpiryDate,
@@ -10357,11 +10930,11 @@ const NewPolicyPage = () => {
           ncb: form.ncb,
           duration: form.duration
         },
-        // FIXED: Include processed insurance quotes with NCB and policy term
+        // ENHANCED: Include processed insurance quotes with consistent policy duration
         insurance_quotes: form.insuranceQuotes.map(quote => ({
           ...quote,
           ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
-          policyDurationLabel: quote.policyDurationLabel || (quote.policyDuration.includes('yr') ? quote.policyDuration : `${quote.policyDuration} Year${quote.policyDuration !== '1' ? 's' : ''}`),
+          policyDurationLabel: quote.policyDurationLabel || formatPolicyDuration(quote.policyDuration.toString()),
           odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0))
         })),
         policy_info: {
@@ -10407,7 +10980,10 @@ const NewPolicyPage = () => {
         completed_at: Date.now(),
         ts: form.ts,
         created_by: form.created_by,
-        policyPrefilled: form.policyPrefilled || false
+        policyPrefilled: form.policyPrefilled || false,
+        // Include renewal fields in final save
+        renewal_id: form.renewal_id || "",
+        isRenewal: form.isRenewal || false
       };
 
       // Sanitize final data
@@ -10497,6 +11073,7 @@ const NewPolicyPage = () => {
 
   const nextLabel = getNextLabel();
 
+  // ENHANCED: Step props with consistent duration utilities
   const stepProps = {
     form,
     handleChange,
@@ -10512,7 +11089,13 @@ const NewPolicyPage = () => {
     onNextStep: nextStep,
     paymentLedger,
     onPaymentLedgerUpdate: handlePaymentLedgerUpdate,
-    isEditMode: !!id 
+    isEditMode: !!id,
+    // Add duration utilities to ALL components
+    formatPolicyDuration,
+    getPolicyDurationOptions,
+    mapQuoteDurationToForm,
+    calculateExpiryDates,
+    policyDurationMappings
   };
 
   if (loadingPolicy) {
@@ -10522,7 +11105,7 @@ const NewPolicyPage = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-extrabold text-gray-800">
-                Edit Insurance Case #{id}
+                {form.isRenewal ? 'Renew Insurance Case' : 'Edit Insurance Case'} #{id}
               </h1>
               <p className="text-sm text-gray-500">Loading policy data...</p>
             </div>
@@ -10565,13 +11148,15 @@ const NewPolicyPage = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-extrabold text-gray-800">
-              {isEditMode ? 'Edit Insurance Case' : 'New Insurance Case'} 
+              {form.isRenewal ? 'Renew Insurance Case' : isEditMode ? 'Edit Insurance Case' : 'New Insurance Case'} 
               {policyId && ` #${policyId}`}
+              {form.isRenewal && form.renewal_id && ` (Renewal of #${form.renewal_id})`}
             </h1>
             <p className="text-sm text-gray-500">
-              {isEditMode ? 'Edit existing insurance case' : 'Create a new insurance case'}
+              {form.isRenewal ? 'Renew existing insurance policy' : isEditMode ? 'Edit existing insurance case' : 'Create a new insurance case'}
               {isEditMode && " - All fields are pre-filled with existing data"}
               {form.vehicleType && ` - Vehicle Type: ${form.vehicleType === 'new' ? 'New Car' : 'Used Car'}`}
+              {form.isRenewal && " - This is a renewal case"}
             </p>
           </div>
           <Link
@@ -10581,6 +11166,28 @@ const NewPolicyPage = () => {
             <FaChevronLeft /> Back to Cases
           </Link>
         </div>
+
+        {/* Renewal Info Banner */}
+        {form.isRenewal && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+                  <FaHistory />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-800">Renewal Case</h3>
+                  <p className="text-sm text-blue-600">
+                    This is a renewal of policy #{form.renewal_id}. Customer details, vehicle information, and previous policy data have been pre-filled.
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                Renewal
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -10644,6 +11251,12 @@ const NewPolicyPage = () => {
                         : "bg-blue-100 text-blue-800"
                     }`}>
                       {form.vehicleType === "new" ? "NEW" : "USED"}
+                    </div>
+                  )}
+                  {/* NEW: Show renewal indicator */}
+                  {form.isRenewal && title === "Previous Policy" && (
+                    <div className="mt-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                      PRE-FILLED
                     </div>
                   )}
                 </div>
@@ -10715,6 +11328,7 @@ const NewPolicyPage = () => {
     </div>
   );
 };
+
 function formatPolicyDuration(duration) {
     if (duration.includes('yr') || duration.includes('year')) {
         return duration;
