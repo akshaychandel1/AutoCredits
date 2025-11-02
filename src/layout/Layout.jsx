@@ -5,6 +5,9 @@ import PoliciesPage from "../pages/PoliciesPage/PoliciesPage";
 import NewPolicyPage from "../pages/PoliciesPage/NewPolicyPage";
 import InsuranceCustomers from "../pages/CustomerPage/InsuranceCustomers.jsx";
 import RenewalTable from "../pages/Renewal/RenewalTable.jsx";
+import DocumentsPage from "../pages/DocumentsPage/DocumentsPage.jsx";
+import UnifiedDashboard from "../pages/InsuranceDashboard/UnifiedDashboard.jsx";
+import PaymentDashboard from "../pages/Payment/PaymentDashboard.jsx";
 // import NewCustomerPage from "../pages/CustomerPage/NewCustomerPage.jsx";
 
 const Layout = () => {
@@ -19,11 +22,14 @@ const Layout = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex-1 overflow-auto">
           <Routes>
+            <Route path="/" element={<UnifiedDashboard />} />
             <Route path="/policies" element={<PoliciesPage />} />
             <Route path="/new-policy" element={<NewPolicyPage />} />
             <Route path="/new-policy/:id" element={<NewPolicyPage />} />
             <Route path="/customers" element={<InsuranceCustomers />} />
             <Route path="/renewals" element={<RenewalTable />} />
+            <Route path="/documents" element={<DocumentsPage />} />
+            <Route path="/payments" element={<PaymentDashboard />} />
             {/* <Route path="/new-customer" element={<NewCustomerPage />} />
             <Route path="/edit-customer/:id" element={<NewCustomerPage />} /> */}
             {/* Add other routes later */}

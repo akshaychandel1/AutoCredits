@@ -24,7 +24,7 @@ const Sidebar = () => {
     { name: "Dashboard", path: "/", icon: <FiHome className="text-lg" />, badge: null },
     { name: "Policies", path: "/policies", icon: <FiFileText className="text-lg" /> },
     { name: "Customers", path: "/customers", icon: <FiUsers className="text-lg" />},
-    { name: "Quotations", path: "/quotations", icon: <FiFile className="text-lg" />},
+    // { name: "Quotations", path: "/quotations", icon: <FiFile className="text-lg" />},
     { name: "Payments", path: "/payments", icon: <FiDollarSign className="text-lg" />},
     { name: "Renewals", path: "/renewals", icon: <FiRefreshCw className="text-lg" />},
     { name: "Documents", path: "/documents", icon: <FiFolder className="text-lg" />},

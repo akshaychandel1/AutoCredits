@@ -1276,7 +1276,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                     )}
                     {payout.odAddonPercentage > 0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">OD+Addon %</span>
+                        <span className="text-sm text-gray-600">Payout %</span>
                         <span className="font-semibold text-purple-600">{payout.odAddonPercentage}%</span>
                       </div>
                     )}
