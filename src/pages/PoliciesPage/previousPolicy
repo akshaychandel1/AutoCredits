@@ -1,0 +1,710 @@
+const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
+  // Insurance companies options
+  const insuranceCompanies = [
+    "ICICI Lombard", "HDFC Ergo", "Bajaj Allianz", "New India Assurance", 
+    "United India", "National Insurance", "Oriental Insurance", "Tata AIG",
+    "Reliance General", "Cholamandalam", "SBI General", "Royal Sundaram",
+    "Go Digit", "Acko", "Liberty General", "Future Generali", "IFFCO Tokio",
+    "Shriram General", "Edelweiss General", "Kotak General", "Magma HDI",
+    "Raheja QBE", "Universal Sompo", "Bharti AXA", "Aditya Birla Health"
+  ];
+
+  // NCB options
+  const ncbOptions = [0, 20, 25, 35, 45, 50];
+
+  // Policy type options
+  const policyTypeOptions = [
+    { value: "comprehensive", label: "Comprehensive" },
+    { value: "standalone", label: "Stand Alone OD" },
+    { value: "thirdParty", label: "Third Party" }
+  ];
+
+  // Policy duration options based on policy type
+  const getPolicyDurations = (policyType) => {
+    const durations = {
+      standalone: ["1 Year", "2 Years", "3 Years"],
+      comprehensive: ["1yr OD + 1yr TP", "1yr OD + 3yr TP", "2yr OD + 3yr TP", "3yr OD + 3yr TP"],
+      thirdParty: ["1 Year", "2 Years", "3 Years"]
+    };
+    return durations[policyType] || [];
+  };
+
+  const policyDurations = getPolicyDurations(form.previousPolicyType);
+
+  // State for auto-suggest
+  const [insuranceCompanySuggestions, setInsuranceCompanySuggestions] = useState([]);
+  const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = useState(false);
+  const [ncbSuggestions, setNcbSuggestions] = useState([]);
+  const [showNcbSuggestions, setShowNcbSuggestions] = useState(false);
+  const [durationSuggestions, setDurationSuggestions] = useState([]);
+  const [showDurationSuggestions, setShowDurationSuggestions] = useState(false);
+
+  // Calculate min date for policy start (cannot be before issue date)
+  const getMinPolicyStartDate = () => {
+    return form.previousIssueDate || '';
+  };
+
+  // Calculate policy end date based on policy type
+  const calculatePolicyEndDate = (startDate, duration, policyType) => {
+    if (!startDate || !duration) return '';
+    
+    let years = 1;
+    
+    if (policyType === "standalone" || policyType === "thirdParty") {
+      years = parseInt(duration.match(/\d+/)?.[0]) || 1;
+    } else if (policyType === "comprehensive") {
+      const odMatch = duration.match(/(\d+)yr OD/);
+      years = odMatch ? parseInt(odMatch[1]) : 1;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setFullYear(start.getFullYear() + years);
+    end.setDate(end.getDate() - 1);
+    
+    return end.toISOString().split('T')[0];
+  };
+
+  // Calculate TP expiry date
+  const calculateTpExpiryDate = (startDate, duration, policyType) => {
+    if (!startDate || !duration) return '';
+    
+    let years = policyType === "comprehensive" ? 3 : 1;
+    
+    if (policyType === "comprehensive") {
+      const tpMatch = duration.match(/(\d+)yr TP/);
+      years = tpMatch ? parseInt(tpMatch[1]) : 1;
+    } else if (policyType === "thirdParty") {
+      years = parseInt(duration.match(/\d+/)?.[0]) || 1;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setFullYear(start.getFullYear() + years);
+    end.setDate(end.getDate() - 1);
+    
+    return end.toISOString().split('T')[0];
+  };
+
+  // Handle policy type change
+  const handlePolicyTypeChange = (e) => {
+    const policyType = e.target.value;
+    handleChange(e);
+    
+    // Reset all related fields when policy type changes
+    const resetFields = ['previousPolicyDuration', 'previousPolicyEndDate', 'previousTpExpiryDate'];
+    resetFields.forEach(field => {
+      handleChange({
+        target: { name: field, value: '' }
+      });
+    });
+  };
+
+  // Handle issue date change
+  const handleIssueDateChange = (e) => {
+    const issueDate = e.target.value;
+    handleChange(e);
+    
+    if (form.previousPolicyStartDate && issueDate) {
+      const startDate = new Date(form.previousPolicyStartDate);
+      const newIssueDate = new Date(issueDate);
+      
+      if (startDate < newIssueDate) {
+        handleChange({
+          target: { name: 'previousPolicyStartDate', value: issueDate }
+        });
+        
+        if (form.previousPolicyDuration && form.previousPolicyType) {
+          recalculateAllDates(issueDate, form.previousPolicyDuration);
+        }
+      }
+    }
+  };
+
+  // Handle policy start date change
+  const handlePolicyStartDateChange = (e) => {
+    const startDate = e.target.value;
+    const issueDate = form.previousIssueDate;
+    
+    if (issueDate && startDate) {
+      const start = new Date(startDate);
+      const issue = new Date(issueDate);
+      
+      if (start < issue) {
+        alert("Policy start date cannot be before issue date!");
+        return;
+      }
+    }
+    
+    handleChange(e);
+    
+    if (startDate && form.previousPolicyDuration && form.previousPolicyType) {
+      recalculateAllDates(startDate, form.previousPolicyDuration);
+    }
+  };
+
+  // Recalculate all dates based on start date and duration
+  const recalculateAllDates = (startDate, duration) => {
+    const policyType = form.previousPolicyType;
+    
+    if (policyType === "comprehensive") {
+      const odEndDate = calculatePolicyEndDate(startDate, duration, "comprehensive");
+      const tpEndDate = calculateTpExpiryDate(startDate, duration, "comprehensive");
+      
+      handleChange({ target: { name: 'previousPolicyEndDate', value: odEndDate } });
+      handleChange({ target: { name: 'previousTpExpiryDate', value: tpEndDate } });
+    } else if (policyType === "standalone") {
+      const odEndDate = calculatePolicyEndDate(startDate, duration, "standalone");
+      handleChange({ target: { name: 'previousPolicyEndDate', value: odEndDate } });
+    } else if (policyType === "thirdParty") {
+      const tpEndDate = calculateTpExpiryDate(startDate, duration, "thirdParty");
+      handleChange({ target: { name: 'previousTpExpiryDate', value: tpEndDate } });
+    }
+  };
+
+  // Handle duration change
+  const handleDurationChange = (duration) => {
+    handleChange({
+      target: { name: 'previousPolicyDuration', value: duration }
+    });
+
+    if (form.previousPolicyStartDate && form.previousPolicyType) {
+      recalculateAllDates(form.previousPolicyStartDate, duration);
+    }
+  };
+
+  // Auto-suggest handlers
+  const handleInsuranceCompanyChange = (e) => {
+    const value = e.target.value;
+    handleChange(e);
+    
+    if (value) {
+      const filtered = insuranceCompanies.filter(company =>
+        company.toLowerCase().includes(value.toLowerCase())
+      );
+      setInsuranceCompanySuggestions(filtered);
+      setShowInsuranceCompanySuggestions(true);
+    } else {
+      setShowInsuranceCompanySuggestions(false);
+    }
+  };
+
+  const handleNcbChange = (e) => {
+    const value = e.target.value;
+    handleChange(e);
+    
+    if (value) {
+      const filtered = ncbOptions.filter(ncb =>
+        ncb.toString().includes(value)
+      );
+      setNcbSuggestions(filtered);
+      setShowNcbSuggestions(true);
+    } else {
+      setShowNcbSuggestions(false);
+    }
+  };
+
+  const handleDurationInputChange = (e) => {
+    const value = e.target.value;
+    handleChange(e);
+    
+    if (value && form.previousPolicyType) {
+      const filtered = policyDurations.filter(duration =>
+        duration.toLowerCase().includes(value.toLowerCase())
+      );
+      setDurationSuggestions(filtered);
+      setShowDurationSuggestions(true);
+    } else {
+      setShowDurationSuggestions(false);
+    }
+  };
+
+  // Select from suggestions
+  const selectInsuranceCompany = (company) => {
+    handleChange({ target: { name: 'previousInsuranceCompany', value: company } });
+    setShowInsuranceCompanySuggestions(false);
+  };
+
+  const selectNcb = (ncb) => {
+    handleChange({ target: { name: 'previousNcbDiscount', value: ncb.toString() } });
+    setShowNcbSuggestions(false);
+  };
+
+  const selectDuration = (duration) => {
+    handleDurationChange(duration);
+    setShowDurationSuggestions(false);
+  };
+
+  // Get placeholder text for duration field
+  const getDurationPlaceholder = () => {
+    const placeholders = {
+      standalone: "Type duration (e.g., 1 Year, 2 Years)",
+      comprehensive: "Type duration (e.g., 1yr OD + 1yr TP, 1yr OD + 3yr TP)",
+      thirdParty: "Type duration (e.g., 1 Year, 2 Years)"
+    };
+    return placeholders[form.previousPolicyType] || "Select policy type first";
+  };
+
+  // Get policy type info text
+  const getPolicyTypeInfo = () => {
+    const info = {
+      standalone: "Available: 1 Year, 2 Years, 3 Years (OD coverage only)",
+      comprehensive: "Available: 1yr OD + 1yr TP, 1yr OD + 3yr TP, 2yr OD + 3yr TP, 3yr OD + 3yr TP",
+      thirdParty: "Available: 1 Year, 2 Years, 3 Years (TP coverage only)"
+    };
+    return info[form.previousPolicyType];
+  };
+
+  // Debug effect for TP expiry date
+  useEffect(() => {
+    console.log("🔍 PreviousPolicy Debug State:", {
+      previousTpExpiryDate: form.previousTpExpiryDate,
+      previousPolicyType: form.previousPolicyType,
+      previousPolicyStartDate: form.previousPolicyStartDate,
+      previousPolicyDuration: form.previousPolicyDuration,
+      formData: {
+        previousTpExpiryDate: form.previousTpExpiryDate,
+        previousPolicyEndDate: form.previousPolicyEndDate
+      }
+    });
+  }, [form.previousTpExpiryDate, form.previousPolicyType, form.previousPolicyStartDate, form.previousPolicyDuration]);
+
+  // Render expiry date fields based on policy type
+  const renderExpiryDateFields = () => {
+    const policyType = form.previousPolicyType;
+    
+    if (policyType === "standalone") {
+      return (
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            OD Expiry Date *
+          </label>
+          <input
+            type="date"
+            name="previousPolicyEndDate"
+            value={form.previousPolicyEndDate || ""}
+            onChange={handleChange}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              errors.previousPolicyEndDate ? "border-red-500" : "border-gray-300"
+            }`}
+          />
+          {errors.previousPolicyEndDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyEndDate}</p>}
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-calculated: Start Date + Duration - 1 Day
+            {form.previousPolicyStartDate && form.previousPolicyDuration && (
+              <span className="text-green-600 font-medium"> ✓ Calculated - You can edit if needed</span>
+            )}
+          </p>
+        </div>
+      );
+    }
+    
+    if (policyType === "comprehensive") {
+      return (
+        <>
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              OD Expiry Date *
+            </label>
+            <input
+              type="date"
+              name="previousPolicyEndDate"
+              value={form.previousPolicyEndDate || ""}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousPolicyEndDate ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousPolicyEndDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyEndDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              Auto-calculated: Start Date + OD Duration - 1 Day
+              {form.previousPolicyStartDate && form.previousPolicyDuration && (
+                <span className="text-green-600 font-medium"> ✓ Calculated - You can edit if needed</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              TP Expiry Date *
+            </label>
+            <input
+              type="date"
+              name="previousTpExpiryDate"
+              value={form.previousTpExpiryDate || ""}
+              onChange={handleChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousTpExpiryDate ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousTpExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.previousTpExpiryDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              Auto-calculated: Start Date + TP Duration - 1 Day
+              {form.previousPolicyStartDate && form.previousPolicyDuration && (
+                <span className="text-green-600 font-medium"> ✓ Calculated - You can edit if needed</span>
+              )}
+            </p>
+          </div>
+        </>
+      );
+    }
+    
+    if (policyType === "thirdParty") {
+      return (
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            TP Expiry Date *
+          </label>
+          <input
+            type="date"
+            name="previousTpExpiryDate"
+            value={form.previousTpExpiryDate || ""}
+            onChange={handleChange}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              errors.previousTpExpiryDate ? "border-red-500" : "border-gray-300"
+            }`}
+          />
+          {errors.previousTpExpiryDate && <p className="text-red-500 text-xs mt-1">{errors.previousTpExpiryDate}</p>}
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-calculated: Start Date + Duration - 1 Day
+            {form.previousPolicyStartDate && form.previousPolicyDuration && (
+              <span className="text-green-600 font-medium"> ✓ Calculated - You can edit if needed</span>
+            )}
+          </p>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  return (
+    <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-full bg-gray-100 text-gray-700">
+            <FaFileInvoiceDollar />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">
+              Step 3: Previous Policy Details
+            </h3>
+            <p className="text-xs text-gray-500">
+              For renewal cases & policy already expired cases
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="border rounded-xl p-5 mb-6">
+        <h4 className="text-md font-semibold text-gray-700 mb-4">
+          Previous Policy Information (All Fields Mandatory)
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Insurance Company */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Insurance Company *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="previousInsuranceCompany"
+                value={form.previousInsuranceCompany || ""}
+                onChange={handleInsuranceCompanyChange}
+                onFocus={() => {
+                  if (form.previousInsuranceCompany) {
+                    const filtered = insuranceCompanies.filter(company =>
+                      company.toLowerCase().includes(form.previousInsuranceCompany.toLowerCase())
+                    );
+                    setInsuranceCompanySuggestions(filtered);
+                  } else {
+                    setInsuranceCompanySuggestions(insuranceCompanies);
+                  }
+                  setShowInsuranceCompanySuggestions(true);
+                }}
+                onBlur={() => setTimeout(() => setShowInsuranceCompanySuggestions(false), 200)}
+                placeholder="Type insurance company"
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.previousInsuranceCompany ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              
+              {showInsuranceCompanySuggestions && insuranceCompanySuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {insuranceCompanySuggestions.map((company, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                      onClick={() => selectInsuranceCompany(company)}
+                    >
+                      {company}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {errors.previousInsuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.previousInsuranceCompany}</p>}
+          </div>
+
+          {/* Policy Number */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Policy Number *
+            </label>
+            <input
+              type="text"
+              name="previousPolicyNumber"
+              value={form.previousPolicyNumber || ""}
+              onChange={handleChange}
+              placeholder="Enter previous policy number"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousPolicyNumber ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousPolicyNumber && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyNumber}</p>}
+          </div>
+
+          {/* Policy Type */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Policy Type *
+            </label>
+            <select
+              name="previousPolicyType"
+              value={form.previousPolicyType || ""}
+              onChange={handlePolicyTypeChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousPolicyType ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              <option value="">Select policy type</option>
+              {policyTypeOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {errors.previousPolicyType && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyType}</p>}
+          </div>
+
+          {/* Issue Date */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Issue Date *
+            </label>
+            <input
+              type="date"
+              name="previousIssueDate"
+              value={form.previousIssueDate || ""}
+              onChange={handleIssueDateChange}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousIssueDate ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousIssueDate && <p className="text-red-500 text-xs mt-1">{errors.previousIssueDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              The date when policy was issued (can be past or future date)
+            </p>
+          </div>
+
+          {/* Policy Start Date */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Policy Start Date *
+            </label>
+            <input
+              type="date"
+              name="previousPolicyStartDate"
+              value={form.previousPolicyStartDate || ""}
+              onChange={handlePolicyStartDateChange}
+              // min={getMinPolicyStartDate()}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.previousPolicyStartDate ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.previousPolicyStartDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyStartDate}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              {form.previousIssueDate 
+                ? `Cannot be before ${new Date(form.previousIssueDate).toLocaleDateString()}`
+                : "Policy coverage start date"
+              }
+            </p>
+          </div>
+
+          {/* Policy Duration */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Policy Duration *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="previousPolicyDuration"
+                value={form.previousPolicyDuration || ""}
+                onChange={handleDurationInputChange}
+                onFocus={() => {
+                  if (form.previousPolicyType) {
+                    setDurationSuggestions(policyDurations);
+                    setShowDurationSuggestions(true);
+                  }
+                }}
+                onBlur={() => setTimeout(() => setShowDurationSuggestions(false), 200)}
+                placeholder={getDurationPlaceholder()}
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.previousPolicyDuration ? "border-red-500" : "border-gray-300"
+                } ${!form.previousPolicyType ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                disabled={!form.previousPolicyType}
+              />
+              
+              {showDurationSuggestions && durationSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {durationSuggestions.map((duration, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                      onClick={() => selectDuration(duration)}
+                    >
+                      {duration}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {errors.previousPolicyDuration && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyDuration}</p>}
+            {form.previousPolicyType && (
+              <p className="text-xs text-purple-600 mt-1">
+                {getPolicyTypeInfo()}
+              </p>
+            )}
+          </div>
+
+          {/* Expiry Date Fields - Dynamic based on policy type */}
+          {renderExpiryDateFields()}
+
+          {/* Claim Taken Last Year */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Claim Taken Last Year *
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="previousClaimTaken"
+                  value="yes"
+                  checked={form.previousClaimTaken === "yes"}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                Yes
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="previousClaimTaken"
+                  value="no"
+                  checked={form.previousClaimTaken === "no"}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                No
+              </label>
+            </div>
+            {errors.previousClaimTaken && <p className="text-red-500 text-xs mt-1">{errors.previousClaimTaken}</p>}
+          </div>
+
+          {/* NCB Discount */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              NCB Discount (%) *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="previousNcbDiscount"
+                value={form.previousNcbDiscount || ""}
+                onChange={handleNcbChange}
+                onFocus={() => {
+                  setNcbSuggestions(ncbOptions);
+                  setShowNcbSuggestions(true);
+                }}
+                onBlur={() => setTimeout(() => setShowNcbSuggestions(false), 200)}
+                placeholder="Type NCB percentage"
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.previousNcbDiscount ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              
+              {showNcbSuggestions && ncbSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {ncbSuggestions.map((ncb, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                      onClick={() => selectNcb(ncb)}
+                    >
+                      {ncb}%
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {errors.previousNcbDiscount && <p className="text-red-500 text-xs mt-1">{errors.previousNcbDiscount}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const previousPolicyValidation = (form) => {
+  const errors = {};
+  const policyType = form.previousPolicyType;
+
+  // Common validations for all policy types
+  const commonValidations = {
+    previousInsuranceCompany: !form.previousInsuranceCompany ? "Previous insurance company is required" : null,
+    previousPolicyNumber: !form.previousPolicyNumber ? "Previous policy number is required" : null,
+    previousPolicyType: !policyType ? "Previous policy type is required" : null,
+    previousIssueDate: !form.previousIssueDate ? "Previous issue date is required" : null,
+    previousPolicyStartDate: !form.previousPolicyStartDate ? "Previous policy start date is required" : null,
+    previousPolicyDuration: !form.previousPolicyDuration ? "Previous policy duration is required" : null,
+    previousClaimTaken: !form.previousClaimTaken ? "Claim history is required" : null,
+    previousNcbDiscount: !form.previousNcbDiscount ? "Previous NCB discount is required" : 
+                        (parseFloat(form.previousNcbDiscount) < 0 || parseFloat(form.previousNcbDiscount) > 100) ? 
+                        "NCB discount must be between 0% and 100%" : null
+  };
+
+  // Policy type specific validations
+  const policySpecificValidations = {
+    standalone: {
+      previousPolicyEndDate: !form.previousPolicyEndDate ? "OD expiry date is required" : null
+    },
+    comprehensive: {
+      previousPolicyEndDate: !form.previousPolicyEndDate ? "OD expiry date is required" : null,
+      previousTpExpiryDate: !form.previousTpExpiryDate ? "TP expiry date is required" : null
+    },
+    thirdParty: {
+      previousTpExpiryDate: !form.previousTpExpiryDate ? "TP expiry date is required" : null
+    }
+  };
+
+  // Apply common validations
+  Object.keys(commonValidations).forEach(key => {
+    if (commonValidations[key]) {
+      errors[key] = commonValidations[key];
+    }
+  });
+
+  // Apply policy type specific validations
+  if (policyType && policySpecificValidations[policyType]) {
+    Object.keys(policySpecificValidations[policyType]).forEach(key => {
+      if (policySpecificValidations[policyType][key]) {
+        errors[key] = policySpecificValidations[policyType][key];
+      }
+    });
+  }
+
+  return errors;
+};

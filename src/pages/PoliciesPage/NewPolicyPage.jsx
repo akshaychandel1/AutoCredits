@@ -48,154 +48,137 @@ import chola from './logos/chola.png'
 import INRCurrencyInput from "../../components/INRCurrencyInput";
 // ================== VALIDATION RULES ==================
 const validationRules = {
-  // Step 1: Case Details validation
-   // Step 1: Case Details validation - UPDATED
- validateStep1: (form) => {
-  const errors = {};
+  // Step 1: Case Details validation - UNCHANGED
+  validateStep1: (form) => {
+    const errors = {};
 
-  // Buyer Type validation
-  if (!form.buyer_type) {
-    errors.buyer_type = "Buyer type is required";
-  }
-
-  // Employee Name validation (common for both types)
-  if (!form.employeeName) {
-    errors.employeeName = "Employee name is required";
-  } else if (form.employeeName.length < 2) {
-    errors.employeeName = "Employee name must be at least 2 characters";
-  }
-
-  // Mobile validation (common for both types)
-  if (!form.mobile) {
-    errors.mobile = "Mobile number is required";
-  } else if (!/^\d{10}$/.test(form.mobile)) {
-    errors.mobile = "Mobile number must be 10 digits";
-  }
-
-  // Email validation (common for both types)
-  if (!form.email) {
-    errors.email = "Email address is required";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = "Please enter a valid email address";
-  }
-
-  // Individual buyer validations
-  if (form.buyer_type === "individual") {
-    // Customer Name validation
-    if (!form.customerName) {
-      errors.customerName = "Customer name is required";
-    } else if (form.customerName.length < 2) {
-      errors.customerName = "Customer name must be at least 2 characters";
+    // Buyer Type validation
+    if (!form.buyer_type) {
+      errors.buyer_type = "Buyer type is required";
     }
 
-    // Gender validation
-    if (!form.gender) {
-      errors.gender = "Gender is required";
+    // Employee Name validation (common for both types)
+    if (!form.employeeName) {
+      errors.employeeName = "Employee name is required";
+    } else if (form.employeeName.length < 2) {
+      errors.employeeName = "Employee name must be at least 2 characters";
     }
 
-    // Aadhaar validation (if provided)
-    // if (form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.replace(/\s/g, ''))) {
-    //   errors.aadhaarNumber = "Aadhaar number must be 12 digits";
-    // }
-    // PAN validation removed - now completely optional without validation
-  }
-
-  // Corporate buyer validations
-  if (form.buyer_type === "corporate") {
-    // Company Name validation
-    if (!form.companyName) {
-      errors.companyName = "Company name is required";
-    } else if (form.companyName.length < 2) {
-      errors.companyName = "Company name must be at least 2 characters";
+    // Mobile validation (common for both types)
+    if (!form.mobile) {
+      errors.mobile = "Mobile number is required";
+    } else if (!/^\d{10}$/.test(form.mobile)) {
+      errors.mobile = "Mobile number must be 10 digits";
     }
 
-    // Contact Person Name validation
-    if (!form.contactPersonName) {
-      errors.contactPersonName = "Contact person name is required";
-    } else if (form.contactPersonName.length < 2) {
-      errors.contactPersonName = "Contact person name must be at least 2 characters";
+    // Email validation (common for both types)
+    if (!form.email) {
+      errors.email = "Email address is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errors.email = "Please enter a valid email address";
     }
 
-    // Company PAN validation
-    // if (!form.companyPanNumber) {
-    //   errors.companyPanNumber = "Company PAN number is required";
-    // }
+    // Individual buyer validations
+    if (form.buyer_type === "individual") {
+      // Customer Name validation
+      if (!form.customerName) {
+        errors.customerName = "Customer name is required";
+      } else if (form.customerName.length < 2) {
+        errors.customerName = "Customer name must be at least 2 characters";
+      }
 
-    // GST Number validation (optional - only validate if provided)
-    // if (form.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(form.gstNumber)) {
-    //   errors.gstNumber = "Please enter a valid GST number";
-    // }
-  }
-
-  // Common validations for both buyer types
-  // Address validation
-  if (!form.residenceAddress) {
-    errors.residenceAddress = form.buyer_type === "corporate" 
-      ? "Office address is required" 
-      : "Residence address is required";
-  } else if (form.residenceAddress.length < 10) {
-    errors.residenceAddress = "Please enter a complete address";
-  }
-
-  // Pincode validation
-  if (!form.pincode) {
-    errors.pincode = "Pincode is required";
-  } else if (!/^\d{6}$/.test(form.pincode)) {
-    errors.pincode = "Pincode must be 6 digits";
-  }
-
-  // City validation
-  if (!form.city) {
-    errors.city = "City is required";
-  } else if (form.city.length < 2) {
-    errors.city = "Please enter a valid city name";
-  }
-
-  // Alternate Phone validation (if provided)
-  if (form.alternatePhone && !/^\d{10}$/.test(form.alternatePhone)) {
-    errors.alternatePhone = "Alternate phone number must be 10 digits";
-  }
-
-  // Nominee validation (if any nominee field is filled)
-  if (form.nomineeName || form.relation || form.nomineeAge) {
-    if (!form.nomineeName) {
-      errors.nomineeName = "Nominee name is required when adding nominee details";
-    } else if (form.nomineeName.length < 2) {
-      errors.nomineeName = "Nominee name must be at least 2 characters";
+      // Gender validation
+      if (!form.gender) {
+        errors.gender = "Gender is required";
+      }
     }
-    
-    if (!form.relation) {
-      errors.relation = "Nominee relation is required";
-    }
-    
-    if (!form.nomineeAge) {
-      errors.nomineeAge = "Nominee age is required";
-    } else if (form.nomineeAge < 1 || form.nomineeAge > 130) {
-      errors.nomineeAge = "Nominee age must be between 1 and 130 years";
-    }
-  }
 
-  // Reference validation (if any reference field is filled)
-  if (form.referenceName || form.referencePhone) {
-    if (form.referenceName && form.referenceName.length < 2) {
-      errors.referenceName = "Reference name must be at least 2 characters";
-    }
-    
-    if (form.referencePhone && !/^\d{10}$/.test(form.referencePhone)) {
-      errors.referencePhone = "Reference phone number must be 10 digits";
-    }
-  }
+    // Corporate buyer validations
+    if (form.buyer_type === "corporate") {
+      // Company Name validation
+      if (!form.companyName) {
+        errors.companyName = "Company name is required";
+      } else if (form.companyName.length < 2) {
+        errors.companyName = "Company name must be at least 2 characters";
+      }
 
-  return errors;
-},
+      // Contact Person Name validation
+      if (!form.contactPersonName) {
+        errors.contactPersonName = "Contact person name is required";
+      } else if (form.contactPersonName.length < 2) {
+        errors.contactPersonName = "Contact person name must be at least 2 characters";
+      }
+    }
 
-  // Step 2: Vehicle Details validation
+    // Common validations for both buyer types
+    // Address validation
+    if (!form.residenceAddress) {
+      errors.residenceAddress = form.buyer_type === "corporate" 
+        ? "Office address is required" 
+        : "Residence address is required";
+    } else if (form.residenceAddress.length < 10) {
+      errors.residenceAddress = "Please enter a complete address";
+    }
+
+    // Pincode validation
+    if (!form.pincode) {
+      errors.pincode = "Pincode is required";
+    } else if (!/^\d{6}$/.test(form.pincode)) {
+      errors.pincode = "Pincode must be 6 digits";
+    }
+
+    // City validation
+    if (!form.city) {
+      errors.city = "City is required";
+    } else if (form.city.length < 2) {
+      errors.city = "Please enter a valid city name";
+    }
+
+    // Alternate Phone validation (if provided)
+    if (form.alternatePhone && !/^\d{10}$/.test(form.alternatePhone)) {
+      errors.alternatePhone = "Alternate phone number must be 10 digits";
+    }
+
+    // Nominee validation (if any nominee field is filled)
+    if (form.nomineeName || form.relation || form.nomineeAge) {
+      if (!form.nomineeName) {
+        errors.nomineeName = "Nominee name is required when adding nominee details";
+      } else if (form.nomineeName.length < 2) {
+        errors.nomineeName = "Nominee name must be at least 2 characters";
+      }
+      
+      if (!form.relation) {
+        errors.relation = "Nominee relation is required";
+      }
+      
+      if (!form.nomineeAge) {
+        errors.nomineeAge = "Nominee age is required";
+      } else if (form.nomineeAge < 1 || form.nomineeAge > 130) {
+        errors.nomineeAge = "Nominee age must be between 1 and 130 years";
+      }
+    }
+
+    // Reference validation (if any reference field is filled)
+    if (form.referenceName || form.referencePhone) {
+      if (form.referenceName && form.referenceName.length < 2) {
+        errors.referenceName = "Reference name must be at least 2 characters";
+      }
+      
+      if (form.referencePhone && !/^\d{10}$/.test(form.referencePhone)) {
+        errors.referencePhone = "Reference phone number must be 10 digits";
+      }
+    }
+
+    return errors;
+  },
+
+  // Step 2: Vehicle Details validation - UNCHANGED
   validateStep2: (form) => {
     const errors = {};
 
-    // City validation
+    // Registration Number validation
     if (!form.regNo) {
-      errors.city = "Registration Number is required";
+      errors.regNo = "Registration Number is required";
     }
 
     // Vehicle Make validation
@@ -244,45 +227,51 @@ const validationRules = {
     return errors;
   },
 
-  // Step 3: Insurance Quotes validation
-validateStep3: (form, acceptedQuote = null) => {
+  // Step 3: Insurance Quotes validation - FIXED: Allow 0 for premium fields
+ validateStep3: (form, acceptedQuote = null) => {
   const errors = {};
 
-  // Primary validation: Require at least one insurance quote
-  if (!form.insuranceQuotes || form.insuranceQuotes.length === 0) {
-    errors.insuranceQuotes = "At least one insurance quote is required";
-  }
+  // Use new system if insuranceQuotes array exists and has items
+  if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
+    // New system validation
+    if (form.insuranceQuotes.length === 0) {
+      errors.insuranceQuotes = "At least one insurance quote is required";
+    }
 
-  // CRITICAL: Require an accepted quote to proceed
-  if (!acceptedQuote) {
-    errors.acceptedQuote = "Please accept a quote to proceed to the next step";
-  }
+    if (!acceptedQuote) {
+      errors.acceptedQuote = "Please accept a quote to proceed";
+    }
 
-  // Optional: Validate individual quote fields if using old system
-  if ((!form.insuranceQuotes || form.insuranceQuotes.length === 0) && !form.insurer) {
+  } else {
+    // Old system validation
     if (!form.insurer) errors.insurer = "Insurance company is required";
     if (!form.coverageType) errors.coverageType = "Coverage type is required";
-    if (!form.premium) {
+    
+    if (!form.premium && form.premium !== 0) {
       errors.premium = "Premium amount is required";
-    } else if (parseFloat(form.premium) <= 0) {
-      errors.premium = "Premium amount must be greater than 0";
+    } else if (parseFloat(form.premium) < 0) {
+      errors.premium = "Premium amount must be 0 or greater";
     }
-    if (!form.idv) {
+    
+    if (!form.idv && form.idv !== 0) {
       errors.idv = "IDV amount is required";
-    } else if (parseFloat(form.idv) <= 0) {
-      errors.idv = "IDV amount must be greater than 0";
+    } else if (parseFloat(form.idv) < 0) {
+      errors.idv = "IDV amount must be 0 or greater";
     }
   }
 
-  // NCB validation (applies to both systems)
-  if (form.ncb && (parseFloat(form.ncb) < 0 || parseFloat(form.ncb) > 100)) {
-    errors.ncb = "NCB discount must be between 0% and 100%";
+  // Common validation
+  if (form.ncb !== null && form.ncb !== undefined && form.ncb !== '') {
+    const ncbValue = parseFloat(form.ncb);
+    if (isNaN(ncbValue) || ncbValue < 0 || ncbValue > 100) {
+      errors.ncb = "NCB discount must be between 0% and 100%";
+    }
   }
 
   return errors;
 },
 
-  // Step 4: New Policy Details validation
+  // Step 4: New Policy Details validation - FIXED: Allow 0 for appropriate fields
   validateStep4: (form) => {
     const errors = {};
 
@@ -291,58 +280,83 @@ validateStep3: (form, acceptedQuote = null) => {
       errors.insuranceCompany = "Insurance company is required";
     }
 
-    // Policy/Covernote Number validation (if policy is issued)
-      if (!form.policyNumber) {
-        errors.policyNumber = "Policy number is required";
+    // Policy/Covernote Number validation
+    if (!form.policyNumber) {
+      errors.policyNumber = "Policy number is required";
     }
 
-    // Issue Date validation (if provided)
-    if (form.issueDate) {
-      const issueDate = new Date(form.issueDate);
-      const today = new Date();
+    // Issue Date validation
+    if (!form.issueDate) {
+      errors.issueDate = "Issue date is required";
     }
 
-    // Due Date validation (if provided)
-    if (form.policyStartDate && form.issueDate) {
-      const policyStartDate = new Date(form.dueDate);
-      
+    // Policy Start Date validation
+    if (!form.policyStartDate) {
+      errors.policyStartDate = "Policy start date is required";
     }
 
-    // NCB Discount validation (if provided)
-    if (form.ncbDiscount && (parseFloat(form.ncbDiscount) < 0 || parseFloat(form.ncbDiscount) > 100)) {
-      errors.ncbDiscount = "NCB discount must be between 0% and 100%";
+    // Insurance Duration validation
+    if (!form.insuranceDuration) {
+      errors.insuranceDuration = "Insurance duration is required";
     }
 
-    // IDV Amount validation
-    if (!form.idvAmount) {
+    // NCB Discount validation - Allow 0%
+    if (form.ncbDiscount !== null && form.ncbDiscount !== undefined && form.ncbDiscount !== '') {
+      const ncbValue = parseFloat(form.ncbDiscount);
+      if (isNaN(ncbValue) || ncbValue < 0 || ncbValue > 100) {
+        errors.ncbDiscount = "NCB discount must be between 0% and 100%";
+      }
+    }
+
+    // IDV Amount validation - Allow 0 (for comprehensive policies with only TP)
+    if (!form.idvAmount && form.idvAmount !== 0) {
       errors.idvAmount = "IDV amount is required";
-    } else if (parseFloat(form.idvAmount) <= 0) {
-      errors.idvAmount = "IDV amount must be greater than 0";
+    } else {
+      const idvValue = parseFloat(form.idvAmount);
+      if (isNaN(idvValue) || idvValue < 0) { // Changed <= to < to allow 0
+        errors.idvAmount = "IDV amount must be 0 or greater";
+      }
     }
 
-    // Total Premium validation
-    if (!form.totalPremium) {
+    // Total Premium validation - Allow 0 (for free policies or special cases)
+    if (!form.totalPremium && form.totalPremium !== 0) {
       errors.totalPremium = "Total premium is required";
-    } else if (parseFloat(form.totalPremium) <= 0) {
-      errors.totalPremium = "Total premium must be greater than 0";
+    } else {
+      const premiumValue = parseFloat(form.totalPremium);
+      if (isNaN(premiumValue) || premiumValue < 0) { // Changed <= to < to allow 0
+        errors.totalPremium = "Total premium must be 0 or greater";
+      }
+    }
+
+    // Expiry date validations based on policy type
+    if (form.policyType === "comprehensive" || form.policyType === "standalone") {
+      if (!form.odExpiryDate) {
+        errors.odExpiryDate = "OD expiry date is required";
+      }
+    }
+    
+    if (form.policyType === "comprehensive" || form.policyType === "thirdParty") {
+      if (!form.tpExpiryDate) {
+        errors.tpExpiryDate = "TP expiry date is required";
+      }
     }
 
     return errors;
   },
 
-  // Step 5: Documents validation
+  // Step 5: Documents validation - UNCHANGED
   validateStep5: (form) => {
-  const errors = {};
+    const errors = {};
 
-  // Check if documents exist and have at least one entry
-  if (!form.documents || Object.keys(form.documents).length === 0) {
-    errors.documents = "At least one document is required";
-  }
+    // Check if documents exist and have at least one entry
+    if (!form.documents || Object.keys(form.documents).length === 0) {
+      errors.documents = "At least one document is required";
+    }
 
-  return errors;
-},
+    return errors;
+  },
 
-  // Step 6: Payment validation
+  // Step 6: Payment validation - FIXED: Payment amount should NOT allow 0
   validateStep6: (form) => {
     const errors = {};
 
@@ -356,20 +370,19 @@ validateStep3: (form, acceptedQuote = null) => {
       errors.paymentMode = "Payment mode is required";
     }
 
-    // Payment Amount validation
+    // Payment Amount validation - DO NOT allow 0 (payment should be > 0)
     if (!form.paymentAmount) {
       errors.paymentAmount = "Payment amount is required";
-    } else if (parseFloat(form.paymentAmount) <= 0) {
-      errors.paymentAmount = "Payment amount must be greater than 0";
+    } else {
+      const paymentValue = parseFloat(form.paymentAmount);
+      if (isNaN(paymentValue) || paymentValue <= 0) { // Keep <= 0 for payment
+        errors.paymentAmount = "Payment amount must be greater than 0";
+      }
     }
 
     // Payment Date validation
     if (!form.paymentDate) {
       errors.paymentDate = "Payment date is required";
-    } else {
-      const paymentDate = new Date(form.paymentDate);
-      const today = new Date();
-      
     }
 
     // Transaction ID validation
@@ -1613,11 +1626,6 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
   const [durationSuggestions, setDurationSuggestions] = useState([]);
   const [showDurationSuggestions, setShowDurationSuggestions] = useState(false);
 
-  // Calculate min date for policy start (cannot be before issue date)
-  const getMinPolicyStartDate = () => {
-    return form.previousIssueDate || '';
-  };
-
   // Calculate policy end date based on policy type
   const calculatePolicyEndDate = (startDate, duration, policyType) => {
     if (!startDate || !duration) return '';
@@ -1674,41 +1682,9 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     });
   };
 
-  // Handle issue date change
-  const handleIssueDateChange = (e) => {
-    const issueDate = e.target.value;
-    handleChange(e);
-    
-    if (form.previousPolicyStartDate && issueDate) {
-      const startDate = new Date(form.previousPolicyStartDate);
-      const newIssueDate = new Date(issueDate);
-      
-      if (startDate < newIssueDate) {
-        handleChange({
-          target: { name: 'previousPolicyStartDate', value: issueDate }
-        });
-        
-        if (form.previousPolicyDuration && form.previousPolicyType) {
-          recalculateAllDates(issueDate, form.previousPolicyDuration);
-        }
-      }
-    }
-  };
-
   // Handle policy start date change
   const handlePolicyStartDateChange = (e) => {
     const startDate = e.target.value;
-    const issueDate = form.previousIssueDate;
-    
-    if (issueDate && startDate) {
-      const start = new Date(startDate);
-      const issue = new Date(issueDate);
-      
-      if (start < issue) {
-        alert("Policy start date cannot be before issue date!");
-        return;
-      }
-    }
     
     handleChange(e);
     
@@ -1851,7 +1827,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
       return (
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
-            OD Expiry Date *
+            OD Expiry Date
           </label>
           <input
             type="date"
@@ -1878,7 +1854,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
         <>
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              OD Expiry Date *
+              OD Expiry Date
             </label>
             <input
               type="date"
@@ -1899,7 +1875,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
           </div>
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              TP Expiry Date *
+              TP Expiry Date
             </label>
             <input
               type="date"
@@ -1926,7 +1902,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
       return (
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
-            TP Expiry Date *
+            TP Expiry Date
           </label>
           <input
             type="date"
@@ -1971,14 +1947,14 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
 
       <div className="border rounded-xl p-5 mb-6">
         <h4 className="text-md font-semibold text-gray-700 mb-4">
-          Previous Policy Information (All Fields Mandatory)
+          Previous Policy Information
         </h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Insurance Company */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              Insurance Company *
+              Insurance Company
             </label>
             <div className="relative">
               <input
@@ -2024,7 +2000,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
           {/* Policy Number */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              Policy Number *
+              Policy Number
             </label>
             <input
               type="text"
@@ -2042,7 +2018,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
           {/* Policy Type */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              Policy Type *
+              Policy Type
             </label>
             <select
               name="previousPolicyType"
@@ -2062,54 +2038,30 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
             {errors.previousPolicyType && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyType}</p>}
           </div>
 
-          {/* Issue Date */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Issue Date *
-            </label>
-            <input
-              type="date"
-              name="previousIssueDate"
-              value={form.previousIssueDate || ""}
-              onChange={handleIssueDateChange}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.previousIssueDate ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.previousIssueDate && <p className="text-red-500 text-xs mt-1">{errors.previousIssueDate}</p>}
-            <p className="text-xs text-gray-500 mt-1">
-              The date when policy was issued (can be past or future date)
-            </p>
-          </div>
-
           {/* Policy Start Date */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              Policy Start Date *
+              Policy Start Date
             </label>
             <input
               type="date"
               name="previousPolicyStartDate"
               value={form.previousPolicyStartDate || ""}
               onChange={handlePolicyStartDateChange}
-              // min={getMinPolicyStartDate()}
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.previousPolicyStartDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.previousPolicyStartDate && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyStartDate}</p>}
             <p className="text-xs text-gray-500 mt-1">
-              {form.previousIssueDate 
-                ? `Cannot be before ${new Date(form.previousIssueDate).toLocaleDateString()}`
-                : "Policy coverage start date"
-              }
+              Policy coverage start date
             </p>
           </div>
 
           {/* Policy Duration */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              Policy Duration *
+              Policy Duration
             </label>
             <div className="relative">
               <input
@@ -2159,7 +2111,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
           {/* Claim Taken Last Year */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              Claim Taken Last Year *
+              Claim Taken Last Year
             </label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2">
@@ -2191,7 +2143,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
           {/* NCB Discount */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
-              NCB Discount (%) *
+              NCB Discount (%)
             </label>
             <div className="relative">
               <input
@@ -2241,7 +2193,6 @@ const previousPolicyValidation = (form) => {
     previousInsuranceCompany: !form.previousInsuranceCompany ? "Previous insurance company is required" : null,
     previousPolicyNumber: !form.previousPolicyNumber ? "Previous policy number is required" : null,
     previousPolicyType: !policyType ? "Previous policy type is required" : null,
-    previousIssueDate: !form.previousIssueDate ? "Previous issue date is required" : null,
     previousPolicyStartDate: !form.previousPolicyStartDate ? "Previous policy start date is required" : null,
     previousPolicyDuration: !form.previousPolicyDuration ? "Previous policy duration is required" : null,
     previousClaimTaken: !form.previousClaimTaken ? "Claim history is required" : null,
@@ -2285,7 +2236,7 @@ const previousPolicyValidation = (form) => {
 
 // ================== STEP 4: Insurance Quotes ==================
 const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onInsuranceQuotesUpdate, onQuoteAccepted, isEditMode = false }) => {
-  // Use quotes from form props with localStorage fallback
+
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [isCoverageSuggestionsOpen, setIsCoverageSuggestionsOpen] = useState(false);
   const [quotes, setQuotes] = useState(() => {
@@ -2318,6 +2269,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
   const [expandedQuotes, setExpandedQuotes] = useState([]);
   const [acceptedQuote, setAcceptedQuote] = useState(null);
   const [editingQuote, setEditingQuote] = useState(null);
+
+  // NEW: State to track focused field for better UX
+  const [focusedField, setFocusedField] = useState(null);
 
   // FIXED: Determine NCB eligibility - only claim-taken vehicles are ineligible
   const isNcbEligible = form.previousClaimTaken !== "yes";
@@ -2390,7 +2344,10 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
   const [manualQuote, setManualQuote] = useState({
     insuranceCompany: '',
     coverageType: 'comprehensive',
-    idv: '',
+    vehicleIdv: '0', // NEW: Vehicle IDV field
+    cngIdv: '0',     // NEW: CNG IDV field
+    accessoriesIdv: '0', // NEW: Accessories IDV field
+    idv: '0',        // Auto-calculated total IDV
     policyDuration: getDefaultPolicyDuration('comprehensive'),
     ncbDiscount: getDefaultNcb(),
     odAmount: '0',
@@ -2409,7 +2366,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       driverCover: { selected: false, amount: '0', rate: '0' },
       passengerCover: { selected: false, amount: '0', rate: '0' },
       lossOfBelongings: { selected: false, amount: '0', rate: '0' },
-      outstationCover: { selected: false, amount: '0', rate: '0' }
+      outstationCover: { selected: false, amount: '0', rate: '0' },
+      batteryCover: { selected: false, amount: '0', rate: '0' } // Battery Cover addon
     }
   });
 
@@ -2511,6 +2469,26 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     }
   }, [manualQuote.coverageType]);
 
+  // ============ NEW: IDV CALCULATION FUNCTIONS ============
+
+  // Calculate total IDV from the 3 components
+  const calculateTotalIdv = () => {
+    const vehicleIdv = parseFloat(manualQuote.vehicleIdv || 0) || 0;
+    const cngIdv = parseFloat(manualQuote.cngIdv || 0) || 0;
+    const accessoriesIdv = parseFloat(manualQuote.accessoriesIdv || 0) || 0;
+    
+    return vehicleIdv + cngIdv + accessoriesIdv;
+  };
+
+  // Update total IDV whenever any of the component IDVs change
+  useEffect(() => {
+    const totalIdv = calculateTotalIdv();
+    setManualQuote(prev => ({
+      ...prev,
+      idv: totalIdv.toString()
+    }));
+  }, [manualQuote.vehicleIdv, manualQuote.cngIdv, manualQuote.accessoriesIdv]);
+
   // ============ CORRECTED CALCULATION FUNCTIONS ============
 
   // Calculate add-ons total
@@ -2563,6 +2541,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
   const currentGstAmount = calculateGstAmount();
   const currentTotalPremium = calculateTotalPremium();
   const currentAddOnsTotal = calculateAddOnsTotal();
+  const currentTotalIdv = calculateTotalIdv();
 
   // ============ END CORRECTED CALCULATION FUNCTIONS ============
 
@@ -2683,11 +2662,17 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       vehicleType: form.vehicleType,
       previousClaimTaken: form.previousClaimTaken,
       previousNcbDiscount: form.previousNcbDiscount,
-      currentDefaultNcb: getDefaultNcb()
+      currentDefaultNcb: getDefaultNcb(),
+      idvBreakdown: {
+        vehicleIdv: manualQuote.vehicleIdv,
+        cngIdv: manualQuote.cngIdv,
+        accessoriesIdv: manualQuote.accessoriesIdv,
+        totalIdv: manualQuote.idv
+      }
     });
-  }, [quotes, acceptedQuote, isEditMode, form.insuranceQuotes, form.vehicleType, form.previousClaimTaken, form.previousNcbDiscount]);
+  }, [quotes, acceptedQuote, isEditMode, form.insuranceQuotes, form.vehicleType, form.previousClaimTaken, form.previousNcbDiscount, manualQuote.vehicleIdv, manualQuote.cngIdv, manualQuote.accessoriesIdv, manualQuote.idv]);
 
-  // Updated add-on descriptions
+  // Updated add-on descriptions with Battery Cover
   const addOnDescriptions = {
     zeroDep: "Zero Depreciation",
     consumables: "Consumables",
@@ -2700,7 +2685,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     driverCover: "Driver Cover",
     passengerCover: "Personal Accident Cover for Passengers",
     lossOfBelongings: "Loss of Personal Belongings",
-    outstationCover: "Outstation Emergency Cover"
+    outstationCover: "Outstation Emergency Cover",
+    batteryCover: "Battery Cover" // Battery Cover description
   };
 
   // NCB options
@@ -2713,7 +2699,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     { value: 'thirdParty', label: 'Third Party' }
   ];
 
-  // Handle manual quote input changes
+  // NEW: Enhanced input field handlers with better UX
   const handleManualQuoteChange = (e) => {
     const { name, value } = e.target;
     
@@ -2722,16 +2708,50 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       return;
     }
     
-    // Handle empty values for numeric fields - convert empty to "0"
+    // Handle empty values for numeric fields - convert empty to "0" only when field loses focus
     let processedValue = value;
-    if (['odAmount', 'thirdPartyAmount', 'addOnsAmount', 'idv'].includes(name)) {
-      processedValue = value === '' ? '0' : value;
-    }
     
     setManualQuote(prev => ({
       ...prev,
       [name]: processedValue
     }));
+  };
+
+  // NEW: Enhanced focus handler for numeric fields
+  const handleNumericFieldFocus = (fieldName) => {
+    setFocusedField(fieldName);
+    // When focusing on a field with "0" value, clear it for fresh input
+    if (manualQuote[fieldName] === '0') {
+      setManualQuote(prev => ({
+        ...prev,
+        [fieldName]: ''
+      }));
+    }
+  };
+
+  // NEW: Enhanced blur handler for numeric fields
+  const handleNumericFieldBlur = (fieldName) => {
+    setFocusedField(null);
+    // When blurring from a field with empty value, set it to "0"
+    if (manualQuote[fieldName] === '') {
+      setManualQuote(prev => ({
+        ...prev,
+        [fieldName]: '0'
+      }));
+    }
+  };
+
+  // NEW: Enhanced handler specifically for numeric fields
+  const handleNumericFieldChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Allow only numbers and empty string for typing
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setManualQuote(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   // Handle add-on changes
@@ -2759,6 +2779,32 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         addOns: updatedAddOns
       };
     });
+  };
+
+  // NEW: Enhanced handler for add-on numeric fields
+  const handleAddOnNumericFieldChange = (addOnKey, field, value) => {
+    // Allow only numbers and empty string for typing
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      handleAddOnChange(addOnKey, field, value);
+    }
+  };
+
+  // NEW: Enhanced focus handler for add-on numeric fields
+  const handleAddOnNumericFieldFocus = (addOnKey, field) => {
+    setFocusedField(`${addOnKey}-${field}`);
+    // When focusing on a field with "0" value, clear it for fresh input
+    if (manualQuote.addOns[addOnKey][field] === '0') {
+      handleAddOnChange(addOnKey, field, '');
+    }
+  };
+
+  // NEW: Enhanced blur handler for add-on numeric fields
+  const handleAddOnNumericFieldBlur = (addOnKey, field) => {
+    setFocusedField(null);
+    // When blurring from a field with empty value, set it to "0"
+    if (manualQuote.addOns[addOnKey][field] === '') {
+      handleAddOnChange(addOnKey, field, '0');
+    }
   };
 
   // Select all add-ons with 0 amount
@@ -2827,10 +2873,14 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     // FIXED: Use the actual policy duration from the quote, not default
     const policyDuration = quote.policyDuration || getDefaultPolicyDuration(quote.coverageType);
 
+    // For existing quotes, set all IDV fields to the total IDV (backward compatibility)
     setManualQuote({
       insuranceCompany: quote.insuranceCompany,
       coverageType: quote.coverageType || 'comprehensive',
-      idv: quote.idv?.toString() || '',
+      vehicleIdv: quote.idv?.toString() || '0', // Set vehicle IDV to total for existing quotes
+      cngIdv: '0', // Default for existing quotes
+      accessoriesIdv: '0', // Default for existing quotes
+      idv: quote.idv?.toString() || '0',
       policyDuration: policyDuration,
       ncbDiscount: quote.ncbDiscount?.toString() || getDefaultNcb(),
       odAmount: quote.odAmount?.toString() || '0',
@@ -2844,7 +2894,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       insuranceCompany: quote.insuranceCompany,
       ncbDiscount: quote.ncbDiscount,
       policyDuration: policyDuration,
-      odAmount: quote.odAmount
+      odAmount: quote.odAmount,
+      idv: quote.idv
     });
   };
 
@@ -2856,8 +2907,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
   // FIXED: Enhanced function to update an existing quote with proper NCB and policy term
   const updateQuote = () => {
-    if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv) {
-      alert("Please fill all required fields: Insurance Company, Coverage Type, and IDV");
+    if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || parseFloat(manualQuote.idv) === 0) {
+      alert("Please fill all required fields: Insurance Company, Coverage Type, and IDV (must be greater than 0)");
       return;
     }
 
@@ -2894,6 +2945,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       companyColor: company?.color || '#000',
       companyBgColor: company?.bgColor || '#fff',
       coverageType: manualQuote.coverageType,
+      vehicleIdv: parseFloat(manualQuote.vehicleIdv || 0) || 0, // NEW: Store vehicle IDV
+      cngIdv: parseFloat(manualQuote.cngIdv || 0) || 0, // NEW: Store CNG IDV
+      accessoriesIdv: parseFloat(manualQuote.accessoriesIdv || 0) || 0, // NEW: Store accessories IDV
       idv: parseFloat(manualQuote.idv || 0) || 0,
       policyDuration: manualQuote.policyDuration,
       policyDurationLabel: policyDurationLabel,
@@ -2922,7 +2976,13 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       ncbDiscountAmount: updatedQuote.ncbDiscountAmount,
       policyDuration: updatedQuote.policyDuration,
       policyDurationLabel: updatedQuote.policyDurationLabel,
-      accepted: updatedQuote.accepted
+      accepted: updatedQuote.accepted,
+      idvBreakdown: {
+        vehicleIdv: updatedQuote.vehicleIdv,
+        cngIdv: updatedQuote.cngIdv,
+        accessoriesIdv: updatedQuote.accessoriesIdv,
+        totalIdv: updatedQuote.idv
+      }
     });
     
     setQuotes(updatedQuotes);
@@ -2944,7 +3004,10 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     setManualQuote({
       insuranceCompany: '',
       coverageType: 'comprehensive',
-      idv: '',
+      vehicleIdv: '0',
+      cngIdv: '0',
+      accessoriesIdv: '0',
+      idv: '0',
       policyDuration: getDefaultPolicyDuration('comprehensive'),
       ncbDiscount: getDefaultNcb(),
       odAmount: '0',
@@ -2963,7 +3026,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         driverCover: { selected: false, amount: '0', rate: '0' },
         passengerCover: { selected: false, amount: '0', rate: '0' },
         lossOfBelongings: { selected: false, amount: '0', rate: '0' },
-        outstationCover: { selected: false, amount: '0', rate: '0' }
+        outstationCover: { selected: false, amount: '0', rate: '0' },
+        batteryCover: { selected: false, amount: '0', rate: '0' } // Battery Cover reset
       }
     });
   };
@@ -2973,18 +3037,21 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     console.log("🔍 Add Quote Button Clicked - Current Values:", {
       insuranceCompany: manualQuote.insuranceCompany,
       coverageType: manualQuote.coverageType,
-      idv: manualQuote.idv,
+      vehicleIdv: manualQuote.vehicleIdv,
+      cngIdv: manualQuote.cngIdv,
+      accessoriesIdv: manualQuote.accessoriesIdv,
+      totalIdv: manualQuote.idv,
       odAmount: manualQuote.odAmount,
       thirdPartyAmount: manualQuote.thirdPartyAmount,
       addOnsAmount: manualQuote.addOnsAmount,
       isInsuranceCompanyValid: !!manualQuote.insuranceCompany,
       isCoverageTypeValid: !!manualQuote.coverageType,
-      isIdvValid: !!manualQuote.idv,
-      isButtonEnabled: !!(manualQuote.insuranceCompany && manualQuote.coverageType && manualQuote.idv)
+      isIdvValid: !!manualQuote.idv && parseFloat(manualQuote.idv) > 0,
+      isButtonEnabled: !!(manualQuote.insuranceCompany && manualQuote.coverageType && manualQuote.idv && parseFloat(manualQuote.idv) > 0)
     });
 
-    if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv) {
-      alert("Please fill all required fields: Insurance Company, Coverage Type, and IDV");
+    if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || parseFloat(manualQuote.idv) === 0) {
+      alert("Please fill all required fields: Insurance Company, Coverage Type, and IDV (must be greater than 0)");
       return;
     }
 
@@ -3020,6 +3087,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       companyColor: company?.color || '#000',
       companyBgColor: company?.bgColor || '#fff',
       coverageType: manualQuote.coverageType,
+      vehicleIdv: parseFloat(manualQuote.vehicleIdv || 0) || 0, // NEW: Store vehicle IDV
+      cngIdv: parseFloat(manualQuote.cngIdv || 0) || 0, // NEW: Store CNG IDV
+      accessoriesIdv: parseFloat(manualQuote.accessoriesIdv || 0) || 0, // NEW: Store accessories IDV
       idv: parseFloat(manualQuote.idv || 0) || 0,
       policyDuration: manualQuote.policyDuration,
       policyDurationLabel: policyDurationLabel,
@@ -3047,7 +3117,13 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       ncbDiscountAmount: newQuote.ncbDiscountAmount,
       policyDuration: newQuote.policyDuration,
       policyDurationLabel: newQuote.policyDurationLabel,
-      accepted: newQuote.accepted
+      accepted: newQuote.accepted,
+      idvBreakdown: {
+        vehicleIdv: newQuote.vehicleIdv,
+        cngIdv: newQuote.cngIdv,
+        accessoriesIdv: newQuote.accessoriesIdv,
+        totalIdv: newQuote.idv
+      }
     });
     setQuotes(updatedQuotes);
     resetManualQuoteForm();
@@ -3108,7 +3184,13 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       ncbDiscountAmount: quote.ncbDiscountAmount,
       policyDuration: quote.policyDuration,
       policyDurationLabel: quote.policyDurationLabel,
-      accepted: true
+      accepted: true,
+      idvBreakdown: {
+        vehicleIdv: quote.vehicleIdv,
+        cngIdv: quote.cngIdv,
+        accessoriesIdv: quote.accessoriesIdv,
+        totalIdv: quote.idv
+      }
     });
     
     if (onQuoteAccepted) {
@@ -3525,19 +3607,79 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
             </div>
           </div>
 
-          {/* IDV */}
+          {/* NEW: Vehicle IDV Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              IDV (₹) *
+              Vehicle IDV (₹) <span className="text-gray-500 text-xs">(Optional)</span>
+            </label>
+            <INRCurrencyInput
+              type="number"
+              name="vehicleIdv"
+              value={manualQuote.vehicleIdv}
+              onChange={handleNumericFieldChange}
+              onFocus={() => handleNumericFieldFocus('vehicleIdv')}
+              onBlur={() => handleNumericFieldBlur('vehicleIdv')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter Vehicle IDV (optional)"
+            />
+          </div>
+
+          {/* NEW: CNG IDV Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              CNG IDV (₹) <span className="text-gray-500 text-xs">(Optional)</span>
+            </label>
+            <INRCurrencyInput
+              type="number"
+              name="cngIdv"
+              value={manualQuote.cngIdv}
+              onChange={handleNumericFieldChange}
+              onFocus={() => handleNumericFieldFocus('cngIdv')}
+              onBlur={() => handleNumericFieldBlur('cngIdv')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter CNG IDV (optional)"
+            />
+          </div>
+
+          {/* NEW: Accessories IDV Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Accessories IDV (₹) <span className="text-gray-500 text-xs">(Optional)</span>
+            </label>
+            <INRCurrencyInput
+              type="number"
+              name="accessoriesIdv"
+              value={manualQuote.accessoriesIdv}
+              onChange={handleNumericFieldChange}
+              onFocus={() => handleNumericFieldFocus('accessoriesIdv')}
+              onBlur={() => handleNumericFieldBlur('accessoriesIdv')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter Accessories IDV (optional)"
+            />
+          </div>
+
+          {/* Auto-calculated Total IDV Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Total IDV (₹) *
             </label>
             <INRCurrencyInput
               type="number"
               name="idv"
               value={manualQuote.idv}
-              onChange={handleManualQuoteChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter IDV amount"
+              onChange={handleNumericFieldChange}
+              onFocus={() => handleNumericFieldFocus('idv')}
+              onBlur={() => handleNumericFieldBlur('idv')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 bg-gray-50"
+              placeholder="Auto-calculated Total IDV"
+              readOnly
             />
+            <p className="text-xs text-purple-600 mt-1">
+              Auto-calculated: Vehicle + CNG + Accessories
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Current: ₹{currentTotalIdv.toLocaleString('en-IN')}
+            </p>
           </div>
 
           {/* UPDATED: Policy Duration - Now fully editable for all vehicle types and coverage types */}
@@ -3628,7 +3770,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               type="number"
               name="odAmount"
               value={manualQuote.odAmount}
-              onChange={handleManualQuoteChange}
+              onChange={handleNumericFieldChange}
+              onFocus={() => handleNumericFieldFocus('odAmount')}
+              onBlur={() => handleNumericFieldBlur('odAmount')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="Enter OD amount (optional)"
             />
@@ -3643,7 +3787,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               type="number"
               name="thirdPartyAmount"
               value={manualQuote.thirdPartyAmount}
-              onChange={handleManualQuoteChange}
+              onChange={handleNumericFieldChange}
+              onFocus={() => handleNumericFieldFocus('thirdPartyAmount')}
+              onBlur={() => handleNumericFieldBlur('thirdPartyAmount')}
               disabled={manualQuote.coverageType === "standalone"}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                 manualQuote.coverageType === "standalone"
@@ -3672,7 +3818,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               type="number"
               name="addOnsAmount"
               value={manualQuote.addOnsAmount}
-              onChange={handleManualQuoteChange}
+              onChange={handleNumericFieldChange}
+              onFocus={() => handleNumericFieldFocus('addOnsAmount')}
+              onBlur={() => handleNumericFieldBlur('addOnsAmount')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="Enter add-ons amount (optional)"
             />
@@ -3716,10 +3864,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs text-gray-500 block mb-1">Amount (₹)</label>
-                        <input
+                        <INRCurrencyInput
                           type="number"
                           value={manualQuote.addOns[key].amount}
-                          onChange={(e) => handleAddOnChange(key, 'amount', e.target.value)}
+                          onChange={(e) => handleAddOnNumericFieldChange(key, 'amount', e.target.value)}
+                          onFocus={() => handleAddOnNumericFieldFocus(key, 'amount')}
+                          onBlur={() => handleAddOnNumericFieldBlur(key, 'amount')}
                           className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                           placeholder="0"
                           disabled={!manualQuote.addOns[key].selected}
@@ -3790,6 +3940,29 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               </div>
             </div>
             
+            {/* NEW: IDV Breakdown */}
+            <div className="mt-4 pt-4 border-t border-purple-200">
+              <h6 className="text-sm font-semibold text-purple-700 mb-3">IDV Breakdown</h6>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span className="text-gray-500">Vehicle IDV:</span>
+                  <div>₹{(parseFloat(manualQuote.vehicleIdv || 0) || 0).toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <span className="text-gray-500">CNG IDV:</span>
+                  <div>₹{(parseFloat(manualQuote.cngIdv || 0) || 0).toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <span className="text-gray-500">Accessories IDV:</span>
+                  <div>₹{(parseFloat(manualQuote.accessoriesIdv || 0) || 0).toLocaleString('en-IN')}</div>
+                </div>
+                <div>
+                  <span className="text-gray-500 font-semibold">Total IDV:</span>
+                  <div className="font-semibold">₹{currentTotalIdv.toLocaleString('en-IN')}</div>
+                </div>
+              </div>
+            </div>
+
             {/* Detailed Breakdown */}
             <div className="mt-4 pt-4 border-t border-purple-200">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
@@ -3818,7 +3991,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         {editingQuote ? (
           <button
             onClick={updateQuote}
-            disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv}
+            disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || parseFloat(manualQuote.idv) === 0}
             className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
           >
             <Edit className="w-5 h-5 mr-2" />
@@ -3827,12 +4000,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         ) : (
           <button
             onClick={addManualQuote}
-            disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv}
+            disabled={!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || parseFloat(manualQuote.idv) === 0}
             className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
             title={
               !manualQuote.insuranceCompany ? "Insurance Company is required" :
               !manualQuote.coverageType ? "Coverage Type is required" :
-              !manualQuote.idv ? "IDV is required" :
+              !manualQuote.idv || parseFloat(manualQuote.idv) === 0 ? "IDV is required and must be greater than 0" :
               "Add Quote"
             }
           >
@@ -4065,9 +4238,24 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                               <span className="font-semibold">{getCoverageTypeLabel(quote.coverageType)}</span>
                             </div>
                             
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">IDV</span>
-                              <span className="font-semibold">₹{quote.idv?.toLocaleString('en-IN')}</span>
+                            {/* NEW: IDV Breakdown in Quote Details */}
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Vehicle IDV</span>
+                                <span className="font-semibold">₹{quote.vehicleIdv?.toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">CNG IDV</span>
+                                <span className="font-semibold">₹{quote.cngIdv?.toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Accessories IDV</span>
+                                <span className="font-semibold">₹{quote.accessoriesIdv?.toLocaleString('en-IN')}</span>
+                              </div>
+                              <div className="flex justify-between pt-2 border-t">
+                                <span className="text-gray-600 font-semibold">Total IDV</span>
+                                <span className="font-semibold text-purple-600">₹{quote.idv?.toLocaleString('en-IN')}</span>
+                              </div>
                             </div>
 
                             {/* NCB Information in Coverage Details - Only show the percentage, not the amount */}
@@ -4168,11 +4356,13 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     </div>
   );
 };
+
+
 // ================== STEP 5: New Policy Details ==================
 const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, acceptedQuote }) => {
   // Insurance companies dropdown options (same as InsuranceQuotes)
   const [insuranceCompanySuggestions, setInsuranceCompanySuggestions] = useState([]);
-const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = useState(false);
+  const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = useState(false);
   const insuranceCompanies = [
     "ICICI Lombard",
     "HDFC Ergo", 
@@ -4333,22 +4523,11 @@ const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = us
     }
   };
 
-  // Handle policy start date change - auto-calculate expiry dates
+  // UPDATED: Handle policy start date change - auto-calculate expiry dates (removed validation)
   const handlePolicyStartDateChange = (e) => {
     const startDate = e.target.value;
-    const issueDate = form.issueDate;
     
-    // Validate: Start date cannot be before issue date
-    if (issueDate && startDate) {
-      const start = new Date(startDate);
-      const issue = new Date(issueDate);
-      
-      if (start < issue) {
-        // Show error and don't update
-        alert("Policy start date cannot be before issue date!");
-        return;
-      }
-    }
+    // REMOVED: The validation that prevented start date from being before issue date
     
     handleChange(e);
     
@@ -4535,14 +4714,7 @@ const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = us
     return fallbackValue;
   };
 
-
-
-
-
-
-
-
-   // ⭐ ADD THESE HANDLER FUNCTIONS ⭐
+  // ⭐ ADD THESE HANDLER FUNCTIONS ⭐
   const handleInsuranceCompanyChange = (e) => {
     const value = e.target.value;
     handleChange(e);
@@ -4562,9 +4734,6 @@ const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = us
     handleChange({ target: { name: 'insuranceCompany', value: company } });
     setShowInsuranceCompanySuggestions(false);
   };
-
-
-
 
   // ENHANCED: Auto-fill effect with better quote handling
   useEffect(() => {
@@ -4903,7 +5072,7 @@ const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = us
             </p>
           </div>
 
-          {/* Policy Start Date */}
+          {/* UPDATED: Policy Start Date - Removed validation and min attribute */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
               Policy Start Date *
@@ -4913,17 +5082,14 @@ const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = us
               name="policyStartDate"
               value={form.policyStartDate || ""}
               onChange={handlePolicyStartDateChange}
-              min={form.issueDate || ''}
+              // REMOVED: min={form.issueDate || ''} - Allow dates before issue date
               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                 errors.policyStartDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.policyStartDate && <p className="text-red-500 text-xs mt-1">{errors.policyStartDate}</p>}
             <p className="text-xs text-gray-500 mt-1">
-              {form.issueDate 
-                ? `Cannot be before ${new Date(form.issueDate).toLocaleDateString()}`
-                : "Policy coverage start date"
-              }
+              Policy coverage start date (can be before or after issue date)
             </p>
           </div>
 
@@ -9083,13 +9249,16 @@ const NewPolicyPage = () => {
     previousTpExpiryDate: "",
     previousDueDate: "",
     previousNcbDiscount: "",
-    // Insurance Quote fields
+    // Insurance Quote fields - UPDATED: Added new IDV fields
     insurer: "",
     coverageType: "",
     premium: "",
     idv: "",
     ncb: "",
     duration: "",
+    vehicleIdv: "", // NEW: Vehicle IDV field
+    cngIdv: "",     // NEW: CNG IDV field
+    accessoriesIdv: "", // NEW: Accessories IDV field
     // New Policy fields
     policyIssued: "",
     insuranceCompany: "",
@@ -9532,6 +9701,10 @@ const NewPolicyPage = () => {
         idv: "",
         ncb: "",
         duration: "",
+        // Reset new IDV fields
+        vehicleIdv: "",
+        cngIdv: "",
+        accessoriesIdv: "",
         // Reset new policy fields
         policyIssued: "",
         insuranceCompany: "",
@@ -9610,6 +9783,9 @@ const NewPolicyPage = () => {
         idv: "",
         ncb: "",
         duration: "",
+        vehicleIdv: "",
+        cngIdv: "",
+        accessoriesIdv: "",
         insuranceQuotes: [],
         previousClaimTaken: "no",
         vehicleType: ""
@@ -9790,7 +9966,7 @@ const NewPolicyPage = () => {
           renewal_id: policyId,
           isRenewal: true,
           
-          // CRITICAL: Reset all subsequent steps for new renewal
+          // CRITICAL: Reset all subsequent steps for new renewal including new IDV fields
           insuranceQuotes: [],
           insurer: "",
           coverageType: "",
@@ -9798,6 +9974,9 @@ const NewPolicyPage = () => {
           idv: "",
           ncb: "",
           duration: "",
+          vehicleIdv: "",
+          cngIdv: "",
+          accessoriesIdv: "",
           policyIssued: "",
           insuranceCompany: "",
           policyNumber: "",
@@ -9869,7 +10048,7 @@ const NewPolicyPage = () => {
     }
   };
 
-  // ENHANCED: Function to fetch policy data with consistent duration handling
+  // ENHANCED: Function to fetch policy data with consistent duration handling and new IDV fields
   const fetchPolicyData = async (policyId) => {
     setLoadingPolicy(true);
     try {
@@ -9888,7 +10067,7 @@ const NewPolicyPage = () => {
       const actualData = policyData.data;
       console.log("📊 Actual Policy Data:", actualData);
       
-      // FIXED: Process insurance quotes with consistent duration handling
+      // FIXED: Process insurance quotes with consistent duration handling and new IDV fields
       let processedInsuranceQuotes = [];
       if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
         processedInsuranceQuotes = actualData.insurance_quotes.map(quote => {
@@ -9908,11 +10087,15 @@ const NewPolicyPage = () => {
             ...quote,
             ncbDiscountAmount: ncbDiscountAmount || 0,
             policyDurationLabel: policyDurationLabel || quote.policyDuration,
-            odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0))
+            odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0)),
+            // Ensure new IDV fields are included
+            vehicleIdv: quote.vehicleIdv || 0,
+            cngIdv: quote.cngIdv || 0,
+            accessoriesIdv: quote.accessoriesIdv || 0
           };
         });
         
-        console.log("✅ Processed insurance quotes with consistent duration:", processedInsuranceQuotes);
+        console.log("✅ Processed insurance quotes with consistent duration and new IDV fields:", processedInsuranceQuotes);
       }
 
       // CRITICAL FIX: Properly map previous policy data including TP expiry date
@@ -9955,7 +10138,7 @@ const NewPolicyPage = () => {
         acceptedQuoteData = null;
       }
 
-      // Create a clean transformed data object with ALL fields properly mapped
+      // Create a clean transformed data object with ALL fields properly mapped including new IDV fields
       const transformedData = {
         // Basic info
         buyer_type: actualData.buyer_type || "individual",
@@ -10015,16 +10198,19 @@ const NewPolicyPage = () => {
         previousClaimTaken: previousPolicyData.claimTakenLastYear || "no",
         previousNcbDiscount: previousPolicyData.ncbDiscount || "",
         
-        // Insurance quotes - use processed quotes
+        // Insurance quotes - use processed quotes with new IDV fields
         insuranceQuotes: processedInsuranceQuotes,
         
-        // Insurance quote (legacy)
+        // Insurance quote (legacy) - UPDATED: Include new IDV fields
         insurer: actualData.insurance_quote?.insurer || "",
         coverageType: actualData.insurance_quote?.coverageType || "",
         premium: actualData.insurance_quote?.premium || "",
         idv: actualData.insurance_quote?.idv || "",
         ncb: actualData.insurance_quote?.ncb || "",
         duration: actualData.insurance_quote?.duration || "",
+        vehicleIdv: actualData.insurance_quote?.vehicleIdv || "", // NEW: Vehicle IDV field
+        cngIdv: actualData.insurance_quote?.cngIdv || "", // NEW: CNG IDV field
+        accessoriesIdv: actualData.insurance_quote?.accessoriesIdv || "", // NEW: Accessories IDV field
         
         // Policy info - CRITICAL FIX: Include all expiry dates and policy type
         policyIssued: policyInfoData.policyIssued || "",
@@ -10077,7 +10263,7 @@ const NewPolicyPage = () => {
         policyPrefilled: true
       };
       
-      console.log("✅ Transformed Form Data with consistent duration handling:", transformedData);
+      console.log("✅ Transformed Form Data with consistent duration handling and new IDV fields:", transformedData);
       
       setForm(transformedData);
       
@@ -10113,7 +10299,7 @@ const NewPolicyPage = () => {
     }
   };
 
-  // Enhanced handleChange to properly handle all field types
+  // Enhanced handleChange to properly handle all field types including new IDV fields
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (errors[name]) {
@@ -10182,6 +10368,12 @@ const NewPolicyPage = () => {
       return;
     }
     
+    // Handle new IDV fields
+    if (name === "vehicleIdv" || name === "cngIdv" || name === "accessoriesIdv") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
     setForm((f) => ({ ...f, [name]: value }));
   };
 
@@ -10205,7 +10397,7 @@ const NewPolicyPage = () => {
     const currentQuotes = form.insuranceQuotes || [];
     const newQuotes = quotesArray || [];
     
-    // Process quotes to ensure all required fields are present
+    // Process quotes to ensure all required fields are present including new IDV fields
     const processedQuotes = newQuotes.map(quote => {
       // Ensure NCB discount amount is calculated if missing
       let ncbDiscountAmount = quote.ncbDiscountAmount;
@@ -10223,13 +10415,17 @@ const NewPolicyPage = () => {
         ...quote,
         ncbDiscountAmount: ncbDiscountAmount || 0,
         policyDurationLabel: policyDurationLabel || quote.policyDuration,
-        odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0))
+        odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0)),
+        // Ensure new IDV fields are included
+        vehicleIdv: quote.vehicleIdv || 0,
+        cngIdv: quote.cngIdv || 0,
+        accessoriesIdv: quote.accessoriesIdv || 0
       };
     });
 
     // Only update if quotes actually changed
     if (JSON.stringify(currentQuotes) !== JSON.stringify(processedQuotes)) {
-      console.log("💰 Insurance quotes updated with consistent duration formatting:", processedQuotes.length, "quotes");
+      console.log("💰 Insurance quotes updated with consistent duration formatting and new IDV fields:", processedQuotes.length, "quotes");
       
       setForm((f) => ({ 
         ...f, 
@@ -10307,7 +10503,7 @@ const NewPolicyPage = () => {
       return value;
     }));
 
-    // FIXED: Clean up insurance quotes with consistent duration handling
+    // FIXED: Clean up insurance quotes with consistent duration handling and new IDV fields
     if (sanitized.insurance_quotes && Array.isArray(sanitized.insurance_quotes)) {
       sanitized.insurance_quotes = sanitized.insurance_quotes.map(quote => {
         // Calculate NCB discount amount if missing
@@ -10341,6 +10537,10 @@ const NewPolicyPage = () => {
           addOnsPremium: parseFloat(quote.addOnsPremium) || 0,
           selectedAddOns: quote.selectedAddOns || {},
           includedAddOns: quote.includedAddOns || [],
+          // NEW: Include the new IDV fields
+          vehicleIdv: parseFloat(quote.vehicleIdv) || 0,
+          cngIdv: parseFloat(quote.cngIdv) || 0,
+          accessoriesIdv: parseFloat(quote.accessoriesIdv) || 0,
           accepted: Boolean(quote.accepted),
           createdAt: quote.createdAt || new Date().toISOString(),
           updatedAt: quote.updatedAt || new Date().toISOString(),
@@ -10616,7 +10816,11 @@ const NewPolicyPage = () => {
                 premium: parseFloat(form.premium) || 0,
                 idv: parseFloat(form.idv) || 0,
                 ncb: form.ncb || "",
-                duration: form.duration || ""
+                duration: form.duration || "",
+                // NEW: Include the new IDV fields
+                vehicleIdv: parseFloat(form.vehicleIdv) || 0,
+                cngIdv: parseFloat(form.cngIdv) || 0,
+                accessoriesIdv: parseFloat(form.accessoriesIdv) || 0
               },
               // Include renewal fields
               renewal_id: form.renewal_id || "",
@@ -10711,14 +10915,18 @@ const NewPolicyPage = () => {
         }
       }
 
-      // FIXED: Always include insurance quotes in updates with consistent duration handling
+      // FIXED: Always include insurance quotes in updates with consistent duration handling and new IDV fields
       if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
         updateData.insurance_quotes = form.insuranceQuotes.map(quote => ({
           ...quote,
           // ENHANCED: Use consistent policy duration formatting
           ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
           policyDurationLabel: quote.policyDurationLabel || formatPolicyDuration(quote.policyDuration.toString()),
-          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0))
+          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0)),
+          // NEW: Include the new IDV fields
+          vehicleIdv: parseFloat(quote.vehicleIdv) || 0,
+          cngIdv: parseFloat(quote.cngIdv) || 0,
+          accessoriesIdv: parseFloat(quote.accessoriesIdv) || 0
         }));
       }
       
@@ -10751,7 +10959,12 @@ const NewPolicyPage = () => {
           policyType: sanitizedUpdateData.policy_info.policyType,
           odExpiryDate: sanitizedUpdateData.policy_info.odExpiryDate,
           tpExpiryDate: sanitizedUpdateData.policy_info.tpExpiryDate
-        } : 'No policy info'
+        } : 'No policy info',
+        newIdvFields: {
+          vehicleIdv: sanitizedUpdateData.insurance_quote?.vehicleIdv,
+          cngIdv: sanitizedUpdateData.insurance_quote?.cngIdv,
+          accessoriesIdv: sanitizedUpdateData.insurance_quote?.accessoriesIdv
+        }
       });
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedUpdateData, {
@@ -10928,14 +11141,22 @@ const NewPolicyPage = () => {
           premium: parseFloat(form.premium) || 0,
           idv: parseFloat(form.idv) || 0,
           ncb: form.ncb,
-          duration: form.duration
+          duration: form.duration,
+          // NEW: Include the new IDV fields in final save
+          vehicleIdv: parseFloat(form.vehicleIdv) || 0,
+          cngIdv: parseFloat(form.cngIdv) || 0,
+          accessoriesIdv: parseFloat(form.accessoriesIdv) || 0
         },
-        // ENHANCED: Include processed insurance quotes with consistent policy duration
+        // ENHANCED: Include processed insurance quotes with consistent policy duration and new IDV fields
         insurance_quotes: form.insuranceQuotes.map(quote => ({
           ...quote,
           ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
           policyDurationLabel: quote.policyDurationLabel || formatPolicyDuration(quote.policyDuration.toString()),
-          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0))
+          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0)),
+          // NEW: Include the new IDV fields
+          vehicleIdv: parseFloat(quote.vehicleIdv) || 0,
+          cngIdv: parseFloat(quote.cngIdv) || 0,
+          accessoriesIdv: parseFloat(quote.accessoriesIdv) || 0
         })),
         policy_info: {
           policyIssued: form.policyIssued,
@@ -10990,7 +11211,7 @@ const NewPolicyPage = () => {
       const sanitizedFinalData = sanitizeDataForAPI(finalData);
 
       console.log(`✅ Finalizing policy with vehicle type:`, form.vehicleType);
-      console.log(`✅ Finalizing policy ${policyId} with complete data:`, sanitizedFinalData);
+      console.log(`✅ Finalizing policy ${policyId} with complete data including new IDV fields:`, sanitizedFinalData);
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedFinalData, {
         headers: {
