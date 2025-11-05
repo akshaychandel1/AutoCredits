@@ -45,7 +45,7 @@ const DocumentsPage = () => {
               </h3>
               <div className="mt-1 text-sm text-blue-700">
                 <p>
-                  Documents are stored within each policy. When you upload a document, it gets attached to the specific policy. 
+                  Documents are stored within each policy. When you upload a document, it gets attached to the specific policy and added to the existing documents array. 
                   Use the search and filters to quickly find documents across all policies.
                 </p>
               </div>

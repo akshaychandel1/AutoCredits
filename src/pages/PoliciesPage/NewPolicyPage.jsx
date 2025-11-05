@@ -414,7 +414,6 @@ const validationRules = {
     return errors;
   }
 };
-
 const steps = [
   "Case Details",
   "Vehicle Details",
@@ -432,13 +431,20 @@ const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1
 const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Relationship options for auto-suggest
   const relationshipOptions = [
-    "Spouse", "Child", "Parent", "Sibling", "Grandparent", "Grandchild",
+    "Spouse", "Son", "Mother", "Father", "Daughter", "Child", "Parent", "Sibling", "Grandparent", "Grandchild",
     "Uncle", "Aunt", "Nephew", "Niece", "Cousin", "Father-in-law",
     "Mother-in-law", "Brother-in-law", "Sister-in-law", "Son-in-law",
     "Daughter-in-law", "Step Father", "Step Mother", "Step Son",
     "Step Daughter", "Step Brother", "Step Sister", "Adopted Son",
     "Adopted Daughter", "Foster Child", "Legal Guardian", "Trust",
     "Friend", "Business Partner", "Employee", "Employer", "Other"
+  ];
+
+  // Credit type options
+  const creditTypeOptions = [
+    { value: "auto", label: "Auto Credits" },
+    { value: "showroom", label: "Showroom" },
+    { value: "customer", label: "Customer" }
   ];
 
   // State for relationship suggestions
@@ -534,6 +540,23 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     });
   };
 
+  // Handle credit type change
+  const handleCreditTypeChange = (e) => {
+    const { value } = e.target;
+    handleChange(e);
+    
+    // Update form state to track if payout should be hidden
+    handleChange({
+      target: {
+        name: 'hidePayout',
+        value: value === "showroom" || value === "customer"
+      }
+    });
+  };
+
+  // Check if payout should be hidden
+  const shouldHidePayout = form.creditType === "showroom" || form.creditType === "customer";
+
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start justify-between">
@@ -617,7 +640,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           {errors.vehicleType && <p className="text-red-500 text-xs mt-1">{errors.vehicleType}</p>}
           
           {/* Vehicle Type Tag Display */}
-          {form.vehicleType && (
+          {/* {form.vehicleType && (
             <div className="mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 form.vehicleType === "new" 
@@ -640,8 +663,65 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   : "Step 3 (Previous Policy) will be required for used vehicles"}
               </p>
             </div>
-          )}
+          )} */}
         </div>
+
+        {/* Credit Type Dropdown - NEW FIELD */}
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Credit Type *
+          </label>
+          <select
+            name="creditType"
+            value={form.creditType || "auto"}
+            onChange={handleCreditTypeChange}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              errors.creditType ? "border-red-500" : "border-gray-300"
+            }`}
+          >
+            {creditTypeOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {errors.creditType && <p className="text-red-500 text-xs mt-1">{errors.creditType}</p>}
+          
+          {/* Credit Type Info */}
+          {/* {form.creditType && (
+            <div className="mt-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                form.creditType === "auto" 
+                  ? "bg-blue-100 text-blue-800" 
+                  : form.creditType === "showroom"
+                  ? "bg-orange-100 text-orange-800"
+                  : "bg-green-100 text-green-800"
+              }`}>
+                {form.creditType === "auto" ? (
+                  <>
+                    <FaCreditCard className="mr-1" /> Auto Credits
+                  </>
+                ) : form.creditType === "showroom" ? (
+                  <>
+                    <FaTags className="mr-1" /> Showroom
+                  </>
+                ) : (
+                  <>
+                    <FaUser className="mr-1" /> Customer
+                  </>
+                )}
+              </span>
+              <p className="text-xs text-gray-500 mt-1">
+                {form.creditType === "auto" 
+                  ? "Payout section will be available" 
+                  : "Payout section will be hidden"}
+              </p>
+            </div>
+          )} */}
+        </div>
+
+        {/* Empty div to maintain grid layout */}
+        <div></div>
 
         {/* Individual Fields */}
         {form.buyer_type === "individual" && (
@@ -1157,8 +1237,53 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           </div>
         </div>
 
+        {/* Credit Type Summary */}
+        {/* {form.creditType && (
+          <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 className="text-md font-semibold text-gray-700 mb-2">Credit Type Summary</h4>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${
+                  form.creditType === "auto" 
+                    ? "bg-blue-100 text-blue-600" 
+                    : form.creditType === "showroom"
+                    ? "bg-orange-100 text-orange-600"
+                    : "bg-green-100 text-green-600"
+                }`}>
+                  {form.creditType === "auto" ? <FaCreditCard /> : 
+                   form.creditType === "showroom" ? <FaTags /> : 
+                   <FaUser />}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-800">
+                    {form.creditType === "auto" ? "Auto Credits" : 
+                     form.creditType === "showroom" ? "Showroom" : 
+                     "Customer"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {form.creditType === "auto" 
+                      ? "Payout section will be available in Step 8" 
+                      : "Payout section will be hidden"}
+                  </p>
+                </div>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                form.creditType === "auto" 
+                  ? "bg-blue-100 text-blue-800" 
+                  : form.creditType === "showroom"
+                  ? "bg-orange-100 text-orange-800"
+                  : "bg-green-100 text-green-800"
+              }`}>
+                {form.creditType === "auto" ? "AUTO CREDITS" : 
+                 form.creditType === "showroom" ? "SHOWROOM" : 
+                 "CUSTOMER"}
+              </span>
+            </div>
+          </div>
+        )} */}
+
         {/* Vehicle Type Summary */}
-        {form.vehicleType && (
+        {/* {form.vehicleType && (
           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h4 className="text-md font-semibold text-gray-700 mb-2">Vehicle Type Summary</h4>
             <div className="flex items-center justify-between">
@@ -1188,7 +1313,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
               </span>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
@@ -1583,7 +1708,6 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
     </div>
   );
 };
-
 // ================== STEP 3: Previous Policy Details ==================
 const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Insurance companies options
@@ -2183,7 +2307,6 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     </div>
   );
 };
-
 const previousPolicyValidation = (form) => {
   const errors = {};
   const policyType = form.previousPolicyType;
@@ -2233,7 +2356,6 @@ const previousPolicyValidation = (form) => {
 
   return errors;
 };
-
 // ================== STEP 4: Insurance Quotes ==================
 const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onInsuranceQuotesUpdate, onQuoteAccepted, isEditMode = false }) => {
 
@@ -2251,7 +2373,14 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           policyDuration: form.insuranceQuotes[0].policyDuration,
           policyDurationLabel: form.insuranceQuotes[0].policyDurationLabel,
           odAmount: form.insuranceQuotes[0].odAmount,
-          accepted: form.insuranceQuotes[0].accepted // Check accepted flag
+          accepted: form.insuranceQuotes[0].accepted,
+          // NEW: Debug IDV values
+          idvBreakdown: {
+            vehicleIdv: form.insuranceQuotes[0].vehicleIdv,
+            cngIdv: form.insuranceQuotes[0].cngIdv,
+            accessoriesIdv: form.insuranceQuotes[0].accessoriesIdv,
+            totalIdv: form.insuranceQuotes[0].idv
+          }
         } : 'No quotes');
         return form.insuranceQuotes;
       }
@@ -2559,7 +2688,14 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
           policyDuration: quote.policyDuration,
           policyDurationLabel: quote.policyDurationLabel,
           odAmount: quote.odAmount,
-          accepted: quote.accepted // Check if accepted flag exists
+          accepted: quote.accepted, // Check if accepted flag exists
+          // NEW: Debug IDV values
+          idvBreakdown: {
+            vehicleIdv: quote.vehicleIdv,
+            cngIdv: quote.cngIdv,
+            accessoriesIdv: quote.accessoriesIdv,
+            totalIdv: quote.idv
+          }
         });
 
         // Ensure policy duration label is set if missing
@@ -2843,7 +2979,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     });
   };
 
-  // FIXED: Enhanced function to start editing a quote with proper NCB and policy term handling
+  // FIXED: Enhanced function to start editing a quote with proper IDV breakdown handling
   const startEditingQuote = (quote, index) => {
     console.log("✏️ Starting to edit quote:", {
       insuranceCompany: quote.insuranceCompany,
@@ -2852,7 +2988,14 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       policyDuration: quote.policyDuration,
       policyDurationLabel: quote.policyDurationLabel,
       odAmount: quote.odAmount,
-      accepted: quote.accepted
+      accepted: quote.accepted,
+      // NEW: Debug IDV values
+      idvBreakdown: {
+        vehicleIdv: quote.vehicleIdv,
+        cngIdv: quote.cngIdv,
+        accessoriesIdv: quote.accessoriesIdv,
+        totalIdv: quote.idv
+      }
     });
 
     setEditingQuote({ ...quote, originalIndex: index });
@@ -2873,13 +3016,25 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     // FIXED: Use the actual policy duration from the quote, not default
     const policyDuration = quote.policyDuration || getDefaultPolicyDuration(quote.coverageType);
 
-    // For existing quotes, set all IDV fields to the total IDV (backward compatibility)
+    // FIXED: Properly handle IDV breakdown for ALL quotes - preserve individual IDV values
+    // Always use the individual IDV values from the quote, never default to 0
+    const vehicleIdv = quote.vehicleIdv || 0;
+    const cngIdv = quote.cngIdv || 0;
+    const accessoriesIdv = quote.accessoriesIdv || 0;
+
+    console.log("🔧 IDV Breakdown for Editing:", {
+      vehicleIdv,
+      cngIdv,
+      accessoriesIdv,
+      totalIdv: quote.idv
+    });
+
     setManualQuote({
       insuranceCompany: quote.insuranceCompany,
       coverageType: quote.coverageType || 'comprehensive',
-      vehicleIdv: quote.idv?.toString() || '0', // Set vehicle IDV to total for existing quotes
-      cngIdv: '0', // Default for existing quotes
-      accessoriesIdv: '0', // Default for existing quotes
+      vehicleIdv: vehicleIdv.toString(),
+      cngIdv: cngIdv.toString(),
+      accessoriesIdv: accessoriesIdv.toString(),
       idv: quote.idv?.toString() || '0',
       policyDuration: policyDuration,
       ncbDiscount: quote.ncbDiscount?.toString() || getDefaultNcb(),
@@ -2895,7 +3050,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       ncbDiscount: quote.ncbDiscount,
       policyDuration: policyDuration,
       odAmount: quote.odAmount,
-      idv: quote.idv
+      idvBreakdown: {
+        vehicleIdv: vehicleIdv,
+        cngIdv: cngIdv,
+        accessoriesIdv: accessoriesIdv,
+        totalIdv: quote.idv
+      }
     });
   };
 
@@ -2905,7 +3065,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     resetManualQuoteForm();
   };
 
-  // FIXED: Enhanced function to update an existing quote with proper NCB and policy term
+  // FIXED: Enhanced function to update an existing quote with proper IDV breakdown
   const updateQuote = () => {
     if (!manualQuote.insuranceCompany || !manualQuote.coverageType || !manualQuote.idv || parseFloat(manualQuote.idv) === 0) {
       alert("Please fill all required fields: Insurance Company, Coverage Type, and IDV (must be greater than 0)");
@@ -2945,14 +3105,15 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       companyColor: company?.color || '#000',
       companyBgColor: company?.bgColor || '#fff',
       coverageType: manualQuote.coverageType,
-      vehicleIdv: parseFloat(manualQuote.vehicleIdv || 0) || 0, // NEW: Store vehicle IDV
-      cngIdv: parseFloat(manualQuote.cngIdv || 0) || 0, // NEW: Store CNG IDV
-      accessoriesIdv: parseFloat(manualQuote.accessoriesIdv || 0) || 0, // NEW: Store accessories IDV
+      // FIXED: Preserve individual IDV values from the form
+      vehicleIdv: parseFloat(manualQuote.vehicleIdv || 0) || 0,
+      cngIdv: parseFloat(manualQuote.cngIdv || 0) || 0,
+      accessoriesIdv: parseFloat(manualQuote.accessoriesIdv || 0) || 0,
       idv: parseFloat(manualQuote.idv || 0) || 0,
       policyDuration: manualQuote.policyDuration,
       policyDurationLabel: policyDurationLabel,
       ncbDiscount: parseInt(manualQuote.ncbDiscount),
-      ncbDiscountAmount: 0, // Set to 0 since we're not calculating NCB discount
+      ncbDiscountAmount: 0,
       odAmount: parseFloat(manualQuote.odAmount || 0) || 0,
       thirdPartyAmount: parseFloat(manualQuote.thirdPartyAmount || 0) || 0,
       addOnsAmount: parseFloat(manualQuote.addOnsAmount || 0) || 0,
@@ -2971,9 +3132,8 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     updatedQuotes[editingQuote.originalIndex] = updatedQuote;
     
     console.log("✏️ Updating quote at index:", editingQuote.originalIndex);
-    console.log("📊 Updated quote details:", {
+    console.log("📊 Updated quote details with IDV breakdown:", {
       ncbDiscount: updatedQuote.ncbDiscount,
-      ncbDiscountAmount: updatedQuote.ncbDiscountAmount,
       policyDuration: updatedQuote.policyDuration,
       policyDurationLabel: updatedQuote.policyDurationLabel,
       accepted: updatedQuote.accepted,
@@ -3032,7 +3192,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     });
   };
 
-  // Add manual quote
+  // FIXED: Enhanced function to add manual quote with proper IDV breakdown
   const addManualQuote = () => {
     console.log("🔍 Add Quote Button Clicked - Current Values:", {
       insuranceCompany: manualQuote.insuranceCompany,
@@ -3087,14 +3247,15 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       companyColor: company?.color || '#000',
       companyBgColor: company?.bgColor || '#fff',
       coverageType: manualQuote.coverageType,
-      vehicleIdv: parseFloat(manualQuote.vehicleIdv || 0) || 0, // NEW: Store vehicle IDV
-      cngIdv: parseFloat(manualQuote.cngIdv || 0) || 0, // NEW: Store CNG IDV
-      accessoriesIdv: parseFloat(manualQuote.accessoriesIdv || 0) || 0, // NEW: Store accessories IDV
+      // FIXED: Store individual IDV values for new quotes
+      vehicleIdv: parseFloat(manualQuote.vehicleIdv || 0) || 0,
+      cngIdv: parseFloat(manualQuote.cngIdv || 0) || 0,
+      accessoriesIdv: parseFloat(manualQuote.accessoriesIdv || 0) || 0,
       idv: parseFloat(manualQuote.idv || 0) || 0,
       policyDuration: manualQuote.policyDuration,
       policyDurationLabel: policyDurationLabel,
       ncbDiscount: parseInt(manualQuote.ncbDiscount),
-      ncbDiscountAmount: 0, // Set to 0 since we're not calculating NCB discount
+      ncbDiscountAmount: 0,
       odAmount: parseFloat(manualQuote.odAmount || 0) || 0,
       thirdPartyAmount: parseFloat(manualQuote.thirdPartyAmount || 0) || 0,
       addOnsAmount: parseFloat(manualQuote.addOnsAmount || 0) || 0,
@@ -3105,16 +3266,15 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       selectedAddOns: selectedAddOns,
       includedAddOns: getIncludedAddOns(),
       createdAt: new Date().toISOString(),
-      accepted: false // New quotes are not accepted by default
+      accepted: false
     };
 
     const updatedQuotes = [...quotes, newQuote];
-    console.log("➕ Adding new quote. Previous:", quotes.length, "New:", updatedQuotes.length);
-    console.log("📊 Quote details:", {
+    console.log("➕ Adding new quote with IDV breakdown. Previous:", quotes.length, "New:", updatedQuotes.length);
+    console.log("📊 Quote details with IDV breakdown:", {
       insuranceCompany: newQuote.insuranceCompany,
       totalPremium: newQuote.totalPremium,
       ncbDiscount: newQuote.ncbDiscount,
-      ncbDiscountAmount: newQuote.ncbDiscountAmount,
       policyDuration: newQuote.policyDuration,
       policyDurationLabel: newQuote.policyDurationLabel,
       accepted: newQuote.accepted,
@@ -4356,8 +4516,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     </div>
   );
 };
-
-
 // ================== STEP 5: New Policy Details ==================
 const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, acceptedQuote }) => {
   // Insurance companies dropdown options (same as InsuranceQuotes)
@@ -6371,6 +6529,39 @@ const Payment = ({
   // Use the final premium amount directly from acceptedQuote
   const finalPremiumAmount = acceptedQuote?.totalPremium || 0;
 
+  // State for payment ledger - use prop if provided, otherwise local state
+  const [paymentLedger, setPaymentLedger] = useState(propPaymentLedger || paymentHistory || []);
+  
+  // State for auto credit amount - equals final premium minus subvention refunds
+  const [autoCreditAmount, setAutoCreditAmount] = useState(finalPremiumAmount || "");
+
+  // FIXED: Sync payment ledger with parent component
+  useEffect(() => {
+    if (propPaymentLedger && JSON.stringify(propPaymentLedger) !== JSON.stringify(paymentLedger)) {
+      setPaymentLedger(propPaymentLedger);
+    }
+  }, [propPaymentLedger]);
+
+  // FIXED: Recalculate totals when ledger changes
+  useEffect(() => {
+    const totalCustomerPayments = calculateTotalCustomerPayments();
+    const paymentStatus = calculateOverallPaymentStatus();
+    
+    handleChange({
+      target: {
+        name: 'paymentStatus',
+        value: paymentStatus
+      }
+    });
+
+    handleChange({
+      target: {
+        name: 'totalPaidAmount',
+        value: totalCustomerPayments
+      }
+    });
+  }, [paymentLedger]);
+
   // Calculate total customer payments (both direct and via in house)
   const calculateTotalCustomerPayments = () => {
     return paymentLedger
@@ -6403,6 +6594,28 @@ const Payment = ({
     
     return totalCustomerPayments >= netPremium ? 'Fully Paid' : 'Payment Pending';
   };
+
+  // FIXED: Calculate individual payment status - Customer payments show Pending if remaining amount > 0
+  const calculatePaymentStatus = (payment) => {
+    if (payment.type === "auto_credit") {
+      return 'Completed'; // Auto credit always completed
+    }
+    
+    if (payment.type === "subvention_refund") {
+      return 'Completed'; // Subvention refunds always completed
+    }
+    
+    // For customer payments, check if total paid covers the payment
+    const totalCustomerPayments = calculateTotalCustomerPayments();
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
+    
+    if (payment.paymentMadeBy === "Customer") {
+      return totalCustomerPayments >= netPremium ? 'Completed' : 'Pending';
+    }
+    
+    return payment.status || 'Completed';
+  };
   
   // Payment modes for Customer (includes subvention)
   const customerPaymentModeOptions = [
@@ -6425,12 +6638,6 @@ const Payment = ({
     { value: "Customer", label: "Customer" },
     { value: "In House", label: "In House" }
   ];
-
-  // State for payment ledger - use prop if provided, otherwise local state
-  const [paymentLedger, setPaymentLedger] = useState(propPaymentLedger || paymentHistory || []);
-  
-  // State for auto credit amount - equals final premium minus subvention refunds
-  const [autoCreditAmount, setAutoCreditAmount] = useState(finalPremiumAmount || "");
 
   // Calculate total subvention refund amount - FIXED: Consistent calculation
   const calculateTotalSubventionRefund = () => {
@@ -6503,9 +6710,10 @@ const Payment = ({
       // Update auto credit status if needed
       const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
       
+      // FIXED: Update state immediately
       setPaymentLedger(updatedLedgerWithAutoCreditStatus);
       
-      // Notify parent component about ledger update
+      // FIXED: Notify parent component immediately
       if (onPaymentLedgerUpdate) {
         onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
       }
@@ -6560,28 +6768,15 @@ const Payment = ({
     return paymentLedger.find(payment => payment.type === "auto_credit");
   };
 
-  // NEW: Check if payment ledger has in house payment with auto credit
-  const hasInHouseAutoCreditPayment = () => {
-    return paymentLedger.some(payment => 
-      payment.type === "auto_credit" && payment.paymentMadeBy === "In House"
-    );
-  };
-
-  // Calculate auto credit status based on customer payments
+  // FIXED: Calculate auto credit status - Should always show Completed when created
   const calculateAutoCreditStatus = () => {
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const totalSubventionRefund = calculateTotalSubventionRefund();
-    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
-    
     const autoCreditEntry = getAutoCreditEntry();
     
     if (!autoCreditEntry) return 'Not Created';
     
-    if (totalCustomerPayments >= netPremium) {
-      return 'Completed';
-    } else {
-      return 'Pending';
-    }
+    // Auto credit to insurance company should always show as Completed
+    // because it represents the commitment to pay the insurance company
+    return 'Completed';
   };
 
   // Handle bank name input change with auto-suggest
@@ -6731,14 +6926,14 @@ const Payment = ({
     });
   };
 
-  // EDIT PAYMENT FUNCTIONS - FIXED TO ALLOW PROPER TEXT INPUT
+  // FIXED: EDIT PAYMENT FUNCTIONS - Completely rewritten input handling
   const handleEditPayment = (payment) => {
     console.log("Editing payment:", payment);
     setEditingPayment(payment.id);
     setEditFormData({
       date: payment.date,
       description: payment.description,
-      amount: payment.amount,
+      amount: payment.amount.toString(), // Store as string for free editing
       mode: payment.mode,
       status: payment.status,
       transactionId: payment.transactionId || '',
@@ -6749,90 +6944,82 @@ const Payment = ({
     });
   };
 
-  const handleEditFormChange = (e) => {
-    const { name, value, type } = e.target;
+  // FIXED: Simple input handling that allows multiple digits
+  // const handleEditFormChange = (e) => {
+  //   const { name, value } = e.target;
     
-    // Handle different input types appropriately
-    if (type === 'number') {
-      setEditFormData(prev => ({
-        ...prev,
-        [name]: value === '' ? '' : parseFloat(value)
-      }));
-    } else {
-      setEditFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
+  //   setEditFormData(prev => ({
+  //     ...prev,
+  //     [name]: value
+  //   }));
+  // };
+// FIXED: Edit payment function that works with the new EditPaymentForm component
+const handleSaveEdit = async (editedData) => {
+  console.log("Saving edited payment:", editedData);
+  
+  if (!editedData.amount || !editedData.date || !editedData.mode) {
+    alert("Please fill all required fields (Amount, Date, and Payment Mode)");
+    return;
+  }
 
-  const handleSaveEdit = async () => {
-    console.log("Saving edited payment:", editFormData);
+  try {
+    const updatedLedger = paymentLedger.map(payment => 
+      payment.id === editingPayment 
+        ? { 
+            ...payment, 
+            ...editedData
+          }
+        : payment
+    );
+
+    console.log("Updated ledger after edit:", updatedLedger);
+
+    // Update auto credit status if needed
+    const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
     
-    if (!editFormData.amount || !editFormData.date || !editFormData.mode) {
-      alert("Please fill all required fields (Amount, Date, and Payment Mode)");
-      return;
+    // FIXED: Update local state immediately
+    setPaymentLedger(updatedLedgerWithAutoCreditStatus);
+    
+    // FIXED: Notify parent component about ledger update immediately
+    if (onPaymentLedgerUpdate) {
+      onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
     }
+    
+    // Update payment status and totals
+    const totalCustomerPayments = calculateTotalCustomerPayments();
+    const paymentStatus = calculateOverallPaymentStatus();
 
-    try {
-      const updatedLedger = paymentLedger.map(payment => 
-        payment.id === editingPayment 
-          ? { 
-              ...payment, 
-              ...editFormData,
-              amount: typeof editFormData.amount === 'string' ? parseFloat(editFormData.amount) || 0 : editFormData.amount
-            }
-          : payment
-      );
+    const paymentData = {
+      payment_info: {
+        paymentMadeBy: form.paymentMadeBy || "Customer",
+        paymentMode: form.paymentMode || "",
+        paymentAmount: parseFloat(form.paymentAmount) || 0,
+        paymentDate: form.paymentDate || '',
+        transactionId: form.transactionId || '',
+        receiptDate: form.receiptDate || '',
+        bankName: form.bankName || '',
+        subvention_payment: form.paymentMode?.includes('Subvention') ? form.paymentMode : "No Subvention",
+        paymentStatus: paymentStatus,
+        totalPaidAmount: totalCustomerPayments
+      },
+      payment_ledger: updatedLedgerWithAutoCreditStatus
+    };
 
-      console.log("Updated ledger after edit:", updatedLedger);
+    console.log("Saving payment data after edit:", paymentData);
 
-      // Update auto credit status if needed
-      const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
-      
-      setPaymentLedger(updatedLedgerWithAutoCreditStatus);
-      
-      // Notify parent component about ledger update
-      if (onPaymentLedgerUpdate) {
-        onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
-      }
-      
-      // Update payment status and totals
-      const totalCustomerPayments = calculateTotalCustomerPayments();
-      const paymentStatus = calculateOverallPaymentStatus();
-
-      const paymentData = {
-        payment_info: {
-          paymentMadeBy: form.paymentMadeBy || "Customer",
-          paymentMode: form.paymentMode || "",
-          paymentAmount: parseFloat(form.paymentAmount) || 0,
-          paymentDate: form.paymentDate || '',
-          transactionId: form.transactionId || '',
-          receiptDate: form.receiptDate || '',
-          bankName: form.bankName || '',
-          subvention_payment: form.paymentMode?.includes('Subvention') ? form.paymentMode : "No Subvention",
-          paymentStatus: paymentStatus,
-          totalPaidAmount: totalCustomerPayments
-        },
-        payment_ledger: updatedLedgerWithAutoCreditStatus
-      };
-
-      console.log("Saving payment data after edit:", paymentData);
-
-      // Save to backend
-      await handleSave(paymentData);
-      
-      // Close edit form
-      setEditingPayment(null);
-      setEditFormData({});
-      
-      alert("Payment updated successfully!");
-      
-    } catch (error) {
-      console.error('Error saving edited payment:', error);
-      alert('Error saving edited payment. Please try again.');
-    }
-  };
+    // Save to backend
+    await handleSave(paymentData);
+    
+    // FIXED: Close edit form only after successful save
+    setEditingPayment(null);
+    
+    alert("Payment updated successfully!");
+    
+  } catch (error) {
+    console.error('Error saving edited payment:', error);
+    alert('Error saving edited payment. Please try again.');
+  }
+};
 
   const handleCancelEdit = () => {
     setEditingPayment(null);
@@ -6855,13 +7042,19 @@ const Payment = ({
       return;
     }
 
+    // FIXED: Calculate status based on remaining amount
+    const totalCustomerPayments = calculateTotalCustomerPayments();
+    const totalSubventionRefund = calculateTotalSubventionRefund();
+    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
+    const paymentStatus = (totalCustomerPayments + paymentAmount) >= netPremium ? 'Completed' : 'Pending';
+
     const newPayment = {
       id: Date.now().toString() + '_customer',
       date: form.customerPaymentDate,
       description: `Customer Payment - ${form.customerPaymentMode}`,
       amount: paymentAmount,
       mode: form.customerPaymentMode,
-      status: 'Completed',
+      status: paymentStatus, // FIXED: Dynamic status based on remaining amount
       transactionId: form.customerTransactionId || 'N/A',
       bankName: form.customerBankName || 'N/A',
       paymentMadeBy: "Customer",
@@ -6875,16 +7068,17 @@ const Payment = ({
     // Update auto credit status if it exists
     const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
     
+    // FIXED: Update state immediately
     setPaymentLedger(updatedLedgerWithAutoCreditStatus);
     
-    // Notify parent component about ledger update
+    // FIXED: Notify parent component immediately
     if (onPaymentLedgerUpdate) {
       onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
     }
     
     // Update payment status and totals
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = calculateOverallPaymentStatus();
+    const newTotalCustomerPayments = calculateTotalCustomerPayments();
+    const overallPaymentStatus = calculateOverallPaymentStatus();
 
     const paymentData = {
       payment_info: {
@@ -6896,8 +7090,8 @@ const Payment = ({
         receiptDate: form.customerReceiptDate || form.customerPaymentDate,
         bankName: form.customerBankName || '',
         subvention_payment: form.customerPaymentMode.includes('Subvention') ? form.customerPaymentMode : "No Subvention",
-        paymentStatus: paymentStatus,
-        totalPaidAmount: totalCustomerPayments
+        paymentStatus: overallPaymentStatus,
+        totalPaidAmount: newTotalCustomerPayments
       },
       payment_ledger: updatedLedgerWithAutoCreditStatus
     };
@@ -6947,7 +7141,7 @@ const Payment = ({
           description: `Auto Credit to Insurance Company - ${form.autoCreditPaymentMode}`,
           amount: finalPremiumAmount, // Use final premium amount here instead of netPremium
           mode: form.autoCreditPaymentMode,
-          status: 'Pending', // Initially pending until customer pays full amount
+          status: 'Completed', // FIXED: Always show as Completed
           transactionId: form.autoCreditTransactionId || 'N/A',
           bankName: form.autoCreditBankName || 'N/A',
           paymentMadeBy: "In House",
@@ -6970,13 +7164,19 @@ const Payment = ({
         return;
       }
 
+      // FIXED: Calculate status based on remaining amount
+      const totalCustomerPayments = calculateTotalCustomerPayments();
+      const totalSubventionRefund = calculateTotalSubventionRefund();
+      const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
+      const paymentStatus = (totalCustomerPayments + paymentAmount) >= netPremium ? 'Completed' : 'Pending';
+
       const customerPaymentEntry = {
         id: Date.now().toString() + '_inhouse_customer',
         date: form.inHousePaymentDate,
         description: `Customer Payment via In House - ${form.inHousePaymentMode}`,
         amount: paymentAmount,
         mode: form.inHousePaymentMode,
-        status: 'Completed',
+        status: paymentStatus, // FIXED: Dynamic status based on remaining amount
         transactionId: form.inHouseTransactionId || 'N/A',
         bankName: form.inHouseBankName || 'N/A',
         paymentMadeBy: "Customer",
@@ -6991,9 +7191,10 @@ const Payment = ({
     // Update auto credit status based on total customer payments
     const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
     
+    // FIXED: Update state immediately
     setPaymentLedger(updatedLedgerWithAutoCreditStatus);
     
-    // Notify parent component about ledger update
+    // FIXED: Notify parent component immediately
     if (onPaymentLedgerUpdate) {
       onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
     }
@@ -7052,23 +7253,15 @@ const Payment = ({
     }
   };
 
-  // Update auto credit status based on total customer payments
+  // FIXED: Update auto credit status - Always show as Completed
   const updateAutoCreditStatus = (ledger) => {
-    const totalCustomerPayments = ledger
-      .filter(payment => payment.paymentMadeBy === "Customer" && payment.type !== "subvention_refund")
-      .reduce((sum, payment) => sum + payment.amount, 0);
-    
-    const totalSubventionRefund = calculateTotalSubventionRefund();
-    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
-    
     const autoCreditEntry = ledger.find(payment => payment.type === "auto_credit");
     
     if (autoCreditEntry) {
-      const newStatus = totalCustomerPayments >= netPremium ? 'Completed' : 'Pending';
-      
+      // Auto credit entries should always show as Completed
       return ledger.map(payment => 
         payment.type === "auto_credit" 
-          ? { ...payment, status: newStatus }
+          ? { ...payment, status: 'Completed' }
           : payment
       );
     }
@@ -7088,9 +7281,10 @@ const Payment = ({
     // Update auto credit status after deletion
     updatedLedger = updateAutoCreditStatus(updatedLedger);
     
+    // FIXED: Update state immediately
     setPaymentLedger(updatedLedger);
     
-    // Notify parent component about ledger update
+    // FIXED: Notify parent component immediately
     if (onPaymentLedgerUpdate) {
       onPaymentLedgerUpdate(updatedLedger);
     }
@@ -7295,13 +7489,6 @@ const Payment = ({
     setAutoCreditAmount(finalPremiumAmount);
   }, [finalPremiumAmount, totalSubventionRefund]);
 
-  // Update ledger when propPaymentLedger changes
-  useEffect(() => {
-    if (propPaymentLedger && propPaymentLedger.length >= 0) {
-      setPaymentLedger(propPaymentLedger);
-    }
-  }, [propPaymentLedger]);
-
   const paymentStatusColor = overallPaymentStatus === 'Fully Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
   
   const totalSubvention = calculateTotalSubvention();
@@ -7330,6 +7517,230 @@ const Payment = ({
       </div>
     );
   };
+
+  // FIXED: Edit Form Component with proper input handling for multiple digits
+  // FIXED: Edit Form Component with proper local state management
+const EditPaymentForm = ({ payment, onSave, onCancel }) => {
+  const [localEditForm, setLocalEditForm] = useState({
+    date: payment.date || '',
+    description: payment.description || '',
+    amount: payment.amount?.toString() || '',
+    mode: payment.mode || '',
+    status: payment.status || 'Completed',
+    transactionId: payment.transactionId || '',
+    bankName: payment.bankName || '',
+    paymentMadeBy: payment.paymentMadeBy || 'Customer',
+    receiptDate: payment.receiptDate || payment.date || '',
+    payoutBy: payment.payoutBy || 'Customer'
+  });
+
+  // FIXED: Proper input handling that maintains focus
+  const handleLocalChange = (e) => {
+    const { name, value } = e.target;
+    
+    setLocalEditForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleLocalSave = () => {
+    if (!localEditForm.amount || !localEditForm.date || !localEditForm.mode) {
+      alert("Please fill all required fields (Amount, Date, and Payment Mode)");
+      return;
+    }
+
+    const amountToSave = parseFloat(localEditForm.amount);
+    if (isNaN(amountToSave) || amountToSave <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    const formDataToSave = {
+      ...localEditForm,
+      amount: amountToSave
+    };
+    
+    onSave(formDataToSave);
+  };
+
+  const getPaymentModeOptions = () => {
+    return localEditForm.paymentMadeBy === "Customer" 
+      ? customerPaymentModeOptions 
+      : inHousePaymentModeOptions;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg font-semibold mb-4">Edit Payment</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Date *</label>
+            <input
+              type="date"
+              name="date"
+              value={localEditForm.date}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Amount (₹) *</label>
+            <INRCurrencyInput
+              type="number"
+              name="amount"
+              value={localEditForm.amount}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+              placeholder="Enter amount"
+              step="0.01"
+              min="0"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Current: ₹{formatIndianNumber(payment.amount)}
+            </p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Payment Mode *</label>
+            <select
+              name="mode"
+              value={localEditForm.mode}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            >
+              <option value="">Select payment mode</option>
+              {getPaymentModeOptions().map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+            <select
+              name="status"
+              value={localEditForm.status}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Transaction ID</label>
+            <input
+              type="text"
+              name="transactionId"
+              value={localEditForm.transactionId}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter transaction ID"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
+            <input
+              type="text"
+              name="bankName"
+              value={localEditForm.bankName}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter bank name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
+            <input
+              type="text"
+              name="description"
+              value={localEditForm.description}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter description"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Receipt Date</label>
+            <input
+              type="date"
+              name="receiptDate"
+              value={localEditForm.receiptDate}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Payment Made By</label>
+            <select
+              name="paymentMadeBy"
+              value={localEditForm.paymentMadeBy}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              disabled
+            >
+              <option value="Customer">Customer</option>
+              <option value="In House">In House</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Payout By</label>
+            <select
+              name="payoutBy"
+              value={localEditForm.payoutBy}
+              onChange={handleLocalChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="Customer">Customer</option>
+              <option value="In House">In House</option>
+              <option value="Auto Credit to Insurance Company">Auto Credit to Insurance Company</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mb-4 p-3 bg-gray-50 rounded-md">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Original Values:</h4>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div><span className="text-gray-600">Amount:</span> ₹{formatIndianNumber(payment.amount)}</div>
+            <div><span className="text-gray-600">Date:</span> {payment.date}</div>
+            <div><span className="text-gray-600">Mode:</span> {payment.mode}</div>
+            <div><span className="text-gray-600">Status:</span> {payment.status}</div>
+          </div>
+        </div>
+        
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleLocalSave}
+            className="px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
   // UPDATED: Subvention Form Component with one-by-one entry
   const SubventionForm = ({ 
@@ -7413,9 +7824,10 @@ const Payment = ({
         // Update auto credit status if needed
         const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
         
+        // FIXED: Update state immediately
         setPaymentLedger(updatedLedgerWithAutoCreditStatus);
         
-        // Notify parent component about ledger update
+        // FIXED: Notify parent component immediately
         if (onPaymentLedgerUpdate) {
           onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
         }
@@ -7461,7 +7873,7 @@ const Payment = ({
     };
 
     return (
-      <div className="fixed inset-0 bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <FaGift className="text-green-600" />
@@ -7601,234 +8013,6 @@ const Payment = ({
                 Apply Subvention Refunds
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // FIXED: Edit Form Component with proper text input handling
-  const EditPaymentForm = ({ payment, onSave, onCancel }) => {
-    const [localEditForm, setLocalEditForm] = useState(editFormData);
-
-    const handleLocalChange = (e) => {
-      const { name, value, type } = e.target;
-      
-      // Handle different input types appropriately
-      if (type === 'number') {
-        // For number inputs, store as string while typing, parse only on save
-        setLocalEditForm(prev => ({
-          ...prev,
-          [name]: value // Keep as string for free typing
-        }));
-      } else {
-        setLocalEditForm(prev => ({
-          ...prev,
-          [name]: value
-        }));
-      }
-      
-      // Also update the main editFormData for consistency
-      setEditFormData(prev => ({
-        ...prev,
-        [name]: type === 'number' ? value : value // Keep numbers as strings for now
-      }));
-    };
-
-    const handleLocalSave = () => {
-      // Validate required fields
-      if (!localEditForm.amount || !localEditForm.date || !localEditForm.mode) {
-        alert("Please fill all required fields (Amount, Date, and Payment Mode)");
-        return;
-      }
-
-      // Parse amount to number only when saving
-      const amountToSave = parseFloat(localEditForm.amount);
-      if (isNaN(amountToSave) || amountToSave <= 0) {
-        alert("Please enter a valid amount");
-        return;
-      }
-
-      const formDataToSave = {
-        ...localEditForm,
-        amount: amountToSave
-      };
-      
-      console.log("Saving local form:", formDataToSave);
-      onSave(formDataToSave);
-    };
-
-    // Get appropriate payment mode options based on who made the payment
-    const getPaymentModeOptions = () => {
-      return localEditForm.paymentMadeBy === "Customer" 
-        ? customerPaymentModeOptions 
-        : inHousePaymentModeOptions;
-    };
-
-    return (
-      <div className="fixed inset-0  bg-opacity-50 backdrop-blur-md flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-          <h3 className="text-lg font-semibold mb-4">Edit Payment</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Date *</label>
-              <input
-                type="date"
-                name="date"
-                value={localEditForm.date}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Amount (₹) *</label>
-              <input
-                type="number"
-                name="amount"
-                value={localEditForm.amount}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                required
-                min="0"
-                step="0.01"
-                placeholder="Enter amount"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Payment Mode *</label>
-              <select
-                name="mode"
-                value={localEditForm.mode}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                required
-              >
-                <option value="">Select payment mode</option>
-                {getPaymentModeOptions().map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-              <select
-                name="status"
-                value={localEditForm.status}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                <option value="Completed">Completed</option>
-                <option value="Pending">Pending</option>
-                <option value="Failed">Failed</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Transaction ID</label>
-              <input
-                type="text"
-                name="transactionId"
-                value={localEditForm.transactionId}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                placeholder="Enter transaction ID"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
-              <input
-                type="text"
-                name="bankName"
-                value={localEditForm.bankName}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                placeholder="Enter bank name"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
-              <input
-                type="text"
-                name="description"
-                value={localEditForm.description}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                placeholder="Enter description"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Receipt Date</label>
-              <input
-                type="date"
-                name="receiptDate"
-                value={localEditForm.receiptDate}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Payment Made By</label>
-              <select
-                name="paymentMadeBy"
-                value={localEditForm.paymentMadeBy}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                disabled // Keep this disabled as we shouldn't change who made the payment
-              >
-                <option value="Customer">Customer</option>
-                <option value="In House">In House</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Payout By</label>
-              <select
-                name="payoutBy"
-                value={localEditForm.payoutBy}
-                onChange={handleLocalChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                <option value="Customer">Customer</option>
-                <option value="In House">In House</option>
-                <option value="Auto Credit to Insurance Company">Auto Credit to Insurance Company</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Show current values for reference */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-md">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Current Values:</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-gray-600">Amount:</span> ₹{formatIndianNumber(payment.amount)}</div>
-              <div><span className="text-gray-600">Date:</span> {payment.date}</div>
-              <div><span className="text-gray-600">Mode:</span> {payment.mode}</div>
-              <div><span className="text-gray-600">Status:</span> {payment.status}</div>
-            </div>
-          </div>
-          
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleLocalSave}
-              className="px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-            >
-              Save Changes
-            </button>
           </div>
         </div>
       </div>
@@ -7987,7 +8171,7 @@ const Payment = ({
               <label className="block text-sm font-medium text-gray-600 mb-1">
                 Payment Amount (₹) *
               </label>
-              <input
+              <INRCurrencyInput
                 type="number"
                 name="customerPaymentAmount"
                 value={form.customerPaymentAmount || ""}
@@ -8084,7 +8268,7 @@ const Payment = ({
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Amount (₹) *
                 </label>
-                <input
+                <INRCurrencyInput
                   type="number"
                   name="autoCreditAmount"
                   value={finalPremiumAmount} // Always use final premium amount
@@ -8106,8 +8290,8 @@ const Payment = ({
                     autoCreditStatus === 'Completed' ? 'text-green-600' : 'text-yellow-600'
                   }`}>
                     {autoCreditStatus === 'Completed' 
-                      ? '✓ Auto credit completed - Customer paid full amount' 
-                      : `⏳ Auto credit pending - Customer paid ₹${formatIndianNumber(totalCustomerPayments)}/${formatIndianNumber(netPremium)}`}
+                      ? '✓ Auto credit completed' 
+                      : `Auto credit status: ${autoCreditStatus}`}
                   </p>
                 )}
               </div>
@@ -8215,7 +8399,7 @@ const Payment = ({
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Payment Amount (₹)
                 </label>
-                <input
+                <INRCurrencyInput
                   type="number"
                   name="inHousePaymentAmount"
                   value={form.inHousePaymentAmount || ""}
@@ -8324,67 +8508,73 @@ const Payment = ({
                 </tr>
               </thead>
               <tbody>
-                {paymentLedger.map((payment) => (
-                  <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="p-3 text-gray-700">{payment.date}</td>
-                    <td className="p-3 text-gray-700">
-                      {payment.description}
-                      {payment.type === "subvention_refund" && (
-                        <span className="ml-2 px-1 bg-green-100 text-green-800 text-xs rounded">Subvention</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-gray-700">
-                      {payment.mode}
-                      {payment.mode.includes('Subvention') && !payment.type === "subvention_refund" && (
-                        <span className="ml-2 px-1 bg-blue-100 text-blue-800 text-xs rounded">Subvention</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-gray-700">{payment.paymentMadeBy}</td>
-                    <td className="p-3 text-gray-700">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                        payment.payoutBy === "Auto Credit to Insurance Company" 
-                          ? "bg-green-100 text-green-800"
-                          : payment.payoutBy === "Customer"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-purple-100 text-purple-800"
+                {paymentLedger.map((payment) => {
+                  // FIXED: Calculate dynamic status for each payment
+                  const paymentStatus = calculatePaymentStatus(payment);
+                  return (
+                    <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="p-3 text-gray-700">{payment.date}</td>
+                      <td className="p-3 text-gray-700">
+                        {payment.description}
+                        {payment.type === "subvention_refund" && (
+                          <span className="ml-2 px-1 bg-green-100 text-green-800 text-xs rounded">Subvention</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-gray-700">
+                        {payment.mode}
+                        {payment.mode.includes('Subvention') && !payment.type === "subvention_refund" && (
+                          <span className="ml-2 px-1 bg-blue-100 text-blue-800 text-xs rounded">Subvention</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-gray-700">{payment.paymentMadeBy}</td>
+                      <td className="p-3 text-gray-700">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                          payment.payoutBy === "Auto Credit to Insurance Company" 
+                            ? "bg-green-100 text-green-800"
+                            : payment.payoutBy === "Customer"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-purple-100 text-purple-800"
+                        }`}>
+                          {payment.payoutBy}
+                        </span>
+                      </td>
+                      <td className={`p-3 text-right font-medium ${
+                        payment.type === "subvention_refund" ? "text-green-600" : "text-blue-600"
                       }`}>
-                        {payment.payoutBy}
-                      </span>
-                    </td>
-                    <td className={`p-3 text-right font-medium ${
-                      payment.type === "subvention_refund" ? "text-green-600" : "text-blue-600"
-                    }`}>
-                      {payment.type === "subvention_refund" ? '-' : ''}₹{formatIndianNumber(payment.amount)}
-                    </td>
-                    <td className="p-3">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                        payment.status === 'Completed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {payment.status}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center">
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleEditPayment(payment)}
-                          className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-                          title="Edit payment"
-                        >
-                          <FaEdit /> Edit
-                        </button>
-                        <button
-                          onClick={() => deletePaymentFromLedger(payment.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
-                          title="Delete payment"
-                        >
-                          <FaTrash /> Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        {payment.type === "subvention_refund" ? '-' : ''}₹{formatIndianNumber(payment.amount)}
+                      </td>
+                      <td className="p-3">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                          paymentStatus === 'Completed' 
+                            ? 'bg-green-100 text-green-800' 
+                            : paymentStatus === 'Pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {paymentStatus}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => handleEditPayment(payment)}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                            title="Edit payment"
+                          >
+                            <FaEdit /> Edit
+                          </button>
+                          <button
+                            onClick={() => deletePaymentFromLedger(payment.id)}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                            title="Delete payment"
+                          >
+                            <FaTrash /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="bg-gray-50">
@@ -8431,8 +8621,8 @@ const Payment = ({
       )}
 
       {/* Next Step Button - UPDATED: Always enabled if there are payments */}
-      <div className="mt-6 flex justify-between items-center">
-        <div className="text-sm text-gray-600">
+      {/* <div className="mt-6 flex justify-between items-center"> */}
+        {/* <div className="text-sm text-gray-600">
           {paymentLedger.length > 0 ? (
             customerRemainingAmount <= 0 ? (
               <span className="text-green-600">✅ All customer payments completed</span>
@@ -8442,17 +8632,17 @@ const Payment = ({
           ) : (
             <span className="text-red-600">Please add at least one payment</span>
           )}
-        </div>
+        </div> */}
         
-        <button
+        {/* <button
           onClick={handleNextStep}
           disabled={paymentLedger.length === 0 || isSaving}
           className="inline-flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSaving ? "Saving..." : "Proceed to Payout"} 
           <FaArrowRight />
-        </button>
-      </div>
+        </button> */}
+      {/* </div> */}
     </div>
   );
 };
@@ -9204,6 +9394,9 @@ const NewPolicyPage = () => {
     created_by: "ADMIN123",
     insuranceQuotes: [],
     previousClaimTaken: "no",
+    // FIXED: Don't hardcode default, let API data determine it
+    creditType: "", // Changed from "auto" to empty string
+    hidePayout: false,
     // Corporate fields
     companyName: "",
     employeeName: "",
@@ -9551,6 +9744,11 @@ const NewPolicyPage = () => {
     };
   };
 
+  // NEW: Check if payout should be hidden based on credit type
+  const shouldHidePayout = () => {
+    return form.creditType === "showroom" || form.creditType === "customer";
+  };
+
   // Debounce utility function
   const debounce = (func, wait) => {
     let timeout;
@@ -9575,28 +9773,57 @@ const NewPolicyPage = () => {
     "Payout"
   ];
 
-  // Function to get actual steps based on vehicle type
+  // Function to get actual steps based on vehicle type AND credit type
   const getSteps = () => {
+    let filteredSteps = [...steps];
+    
+    // Remove Previous Policy for new vehicles
     if (form.vehicleType === "new") {
-      return steps.filter(step => step !== "Previous Policy");
+      filteredSteps = filteredSteps.filter(step => step !== "Previous Policy");
     }
-    return steps;
+    
+    // Remove Payout for showroom/customer credit types
+    if (shouldHidePayout()) {
+      filteredSteps = filteredSteps.filter(step => step !== "Payout");
+    }
+    
+    return filteredSteps;
   };
 
   // Function to get actual step number for navigation
   const getActualStep = (displayStep) => {
+    let actualStep = displayStep;
+    
+    // Adjust for skipped steps
     if (form.vehicleType === "new" && displayStep >= 3) {
-      return displayStep + 1;
+      actualStep += 1; // Skip Previous Policy
     }
-    return displayStep;
+    
+    if (shouldHidePayout() && displayStep >= steps.indexOf("Payout") + 1) {
+      // If payout is hidden and we're beyond payout step, adjust
+      const payoutIndex = steps.indexOf("Payout");
+      if (displayStep > payoutIndex) {
+        actualStep -= 1;
+      }
+    }
+    
+    return actualStep;
   };
 
   // Function to get display step number
   const getDisplayStep = (actualStep) => {
+    let displayStep = actualStep;
+    
+    // Adjust for skipped steps
     if (form.vehicleType === "new" && actualStep >= 3) {
-      return actualStep - 1;
+      displayStep -= 1; // Skip Previous Policy
     }
-    return actualStep;
+    
+    if (shouldHidePayout() && actualStep > steps.indexOf("Payout")) {
+      displayStep -= 1; // Skip Payout
+    }
+    
+    return displayStep;
   };
 
   // Function to handle step click
@@ -9672,7 +9899,9 @@ const NewPolicyPage = () => {
     console.log("   - form.insuranceQuotes:", form.insuranceQuotes);
     console.log("   - Calculated totalPremium:", totalPremium);
     console.log("   - Vehicle Type:", form.vehicleType);
-  }, [acceptedQuote, form.premium, form.totalPremium, form.insuranceQuotes, totalPremium, form.vehicleType]);
+    console.log("   - Credit Type:", form.creditType);
+    console.log("   - Hide Payout:", shouldHidePayout());
+  }, [acceptedQuote, form.premium, form.totalPremium, form.insuranceQuotes, totalPremium, form.vehicleType, form.creditType]);
 
   // Debug effect for payment ledger
   useEffect(() => {
@@ -9682,6 +9911,27 @@ const NewPolicyPage = () => {
       total: paymentLedger.reduce((sum, p) => sum + p.amount, 0)
     });
   }, [paymentLedger]);
+
+  // DEBUG: Track credit type changes
+  useEffect(() => {
+    console.log("💳 Credit Type Debug:", {
+      currentCreditType: form.creditType,
+      hidePayout: form.hidePayout,
+      step: step,
+      policyId: policyId
+    });
+  }, [form.creditType, form.hidePayout, step, policyId]);
+
+  // DEBUG: Track credit type loading
+  useEffect(() => {
+    console.log("🔍 Credit Type Loading Debug:", {
+      policyId: id,
+      isEditMode: isEditMode,
+      currentCreditType: form.creditType,
+      loadingPolicy: loadingPolicy,
+      step: step
+    });
+  }, [id, isEditMode, form.creditType, loadingPolicy, step]);
 
   // FIXED: Optimized quote acceptance handler with renewal reset logic
   const handleQuoteAccepted = useCallback((quote) => {
@@ -9877,429 +10127,460 @@ const NewPolicyPage = () => {
   }, [form.isRenewal, loadingPolicy, step, acceptedQuote]);
 
   // ENHANCED: Function to fetch renewal policy data for both new renewals and editing existing renewals
-  const fetchRenewalPolicyData = async (policyId) => {
-    setLoadingPolicy(true);
-    try {
-      console.log("🔍 Fetching renewal policy data for ID:", policyId);
-      const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
-      const policyData = response.data;
-      
-      console.log("📦 Full Renewal API Response:", policyData);
-      
-      if (!policyData || !policyData.data) {
-        console.error("❌ No renewal policy data received from API");
-        setSaveMessage("❌ No renewal policy data found for this ID");
-        return;
-      }
-
-      const renewalData = policyData.data;
-      console.log("📊 Renewal Policy Data:", renewalData);
-      
-      // Check if this is a new renewal (creating from existing policy) 
-      // or editing an existing renewal policy
-      const isNewRenewal = !renewalData.isRenewal; // If the source policy is not already a renewal
-      
-      if (isNewRenewal) {
-        console.log("🔄 Creating NEW renewal from existing policy");
-        // Map renewal policy data to current form for NEW renewal case
-        // Only populate Case Details, Vehicle Details, and Previous Policy
-        const renewalFormData = {
-          // Basic info
-          buyer_type: renewalData.buyer_type || "individual",
-          vehicleType: "used", // Renewals are always used vehicles
-          insurance_category: renewalData.insurance_category || "motor",
-          status: "draft",
-          
-          // Customer details
-          customerName: renewalData.customer_details?.name || "",
-          mobile: renewalData.customer_details?.mobile || "",
-          email: renewalData.customer_details?.email || "",
-          employeeName: renewalData.customer_details?.employeeName || "",
-          age: renewalData.customer_details?.age || "",
-          gender: renewalData.customer_details?.gender || "",
-          panNumber: renewalData.customer_details?.panNumber || "",
-          aadhaarNumber: renewalData.customer_details?.aadhaarNumber || "",
-          residenceAddress: renewalData.customer_details?.residenceAddress || "",
-          pincode: renewalData.customer_details?.pincode || "",
-          city: renewalData.customer_details?.city || "",
-          alternatePhone: renewalData.customer_details?.alternatePhone || "",
-          
-          // Corporate fields
-          companyName: renewalData.customer_details?.companyName || "",
-          contactPersonName: renewalData.customer_details?.contactPersonName || "",
-          companyPanNumber: renewalData.customer_details?.companyPanNumber || "",
-          gstNumber: renewalData.customer_details?.gstNumber || "",
-          
-          // Nominee
-          nomineeName: renewalData.nominee?.name || "",
-          relation: renewalData.nominee?.relation || "",
-          nomineeAge: renewalData.nominee?.age || "",
-          
-          // Reference
-          referenceName: renewalData.reference?.name || renewalData.refrence?.name || "",
-          referencePhone: renewalData.reference?.phone || renewalData.refrence?.phone || "",
-          
-          // Vehicle details
-          regNo: renewalData.vehicle_details?.regNo || "",
-          make: renewalData.vehicle_details?.make || "",
-          model: renewalData.vehicle_details?.model || "",
-          variant: renewalData.vehicle_details?.variant || "",
-          engineNo: renewalData.vehicle_details?.engineNo || "",
-          chassisNo: renewalData.vehicle_details?.chassisNo || "",
-          makeMonth: renewalData.vehicle_details?.makeMonth || "",
-          makeYear: renewalData.vehicle_details?.makeYear || "",
-          
-          // Map new policy data from renewal to previous policy for the renewal case
-          previousInsuranceCompany: renewalData.policy_info?.insuranceCompany || "",
-          previousPolicyNumber: renewalData.policy_info?.policyNumber || "",
-          previousPolicyType: renewalData.policy_info?.policyType || "",
-          previousIssueDate: renewalData.policy_info?.issueDate || "",
-          previousPolicyStartDate: renewalData.policy_info?.policyStartDate || "",
-          previousPolicyDuration: renewalData.policy_info?.insuranceDuration || "",
-          previousPolicyEndDate: renewalData.policy_info?.odExpiryDate || renewalData.policy_info?.tpExpiryDate || "",
-          previousTpExpiryDate: renewalData.policy_info?.tpExpiryDate || "",
-          previousDueDate: renewalData.policy_info?.dueDate || "",
-          previousClaimTaken: renewalData.previous_policy?.claimTakenLastYear || "no",
-          previousNcbDiscount: renewalData.policy_info?.ncbDiscount || renewalData.previous_policy?.ncbDiscount || "",
-          
-          // Renewal fields
-          renewal_id: policyId,
-          isRenewal: true,
-          
-          // CRITICAL: Reset all subsequent steps for new renewal including new IDV fields
-          insuranceQuotes: [],
-          insurer: "",
-          coverageType: "",
-          premium: "",
-          idv: "",
-          ncb: "",
-          duration: "",
-          vehicleIdv: "",
-          cngIdv: "",
-          accessoriesIdv: "",
-          policyIssued: "",
-          insuranceCompany: "",
-          policyNumber: "",
-          covernoteNumber: "",
-          issueDate: "",
-          policyStartDate: "",
-          dueDate: "",
-          ncbDiscount: "",
-          insuranceDuration: "",
-          idvAmount: "",
-          totalPremium: "",
-          policyType: "",
-          odExpiryDate: "",
-          tpExpiryDate: "",
-          documents: {},
-          documentTags: {},
-          paymentMadeBy: "Customer",
-          paymentMode: "",
-          paymentAmount: "",
-          paymentDate: "",
-          transactionId: "",
-          receiptDate: "",
-          bankName: "",
-          subvention_payment: "No Subvention",
-          paymentStatus: "Payment Pending",
-          totalPaidAmount: 0,
-          netPremium: "",
-          odAddonPercentage: 10,
-          odAddonAmount: "",
-          netAmount: "",
-          odAmount: "",
-          ncbAmount: "",
-          subVention: "",
-          policyPrefilled: true
-        };
-        
-        console.log("✅ NEW Renewal Form Data Prepared:", renewalFormData);
-        setForm(renewalFormData);
-        
-        // CRITICAL: Clear accepted quote for new renewal
-        setAcceptedQuote(null);
-        setPaymentLedger([]);
-        
-        setSaveMessage("✅ Renewal case initialized! Previous policy data has been populated. Please proceed with new insurance quotes.");
-        
-      } else {
-        console.log("📝 Editing EXISTING renewal policy");
-        // This is editing an existing renewal policy - use the regular fetchPolicyData logic
-        // but ensure renewal flags are preserved and accepted quote is cleared
-        await fetchPolicyData(policyId);
-        
-        // Ensure renewal flags are set and clear accepted quote
-        setForm(prev => ({
-          ...prev,
-          isRenewal: true,
-          renewal_id: renewalData.renewal_id || policyId
-        }));
-        
-        // Clear accepted quote for renewal edit
-        setAcceptedQuote(null);
-        console.log("🔄 Cleared accepted quote for renewal edit case");
-      }
-      
-    } catch (error) {
-      console.error("❌ Error fetching renewal policy data:", error);
-      setSaveMessage(`❌ Error loading renewal data: ${error.message}`);
-    } finally {
-      setLoadingPolicy(false);
+const fetchRenewalPolicyData = async (policyId) => {
+  setLoadingPolicy(true);
+  try {
+    console.log("🔍 Fetching renewal policy data for ID:", policyId);
+    const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
+    const policyData = response.data;
+    
+    console.log("📦 Full Renewal API Response:", policyData);
+    
+    if (!policyData || !policyData.data) {
+      console.error("❌ No renewal policy data received from API");
+      setSaveMessage("❌ No renewal policy data found for this ID");
+      return;
     }
-  };
 
-  // ENHANCED: Function to fetch policy data with consistent duration handling and new IDV fields
-  const fetchPolicyData = async (policyId) => {
-    setLoadingPolicy(true);
-    try {
-      console.log("🔍 Fetching policy data for ID:", policyId);
-      const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
-      const policyData = response.data;
-      
-      console.log("📦 Full API Response:", policyData);
-      
-      if (!policyData || !policyData.data) {
-        console.error("❌ No policy data received from API");
-        setSaveMessage("❌ No policy data found for this ID");
-        return;
-      }
-
-      const actualData = policyData.data;
-      console.log("📊 Actual Policy Data:", actualData);
-      
-      // FIXED: Process insurance quotes with consistent duration handling and new IDV fields
-      let processedInsuranceQuotes = [];
-      if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
-        processedInsuranceQuotes = actualData.insurance_quotes.map(quote => {
-          // Ensure NCB discount amount is calculated if missing
-          let ncbDiscountAmount = quote.ncbDiscountAmount;
-          if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
-            ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
-          }
-
-          // ENHANCED: Use consistent policy duration formatting
-          let policyDurationLabel = quote.policyDurationLabel;
-          if (!policyDurationLabel && quote.policyDuration) {
-            policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
-          }
-
-          return {
-            ...quote,
-            ncbDiscountAmount: ncbDiscountAmount || 0,
-            policyDurationLabel: policyDurationLabel || quote.policyDuration,
-            odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0)),
-            // Ensure new IDV fields are included
-            vehicleIdv: quote.vehicleIdv || 0,
-            cngIdv: quote.cngIdv || 0,
-            accessoriesIdv: quote.accessoriesIdv || 0
-          };
-        });
-        
-        console.log("✅ Processed insurance quotes with consistent duration and new IDV fields:", processedInsuranceQuotes);
-      }
-
-      // CRITICAL FIX: Properly map previous policy data including TP expiry date
-      const previousPolicyData = actualData.previous_policy || {};
-      
-      console.log("🔍 Previous Policy Data from API:", previousPolicyData);
-      console.log("📅 TP Expiry Date from API:", previousPolicyData.tpExpiryDate);
-      console.log("📅 Policy End Date from API:", previousPolicyData.policyEndDate);
-
-      // CRITICAL FIX: Properly map new policy data including expiry dates
-      const policyInfoData = actualData.policy_info || {};
-      
-      console.log("🔍 New Policy Data from API:", policyInfoData);
-      console.log("📅 OD Expiry Date from API:", policyInfoData.odExpiryDate);
-      console.log("📅 TP Expiry Date from API:", policyInfoData.tpExpiryDate);
-
-      // Transform documents array to object with tagging
-      const documentsObject = {};
-      const documentTagsObject = {};
-      if (actualData.documents && Array.isArray(actualData.documents)) {
-        actualData.documents.forEach((doc, index) => {
-          const docId = `doc_${index}`;
-          documentsObject[docId] = doc;
-          documentTagsObject[docId] = doc.tag || "";
-        });
-      }
-
-      // Find accepted quote from processed insurance quotes
-      let acceptedQuoteData = null;
-      if (processedInsuranceQuotes.length > 0) {
-        acceptedQuoteData = processedInsuranceQuotes.find(quote => quote.accepted === true);
-        if (!acceptedQuoteData && processedInsuranceQuotes.length > 0) {
-          acceptedQuoteData = processedInsuranceQuotes[0];
-        }
-      }
-
-      // NEW: Clear accepted quote if this is a renewal case
-      if (actualData.isRenewal) {
-        console.log("🔄 Renewal case detected - clearing accepted quote");
-        acceptedQuoteData = null;
-      }
-
-      // Create a clean transformed data object with ALL fields properly mapped including new IDV fields
-      const transformedData = {
+    const renewalData = policyData.data;
+    console.log("📊 Renewal Policy Data:", renewalData);
+    
+    // CRITICAL FIX: Properly load credit type from renewal data
+    const creditTypeFromRenewal = renewalData.creditType || 
+                                 renewalData.customer_details?.creditType || 
+                                 "auto";
+    
+    console.log("💳 Renewal Credit Type Loading Debug:", {
+      rootCreditType: renewalData.creditType,
+      customerDetailsCreditType: renewalData.customer_details?.creditType,
+      finalCreditType: creditTypeFromRenewal
+    });
+    
+    // Check if this is a new renewal (creating from existing policy) 
+    // or editing an existing renewal policy
+    const isNewRenewal = !renewalData.isRenewal; // If the source policy is not already a renewal
+    
+    if (isNewRenewal) {
+      console.log("🔄 Creating NEW renewal from existing policy");
+      // Map renewal policy data to current form for NEW renewal case
+      // Only populate Case Details, Vehicle Details, and Previous Policy
+      const renewalFormData = {
         // Basic info
-        buyer_type: actualData.buyer_type || "individual",
-        vehicleType: actualData.vehicleType || "used",
-        insurance_category: actualData.insurance_category || "motor",
-        status: actualData.status || "draft",
+        buyer_type: renewalData.buyer_type || "individual",
+        vehicleType: "used", // Renewals are always used vehicles
+        insurance_category: renewalData.insurance_category || "motor",
+        status: "draft",
+        // FIXED: Properly preserve credit type from source policy
+        creditType: creditTypeFromRenewal,
+        hidePayout: creditTypeFromRenewal === "showroom" || creditTypeFromRenewal === "customer",
         
-        // Customer details - handle both individual and corporate
-        customerName: actualData.customer_details?.name || "",
-        mobile: actualData.customer_details?.mobile || "",
-        email: actualData.customer_details?.email || "",
-        employeeName: actualData.customer_details?.employeeName || "",
-        age: actualData.customer_details?.age || "",
-        gender: actualData.customer_details?.gender || "",
-        panNumber: actualData.customer_details?.panNumber || "",
-        aadhaarNumber: actualData.customer_details?.aadhaarNumber || "",
-        residenceAddress: actualData.customer_details?.residenceAddress || "",
-        pincode: actualData.customer_details?.pincode || "",
-        city: actualData.customer_details?.city || "",
-        alternatePhone: actualData.customer_details?.alternatePhone || "",
+        // Customer details
+        customerName: renewalData.customer_details?.name || "",
+        mobile: renewalData.customer_details?.mobile || "",
+        email: renewalData.customer_details?.email || "",
+        employeeName: renewalData.customer_details?.employeeName || "",
+        age: renewalData.customer_details?.age || "",
+        gender: renewalData.customer_details?.gender || "",
+        panNumber: renewalData.customer_details?.panNumber || "",
+        aadhaarNumber: renewalData.customer_details?.aadhaarNumber || "",
+        residenceAddress: renewalData.customer_details?.residenceAddress || "",
+        pincode: renewalData.customer_details?.pincode || "",
+        city: renewalData.customer_details?.city || "",
+        alternatePhone: renewalData.customer_details?.alternatePhone || "",
         
         // Corporate fields
-        companyName: actualData.customer_details?.companyName || "",
-        contactPersonName: actualData.customer_details?.contactPersonName || "",
-        companyPanNumber: actualData.customer_details?.companyPanNumber || "",
-        gstNumber: actualData.customer_details?.gstNumber || "",
+        companyName: renewalData.customer_details?.companyName || "",
+        contactPersonName: renewalData.customer_details?.contactPersonName || "",
+        companyPanNumber: renewalData.customer_details?.companyPanNumber || "",
+        gstNumber: renewalData.customer_details?.gstNumber || "",
         
         // Nominee
-        nomineeName: actualData.nominee?.name || "",
-        relation: actualData.nominee?.relation || "",
-        nomineeAge: actualData.nominee?.age || "",
+        nomineeName: renewalData.nominee?.name || "",
+        relation: renewalData.nominee?.relation || "",
+        nomineeAge: renewalData.nominee?.age || "",
         
-        // Reference - FIXED: Corrected spelling
-        referenceName: actualData.reference?.name || actualData.refrence?.name || "",
-        referencePhone: actualData.reference?.phone || actualData.refrence?.phone || "",
+        // Reference
+        referenceName: renewalData.reference?.name || renewalData.refrence?.name || "",
+        referencePhone: renewalData.reference?.phone || renewalData.refrence?.phone || "",
         
         // Vehicle details
-        regNo: actualData.vehicle_details?.regNo || "",
-        make: actualData.vehicle_details?.make || "",
-        model: actualData.vehicle_details?.model || "",
-        variant: actualData.vehicle_details?.variant || "",
-        engineNo: actualData.vehicle_details?.engineNo || "",
-        chassisNo: actualData.vehicle_details?.chassisNo || "",
-        makeMonth: actualData.vehicle_details?.makeMonth || "",
-        makeYear: actualData.vehicle_details?.makeYear || "",
+        regNo: renewalData.vehicle_details?.regNo || "",
+        make: renewalData.vehicle_details?.make || "",
+        model: renewalData.vehicle_details?.model || "",
+        variant: renewalData.vehicle_details?.variant || "",
+        engineNo: renewalData.vehicle_details?.engineNo || "",
+        chassisNo: renewalData.vehicle_details?.chassisNo || "",
+        makeMonth: renewalData.vehicle_details?.makeMonth || "",
+        makeYear: renewalData.vehicle_details?.makeYear || "",
         
-        // Previous policy - CRITICAL FIX: Include all expiry dates
-        previousInsuranceCompany: previousPolicyData.insuranceCompany || "",
-        previousPolicyNumber: previousPolicyData.policyNumber || "",
-        previousPolicyType: previousPolicyData.policyType || "",
-        previousIssueDate: previousPolicyData.issueDate || "",
-        previousDueDate: previousPolicyData.dueDate || "",
-        previousPolicyStartDate: previousPolicyData.policyStartDate || "", 
-        previousPolicyDuration: previousPolicyData.policyDuration || "",
-        previousPolicyEndDate: previousPolicyData.policyEndDate || "",
-        previousTpExpiryDate: previousPolicyData.tpExpiryDate || "",
-        previousClaimTaken: previousPolicyData.claimTakenLastYear || "no",
-        previousNcbDiscount: previousPolicyData.ncbDiscount || "",
-        
-        // Insurance quotes - use processed quotes with new IDV fields
-        insuranceQuotes: processedInsuranceQuotes,
-        
-        // Insurance quote (legacy) - UPDATED: Include new IDV fields
-        insurer: actualData.insurance_quote?.insurer || "",
-        coverageType: actualData.insurance_quote?.coverageType || "",
-        premium: actualData.insurance_quote?.premium || "",
-        idv: actualData.insurance_quote?.idv || "",
-        ncb: actualData.insurance_quote?.ncb || "",
-        duration: actualData.insurance_quote?.duration || "",
-        vehicleIdv: actualData.insurance_quote?.vehicleIdv || "", // NEW: Vehicle IDV field
-        cngIdv: actualData.insurance_quote?.cngIdv || "", // NEW: CNG IDV field
-        accessoriesIdv: actualData.insurance_quote?.accessoriesIdv || "", // NEW: Accessories IDV field
-        
-        // Policy info - CRITICAL FIX: Include all expiry dates and policy type
-        policyIssued: policyInfoData.policyIssued || "",
-        insuranceCompany: policyInfoData.insuranceCompany || "",
-        policyNumber: policyInfoData.policyNumber || "",
-        covernoteNumber: policyInfoData.covernoteNumber || "",
-        issueDate: policyInfoData.issueDate || "",
-        policyStartDate: policyInfoData.policyStartDate || "",
-        dueDate: policyInfoData.dueDate || "",
-        ncbDiscount: policyInfoData.ncbDiscount || "",
-        insuranceDuration: policyInfoData.insuranceDuration || "",
-        idvAmount: policyInfoData.idvAmount || "",
-        totalPremium: policyInfoData.totalPremium || "",
-        policyType: policyInfoData.policyType || "", // FIXED: Added policyType
-        odExpiryDate: policyInfoData.odExpiryDate || "", // FIXED: Added odExpiryDate
-        tpExpiryDate: policyInfoData.tpExpiryDate || "", // FIXED: Added tpExpiryDate
-        
-        // Payment info
-        paymentMadeBy: actualData.payment_info?.paymentMadeBy || "Customer",
-        paymentMode: actualData.payment_info?.paymentMode || "",
-        paymentAmount: actualData.payment_info?.paymentAmount || "",
-        paymentDate: actualData.payment_info?.paymentDate || "",
-        transactionId: actualData.payment_info?.transactionId || "",
-        receiptDate: actualData.payment_info?.receiptDate || "",
-        bankName: actualData.payment_info?.bankName || "",
-        subvention_payment: actualData.payment_info?.subvention_payment || "No Subvention",
-        paymentStatus: actualData.payment_info?.paymentStatus || "Payment Pending",
-        totalPaidAmount: actualData.payment_info?.totalPaidAmount || 0,
-         
-        // Payout
-        netPremium: actualData.payout?.netPremium || "",
-        odAmount: actualData.payout?.odAmount || "",
-        ncbAmount: actualData.payout?.ncbAmount || "",
-        subVention: actualData.payout?.subVention || "",
-        odAddonPercentage: actualData.payout?.odAddonPercentage || 10,
-        odAddonAmount: actualData.payout?.odAddonAmount || "",
-        netAmount: actualData.payout?.netAmount || "",
-        
-        // Documents as object
-        documents: documentsObject,
-        documentTags: documentTagsObject,
+        // Map new policy data from renewal to previous policy for the renewal case
+        previousInsuranceCompany: renewalData.policy_info?.insuranceCompany || "",
+        previousPolicyNumber: renewalData.policy_info?.policyNumber || "",
+        previousPolicyType: renewalData.policy_info?.policyType || "",
+        previousIssueDate: renewalData.policy_info?.issueDate || "",
+        previousPolicyStartDate: renewalData.policy_info?.policyStartDate || "",
+        previousPolicyDuration: renewalData.policy_info?.insuranceDuration || "",
+        previousPolicyEndDate: renewalData.policy_info?.odExpiryDate || renewalData.policy_info?.tpExpiryDate || "",
+        previousTpExpiryDate: renewalData.policy_info?.tpExpiryDate || "",
+        previousDueDate: renewalData.policy_info?.dueDate || "",
+        previousClaimTaken: renewalData.previous_policy?.claimTakenLastYear || "no",
+        previousNcbDiscount: renewalData.policy_info?.ncbDiscount || renewalData.previous_policy?.ncbDiscount || "",
         
         // Renewal fields
-        renewal_id: actualData.renewal_id || "",
-        isRenewal: actualData.isRenewal || false,
+        renewal_id: policyId,
+        isRenewal: true,
         
-        // System fields
-        ts: actualData.ts || Date.now(),
-        created_by: actualData.created_by || "ADMIN123",
+        // CRITICAL: Reset all subsequent steps for new renewal including new IDV fields
+        insuranceQuotes: [],
+        insurer: "",
+        coverageType: "",
+        premium: "",
+        idv: "",
+        ncb: "",
+        duration: "",
+        vehicleIdv: "",
+        cngIdv: "",
+        accessoriesIdv: "",
+        policyIssued: "",
+        insuranceCompany: "",
+        policyNumber: "",
+        covernoteNumber: "",
+        issueDate: "",
+        policyStartDate: "",
+        dueDate: "",
+        ncbDiscount: "",
+        insuranceDuration: "",
+        idvAmount: "",
+        totalPremium: "",
+        policyType: "",
+        odExpiryDate: "",
+        tpExpiryDate: "",
+        documents: {},
+        documentTags: {},
+        paymentMadeBy: "Customer",
+        paymentMode: "",
+        paymentAmount: "",
+        paymentDate: "",
+        transactionId: "",
+        receiptDate: "",
+        bankName: "",
+        subvention_payment: "No Subvention",
+        paymentStatus: "Payment Pending",
+        totalPaidAmount: 0,
+        netPremium: "",
+        odAddonPercentage: 10,
+        odAddonAmount: "",
+        netAmount: "",
+        odAmount: "",
+        ncbAmount: "",
+        subVention: "",
         policyPrefilled: true
       };
       
-      console.log("✅ Transformed Form Data with consistent duration handling and new IDV fields:", transformedData);
+      console.log("✅ NEW Renewal Form Data Prepared with credit type:", {
+        creditType: renewalFormData.creditType,
+        hidePayout: renewalFormData.hidePayout
+      });
+      setForm(renewalFormData);
       
-      setForm(transformedData);
+      // CRITICAL: Clear accepted quote for new renewal
+      setAcceptedQuote(null);
+      setPaymentLedger([]);
       
-      // Set accepted quote from processed quotes (only if not renewal)
-      if (acceptedQuoteData && !actualData.isRenewal) {
-        console.log("✅ Setting accepted quote from processed data:", acceptedQuoteData.insuranceCompany);
-        setAcceptedQuote(acceptedQuoteData);
-      } else if (actualData.isRenewal) {
-        console.log("🔄 Renewal case - not setting accepted quote");
-        setAcceptedQuote(null);
-      }
+      setSaveMessage("✅ Renewal case initialized! Previous policy data has been populated. Please proceed with new insurance quotes.");
       
-      // Set payment ledger from payment history if available
-      if (actualData.payment_ledger && Array.isArray(actualData.payment_ledger)) {
-        console.log("💰 Setting payment ledger from API:", actualData.payment_ledger);
-        setPaymentLedger(actualData.payment_ledger);
-      } else if (actualData.payment_info?.paymentHistory && Array.isArray(actualData.payment_info.paymentHistory)) {
-        console.log("💰 Setting payment ledger from payment history:", actualData.payment_info.paymentHistory);
-        setPaymentLedger(actualData.payment_info.paymentHistory);
-      } else {
-        console.log("💰 No payment ledger found in API response");
-        setPaymentLedger([]);
-      }
+    } else {
+      console.log("📝 Editing EXISTING renewal policy");
+      // This is editing an existing renewal policy - use the regular fetchPolicyData logic
+      // but ensure renewal flags are preserved and accepted quote is cleared
+      await fetchPolicyData(policyId);
       
-      setSaveMessage("✅ Policy data loaded successfully! You can now edit the form.");
+      // Ensure renewal flags are set and clear accepted quote
+      setForm(prev => ({
+        ...prev,
+        isRenewal: true,
+        renewal_id: renewalData.renewal_id || policyId
+      }));
       
-    } catch (error) {
-      console.error("❌ Error fetching policy data:", error);
-      console.error("❌ Error details:", error.response?.data);
-      setSaveMessage(`❌ Error loading policy data: ${error.message}`);
-    } finally {
-      setLoadingPolicy(false);
+      // Clear accepted quote for renewal edit
+      setAcceptedQuote(null);
+      console.log("🔄 Cleared accepted quote for renewal edit case");
     }
-  };
+    
+  } catch (error) {
+    console.error("❌ Error fetching renewal policy data:", error);
+    setSaveMessage(`❌ Error loading renewal data: ${error.message}`);
+  } finally {
+    setLoadingPolicy(false);
+  }
+};
 
-  // Enhanced handleChange to properly handle all field types including new IDV fields
+  // ENHANCED: Function to fetch policy data with consistent duration handling and new IDV fields
+const fetchPolicyData = async (policyId) => {
+  setLoadingPolicy(true);
+  try {
+    console.log("🔍 Fetching policy data for ID:", policyId);
+    const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
+    const policyData = response.data;
+    
+    console.log("📦 Full API Response:", policyData);
+    
+    if (!policyData || !policyData.data) {
+      console.error("❌ No policy data received from API");
+      setSaveMessage("❌ No policy data found for this ID");
+      return;
+    }
+
+    const actualData = policyData.data;
+    console.log("📊 Actual Policy Data:", actualData);
+    
+    // CRITICAL FIX: Properly load credit type from API data
+    // First check if creditType exists at root level, then check customer_details
+    const creditTypeFromAPI = actualData.creditType || 
+                             actualData.customer_details?.creditType || 
+                             "auto";
+    
+    console.log("💳 Credit Type Loading Debug:", {
+      rootCreditType: actualData.creditType,
+      customerDetailsCreditType: actualData.customer_details?.creditType,
+      finalCreditType: creditTypeFromAPI
+    });
+
+    // FIXED: Process insurance quotes with consistent duration handling and new IDV fields
+    let processedInsuranceQuotes = [];
+    if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
+      processedInsuranceQuotes = actualData.insurance_quotes.map(quote => {
+        // Ensure NCB discount amount is calculated if missing
+        let ncbDiscountAmount = quote.ncbDiscountAmount;
+        if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
+          ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
+        }
+
+        // ENHANCED: Use consistent policy duration formatting
+        let policyDurationLabel = quote.policyDurationLabel;
+        if (!policyDurationLabel && quote.policyDuration) {
+          policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
+        }
+
+        return {
+          ...quote,
+          ncbDiscountAmount: ncbDiscountAmount || 0,
+          policyDurationLabel: policyDurationLabel || quote.policyDuration,
+          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0)),
+          // Ensure new IDV fields are included
+          vehicleIdv: quote.vehicleIdv || 0,
+          cngIdv: quote.cngIdv || 0,
+          accessoriesIdv: quote.accessoriesIdv || 0
+        };
+      });
+      
+      console.log("✅ Processed insurance quotes with consistent duration and new IDV fields:", processedInsuranceQuotes);
+    }
+
+    // CRITICAL FIX: Properly map previous policy data including TP expiry date
+    const previousPolicyData = actualData.previous_policy || {};
+    
+    console.log("🔍 Previous Policy Data from API:", previousPolicyData);
+
+    // CRITICAL FIX: Properly map new policy data including expiry dates
+    const policyInfoData = actualData.policy_info || {};
+    
+    console.log("🔍 New Policy Data from API:", policyInfoData);
+
+    // Transform documents array to object with tagging
+    const documentsObject = {};
+    const documentTagsObject = {};
+    if (actualData.documents && Array.isArray(actualData.documents)) {
+      actualData.documents.forEach((doc, index) => {
+        const docId = `doc_${index}`;
+        documentsObject[docId] = doc;
+        documentTagsObject[docId] = doc.tag || "";
+      });
+    }
+
+    // Find accepted quote from processed insurance quotes
+    let acceptedQuoteData = null;
+    if (processedInsuranceQuotes.length > 0) {
+      acceptedQuoteData = processedInsuranceQuotes.find(quote => quote.accepted === true);
+      if (!acceptedQuoteData && processedInsuranceQuotes.length > 0) {
+        acceptedQuoteData = processedInsuranceQuotes[0];
+      }
+    }
+
+    // NEW: Clear accepted quote if this is a renewal case
+    if (actualData.isRenewal) {
+      console.log("🔄 Renewal case detected - clearing accepted quote");
+      acceptedQuoteData = null;
+    }
+
+    // Create a clean transformed data object with ALL fields properly mapped including credit type
+    const transformedData = {
+      // Basic info
+      buyer_type: actualData.buyer_type || "individual",
+      vehicleType: actualData.vehicleType || "used",
+      insurance_category: actualData.insurance_category || "motor",
+      status: actualData.status || "draft",
+      // CRITICAL FIX: Properly load credit type from API
+      creditType: creditTypeFromAPI,
+      hidePayout: actualData.hidePayout || (creditTypeFromAPI === "showroom" || creditTypeFromAPI === "customer"),
+      
+      // Customer details - handle both individual and corporate
+      customerName: actualData.customer_details?.name || "",
+      mobile: actualData.customer_details?.mobile || "",
+      email: actualData.customer_details?.email || "",
+      employeeName: actualData.customer_details?.employeeName || "",
+      age: actualData.customer_details?.age || "",
+      gender: actualData.customer_details?.gender || "",
+      panNumber: actualData.customer_details?.panNumber || "",
+      aadhaarNumber: actualData.customer_details?.aadhaarNumber || "",
+      residenceAddress: actualData.customer_details?.residenceAddress || "",
+      pincode: actualData.customer_details?.pincode || "",
+      city: actualData.customer_details?.city || "",
+      alternatePhone: actualData.customer_details?.alternatePhone || "",
+      
+      // Corporate fields
+      companyName: actualData.customer_details?.companyName || "",
+      contactPersonName: actualData.customer_details?.contactPersonName || "",
+      companyPanNumber: actualData.customer_details?.companyPanNumber || "",
+      gstNumber: actualData.customer_details?.gstNumber || "",
+      
+      // Nominee
+      nomineeName: actualData.nominee?.name || "",
+      relation: actualData.nominee?.relation || "",
+      nomineeAge: actualData.nominee?.age || "",
+      
+      // Reference - FIXED: Corrected spelling
+      referenceName: actualData.reference?.name || actualData.refrence?.name || "",
+      referencePhone: actualData.reference?.phone || actualData.refrence?.phone || "",
+      
+      // Vehicle details
+      regNo: actualData.vehicle_details?.regNo || "",
+      make: actualData.vehicle_details?.make || "",
+      model: actualData.vehicle_details?.model || "",
+      variant: actualData.vehicle_details?.variant || "",
+      engineNo: actualData.vehicle_details?.engineNo || "",
+      chassisNo: actualData.vehicle_details?.chassisNo || "",
+      makeMonth: actualData.vehicle_details?.makeMonth || "",
+      makeYear: actualData.vehicle_details?.makeYear || "",
+      
+      // Previous policy - CRITICAL FIX: Include all expiry dates
+      previousInsuranceCompany: previousPolicyData.insuranceCompany || "",
+      previousPolicyNumber: previousPolicyData.policyNumber || "",
+      previousPolicyType: previousPolicyData.policyType || "",
+      previousIssueDate: previousPolicyData.issueDate || "",
+      previousDueDate: previousPolicyData.dueDate || "",
+      previousPolicyStartDate: previousPolicyData.policyStartDate || "", 
+      previousPolicyDuration: previousPolicyData.policyDuration || "",
+      previousPolicyEndDate: previousPolicyData.policyEndDate || "",
+      previousTpExpiryDate: previousPolicyData.tpExpiryDate || "",
+      previousClaimTaken: previousPolicyData.claimTakenLastYear || "no",
+      previousNcbDiscount: previousPolicyData.ncbDiscount || "",
+      
+      // Insurance quotes - use processed quotes with new IDV fields
+      insuranceQuotes: processedInsuranceQuotes,
+      
+      // Insurance quote (legacy) - UPDATED: Include new IDV fields
+      insurer: actualData.insurance_quote?.insurer || "",
+      coverageType: actualData.insurance_quote?.coverageType || "",
+      premium: actualData.insurance_quote?.premium || "",
+      idv: actualData.insurance_quote?.idv || "",
+      ncb: actualData.insurance_quote?.ncb || "",
+      duration: actualData.insurance_quote?.duration || "",
+      vehicleIdv: actualData.insurance_quote?.vehicleIdv || "",
+      cngIdv: actualData.insurance_quote?.cngIdv || "",
+      accessoriesIdv: actualData.insurance_quote?.accessoriesIdv || "",
+      
+      // Policy info - CRITICAL FIX: Include all expiry dates and policy type
+      policyIssued: policyInfoData.policyIssued || "",
+      insuranceCompany: policyInfoData.insuranceCompany || "",
+      policyNumber: policyInfoData.policyNumber || "",
+      covernoteNumber: policyInfoData.covernoteNumber || "",
+      issueDate: policyInfoData.issueDate || "",
+      policyStartDate: policyInfoData.policyStartDate || "",
+      dueDate: policyInfoData.dueDate || "",
+      ncbDiscount: policyInfoData.ncbDiscount || "",
+      insuranceDuration: policyInfoData.insuranceDuration || "",
+      idvAmount: policyInfoData.idvAmount || "",
+      totalPremium: policyInfoData.totalPremium || "",
+      policyType: policyInfoData.policyType || "",
+      odExpiryDate: policyInfoData.odExpiryDate || "",
+      tpExpiryDate: policyInfoData.tpExpiryDate || "",
+      
+      // Payment info
+      paymentMadeBy: actualData.payment_info?.paymentMadeBy || "Customer",
+      paymentMode: actualData.payment_info?.paymentMode || "",
+      paymentAmount: actualData.payment_info?.paymentAmount || "",
+      paymentDate: actualData.payment_info?.paymentDate || "",
+      transactionId: actualData.payment_info?.transactionId || "",
+      receiptDate: actualData.payment_info?.receiptDate || "",
+      bankName: actualData.payment_info?.bankName || "",
+      subvention_payment: actualData.payment_info?.subvention_payment || "No Subvention",
+      paymentStatus: actualData.payment_info?.paymentStatus || "Payment Pending",
+      totalPaidAmount: actualData.payment_info?.totalPaidAmount || 0,
+       
+      // Payout
+      netPremium: actualData.payout?.netPremium || "",
+      odAmount: actualData.payout?.odAmount || "",
+      ncbAmount: actualData.payout?.ncbAmount || "",
+      subVention: actualData.payout?.subVention || "",
+      odAddonPercentage: actualData.payout?.odAddonPercentage || 10,
+      odAddonAmount: actualData.payout?.odAddonAmount || "",
+      netAmount: actualData.payout?.netAmount || "",
+      
+      // Documents as object
+      documents: documentsObject,
+      documentTags: documentTagsObject,
+      
+      // Renewal fields
+      renewal_id: actualData.renewal_id || "",
+      isRenewal: actualData.isRenewal || false,
+      
+      // System fields
+      ts: actualData.ts || Date.now(),
+      created_by: actualData.created_by || "ADMIN123",
+      policyPrefilled: true
+    };
+    
+    console.log("✅ Transformed Form Data with proper credit type loading:", {
+      creditType: transformedData.creditType,
+      hidePayout: transformedData.hidePayout
+    });
+    
+    setForm(transformedData);
+    
+    // Set accepted quote from processed quotes (only if not renewal)
+    if (acceptedQuoteData && !actualData.isRenewal) {
+      console.log("✅ Setting accepted quote from processed data:", acceptedQuoteData.insuranceCompany);
+      setAcceptedQuote(acceptedQuoteData);
+    } else if (actualData.isRenewal) {
+      console.log("🔄 Renewal case - not setting accepted quote");
+      setAcceptedQuote(null);
+    }
+    
+    // Set payment ledger from payment history if available
+    if (actualData.payment_ledger && Array.isArray(actualData.payment_ledger)) {
+      console.log("💰 Setting payment ledger from API:", actualData.payment_ledger);
+      setPaymentLedger(actualData.payment_ledger);
+    } else if (actualData.payment_info?.paymentHistory && Array.isArray(actualData.payment_info.paymentHistory)) {
+      console.log("💰 Setting payment ledger from payment history:", actualData.payment_info.paymentHistory);
+      setPaymentLedger(actualData.payment_info.paymentHistory);
+    } else {
+      console.log("💰 No payment ledger found in API response");
+      setPaymentLedger([]);
+    }
+    
+    setSaveMessage("✅ Policy data loaded successfully! You can now edit the form.");
+    
+  } catch (error) {
+    console.error("❌ Error fetching policy data:", error);
+    console.error("❌ Error details:", error.response?.data);
+    setSaveMessage(`❌ Error loading policy data: ${error.message}`);
+  } finally {
+    setLoadingPolicy(false);
+  }
+};
+
+  // Enhanced handleChange to properly handle all field types including new IDV fields and credit type
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (errors[name]) {
@@ -10365,6 +10646,17 @@ const NewPolicyPage = () => {
     // Handle vehicleType change - special logic
     if (name === "vehicleType") {
       setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
+    // NEW: Handle credit type change with payout visibility logic
+    if (name === "creditType") {
+      const hidePayout = value === "showroom" || value === "customer";
+      setForm((f) => ({ 
+        ...f, 
+        [name]: value,
+        hidePayout: hidePayout
+      }));
       return;
     }
     
@@ -10444,7 +10736,7 @@ const NewPolicyPage = () => {
     }));
   };
 
-  // Validation functions - UPDATED to handle vehicle type
+  // Validation functions - UPDATED to handle vehicle type and credit type
   const validateCurrentStep = () => {
     let stepErrors = {};
     
@@ -10479,7 +10771,10 @@ const NewPolicyPage = () => {
         }
         break;
       case 8:
-        stepErrors = payoutValidation(form, acceptedQuote);
+        // Only validate payout if it's not hidden
+        if (!shouldHidePayout()) {
+          stepErrors = payoutValidation(form, acceptedQuote);
+        }
         break;
       default:
         stepErrors = {};
@@ -10602,7 +10897,7 @@ const NewPolicyPage = () => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type
+      // Prepare customer details based on buyer type - INCLUDING CREDIT TYPE
       const customerDetails = {
         name: form.customerName || "",
         mobile: form.mobile || "",
@@ -10619,7 +10914,9 @@ const NewPolicyPage = () => {
         companyName: form.companyName || "",
         contactPersonName: form.contactPersonName || "",
         companyPanNumber: form.companyPanNumber || "",
-        gstNumber: form.gstNumber || ""
+        gstNumber: form.gstNumber || "",
+        // CRITICAL: Include creditType in customer_details
+        creditType: form.creditType || "auto"
       };
 
       const policyData = {
@@ -10637,6 +10934,9 @@ const NewPolicyPage = () => {
         },
         insurance_category: form.insurance_category || "motor",
         status: form.status || "pending",
+        // FIXED: Include credit type in policy data - CRITICAL FOR DB STORAGE
+        creditType: form.creditType || "auto",
+        hidePayout: form.hidePayout || false,
         insurance_quotes: form.insuranceQuotes || [],
         ts: Date.now(),
         created_by: form.created_by || "ADMIN123",
@@ -10650,6 +10950,11 @@ const NewPolicyPage = () => {
       const sanitizedData = sanitizeDataForAPI(policyData);
       
       console.log("📝 Creating policy with sanitized data:", sanitizedData);
+      console.log("💳 CREDIT TYPE IN CREATE:", {
+        formCreditType: form.creditType,
+        sanitizedCreditType: sanitizedData.creditType,
+        customerDetailsCreditType: customerDetails.creditType
+      });
 
       const response = await axios.post(`${API_BASE_URL}/policies`, sanitizedData, {
         headers: {
@@ -10745,7 +11050,9 @@ const NewPolicyPage = () => {
               companyName: form.companyName || "",
               contactPersonName: form.contactPersonName || "",
               companyPanNumber: form.companyPanNumber || "",
-              gstNumber: form.gstNumber || ""
+              gstNumber: form.gstNumber || "",
+              // CRITICAL: Include creditType in customer_details
+              creditType: form.creditType || "auto"
             };
 
             updateData = {
@@ -10761,6 +11068,9 @@ const NewPolicyPage = () => {
                 name: form.referenceName || "",
                 phone: form.referencePhone || ""
               },
+              // FIXED: Include credit type in step 1 update
+              creditType: form.creditType || "auto",
+              hidePayout: form.hidePayout || false,
               policyPrefilled: form.policyPrefilled || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
@@ -10780,6 +11090,9 @@ const NewPolicyPage = () => {
                 makeYear: form.makeYear || ""
               },
               vehicleType: form.vehicleType,
+              // FIXED: Include credit type in all updates
+              creditType: form.creditType || "auto",
+              hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
@@ -10802,6 +11115,9 @@ const NewPolicyPage = () => {
                   claimTakenLastYear: form.previousClaimTaken || "no",
                   ncbDiscount: parseFloat(form.previousNcbDiscount) || 0
                 },
+                // FIXED: Include credit type
+                creditType: form.creditType || "auto",
+                hidePayout: form.hidePayout || false,
                 // Include renewal fields
                 renewal_id: form.renewal_id || "",
                 isRenewal: form.isRenewal || false
@@ -10817,11 +11133,14 @@ const NewPolicyPage = () => {
                 idv: parseFloat(form.idv) || 0,
                 ncb: form.ncb || "",
                 duration: form.duration || "",
-                // NEW: Include the new IDV fields
+                // FIXED: Include the new IDV fields
                 vehicleIdv: parseFloat(form.vehicleIdv) || 0,
                 cngIdv: parseFloat(form.cngIdv) || 0,
                 accessoriesIdv: parseFloat(form.accessoriesIdv) || 0
               },
+              // FIXED: Include credit type
+              creditType: form.creditType || "auto",
+              hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
@@ -10846,6 +11165,9 @@ const NewPolicyPage = () => {
                 odExpiryDate: form.odExpiryDate || "", // FIXED: Added odExpiryDate
                 tpExpiryDate: form.tpExpiryDate || "" // FIXED: Added tpExpiryDate
               },
+              // FIXED: Include credit type
+              creditType: form.creditType || "auto",
+              hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
@@ -10860,6 +11182,9 @@ const NewPolicyPage = () => {
             }));
             updateData = {
               documents: documentsArray,
+              // FIXED: Include credit type
+              creditType: form.creditType || "auto",
+              hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
@@ -10884,30 +11209,51 @@ const NewPolicyPage = () => {
                 totalPaidAmount: totalPaid
               },
               payment_ledger: paymentLedger,
+              // FIXED: Include credit type
+              creditType: form.creditType || "auto",
+              hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
             };
             break;
           case 8:
-            updateData = {
-              payout: {
-                netPremium: parseFloat(form.netPremium) || 0,
-                odAmount: parseFloat(form.odAmount) || 0,
-                ncbAmount: parseFloat(form.ncbAmount) || 0,
-                subVention: parseFloat(form.subVention) || 0,
-                odAddonPercentage: parseFloat(form.odAddonPercentage) || 10,
-                odAddonAmount: parseFloat(form.odAddonAmount) || 0,
-                netAmount: parseFloat(form.netAmount) || 0
-              },
-              payment_ledger: paymentLedger,
-              // Include renewal fields
-              renewal_id: form.renewal_id || "",
-              isRenewal: form.isRenewal || false
-            };
+            // Only include payout data if payout is not hidden
+            if (!shouldHidePayout()) {
+              updateData = {
+                payout: {
+                  netPremium: parseFloat(form.netPremium) || 0,
+                  odAmount: parseFloat(form.odAmount) || 0,
+                  ncbAmount: parseFloat(form.ncbAmount) || 0,
+                  subVention: parseFloat(form.subVention) || 0,
+                  odAddonPercentage: parseFloat(form.odAddonPercentage) || 10,
+                  odAddonAmount: parseFloat(form.odAddonAmount) || 0,
+                  netAmount: parseFloat(form.netAmount) || 0
+                },
+                payment_ledger: paymentLedger,
+                // FIXED: Include credit type
+                creditType: form.creditType || "auto",
+                hidePayout: form.hidePayout || false,
+                // Include renewal fields
+                renewal_id: form.renewal_id || "",
+                isRenewal: form.isRenewal || false
+              };
+            } else {
+              updateData = {
+                // FIXED: Include credit type even when payout is hidden
+                creditType: form.creditType || "auto",
+                hidePayout: form.hidePayout || false,
+                // Include renewal fields
+                renewal_id: form.renewal_id || "",
+                isRenewal: form.isRenewal || false
+              };
+            }
             break;
           default:
             updateData = {
+              // FIXED: Include credit type in all updates
+              creditType: form.creditType || "auto",
+              hidePayout: form.hidePayout || false,
               // Include renewal fields in all updates
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
@@ -10923,7 +11269,7 @@ const NewPolicyPage = () => {
           ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
           policyDurationLabel: quote.policyDurationLabel || formatPolicyDuration(quote.policyDuration.toString()),
           odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0)),
-          // NEW: Include the new IDV fields
+          // FIXED: Include the new IDV fields
           vehicleIdv: parseFloat(quote.vehicleIdv) || 0,
           cngIdv: parseFloat(quote.cngIdv) || 0,
           accessoriesIdv: parseFloat(quote.accessoriesIdv) || 0
@@ -10953,18 +11299,11 @@ const NewPolicyPage = () => {
         paymentLedgerLength: sanitizedUpdateData.payment_ledger?.length || 0,
         insuranceQuotesLength: sanitizedUpdateData.insurance_quotes?.length || 0,
         vehicleType: form.vehicleType,
+        creditType: form.creditType,
+        sanitizedCreditType: sanitizedUpdateData.creditType,
+        hidePayout: form.hidePayout,
         isRenewal: form.isRenewal,
-        renewal_id: form.renewal_id,
-        policyInfo: sanitizedUpdateData.policy_info ? {
-          policyType: sanitizedUpdateData.policy_info.policyType,
-          odExpiryDate: sanitizedUpdateData.policy_info.odExpiryDate,
-          tpExpiryDate: sanitizedUpdateData.policy_info.tpExpiryDate
-        } : 'No policy info',
-        newIdvFields: {
-          vehicleIdv: sanitizedUpdateData.insurance_quote?.vehicleIdv,
-          cngIdv: sanitizedUpdateData.insurance_quote?.cngIdv,
-          accessoriesIdv: sanitizedUpdateData.insurance_quote?.accessoriesIdv
-        }
+        renewal_id: form.renewal_id
       });
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedUpdateData, {
@@ -11034,17 +11373,34 @@ const NewPolicyPage = () => {
     }
   };
 
-  // Handle Save and Exit
+  // FIXED: Enhanced handleSaveAndExit to properly save current form state
   const handleSaveAndExit = async () => {
     try {
       setIsSaving(true);
       
+      // Validate current step before saving
+      if (!validateCurrentStep()) {
+        setSaveMessage("❌ Please fix the validation errors before saving");
+        setIsSaving(false);
+        return;
+      }
+
+      console.log("💾 Save & Exit - Current form state:", {
+        creditType: form.creditType,
+        hidePayout: form.hidePayout,
+        step: step
+      });
+
       // Save current progress first
       if (policyId) {
+        // For existing policies, update with current form data
         await updatePolicy();
       } else {
+        // For new policies, create first
         await createPolicy();
       }
+      
+      setSaveMessage("✅ Progress saved successfully! Redirecting...");
       
       // Navigate back to policies page after successful save
       setTimeout(() => {
@@ -11068,7 +11424,7 @@ const NewPolicyPage = () => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type
+      // Prepare customer details based on buyer type - INCLUDING CREDIT TYPE
       const customerDetails = {
         name: form.customerName,
         mobile: form.mobile,
@@ -11085,7 +11441,9 @@ const NewPolicyPage = () => {
         companyName: form.companyName || "",
         contactPersonName: form.contactPersonName || "",
         companyPanNumber: form.companyPanNumber || "",
-        gstNumber: form.gstNumber || ""
+        gstNumber: form.gstNumber || "",
+        // CRITICAL: Include creditType in customer_details for final save
+        creditType: form.creditType || "auto"
       };
 
       // Convert documents object to array for final save
@@ -11142,7 +11500,7 @@ const NewPolicyPage = () => {
           idv: parseFloat(form.idv) || 0,
           ncb: form.ncb,
           duration: form.duration,
-          // NEW: Include the new IDV fields in final save
+          // FIXED: Include the new IDV fields in final save
           vehicleIdv: parseFloat(form.vehicleIdv) || 0,
           cngIdv: parseFloat(form.cngIdv) || 0,
           accessoriesIdv: parseFloat(form.accessoriesIdv) || 0
@@ -11153,7 +11511,7 @@ const NewPolicyPage = () => {
           ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
           policyDurationLabel: quote.policyDurationLabel || formatPolicyDuration(quote.policyDuration.toString()),
           odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0)),
-          // NEW: Include the new IDV fields
+          // FIXED: Include the new IDV fields
           vehicleIdv: parseFloat(quote.vehicleIdv) || 0,
           cngIdv: parseFloat(quote.cngIdv) || 0,
           accessoriesIdv: parseFloat(quote.accessoriesIdv) || 0
@@ -11188,7 +11546,8 @@ const NewPolicyPage = () => {
           totalPaidAmount: totalPaid
         },
         payment_ledger: paymentLedger,
-        payout: {
+        // FIXED: Only include payout if not hidden
+        payout: !shouldHidePayout() ? {
           netPremium: parseFloat(form.netPremium) || 0,
           odAmount: parseFloat(form.odAmount) || 0,
           ncbAmount: parseFloat(form.ncbAmount) || 0,
@@ -11196,12 +11555,15 @@ const NewPolicyPage = () => {
           odAddonPercentage: parseFloat(form.odAddonPercentage) || 10,
           odAddonAmount: parseFloat(form.odAddonAmount) || 0,
           netAmount: parseFloat(form.netAmount) || 0
-        },
+        } : {},
         status: "completed",
         completed_at: Date.now(),
         ts: form.ts,
         created_by: form.created_by,
         policyPrefilled: form.policyPrefilled || false,
+        // FIXED: CRITICAL - Include credit type in final save to store in database
+        creditType: form.creditType || "auto",
+        hidePayout: form.hidePayout || false,
         // Include renewal fields in final save
         renewal_id: form.renewal_id || "",
         isRenewal: form.isRenewal || false
@@ -11211,6 +11573,13 @@ const NewPolicyPage = () => {
       const sanitizedFinalData = sanitizeDataForAPI(finalData);
 
       console.log(`✅ Finalizing policy with vehicle type:`, form.vehicleType);
+      console.log(`✅ Finalizing policy with credit type:`, form.creditType);
+      console.log(`🔍 FINAL SAVE - CREDIT TYPE CHECK:`, {
+        formCreditType: form.creditType,
+        finalDataCreditType: finalData.creditType,
+        sanitizedCreditType: sanitizedFinalData.creditType,
+        customerDetailsCreditType: customerDetails.creditType
+      });
       console.log(`✅ Finalizing policy ${policyId} with complete data including new IDV fields:`, sanitizedFinalData);
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedFinalData, {
@@ -11236,12 +11605,19 @@ const NewPolicyPage = () => {
   };
 
   const nextStep = async () => {
-    // NEW: Skip step 3 for new cars
+    // FIXED: Skip step 3 for new cars
     if (form.vehicleType === "new" && step === 2) {
       // Skip directly to step 4 (Insurance Quotes) from step 2
       setStep(4);
       setErrors({});
       setSaveMessage("");
+      return;
+    }
+
+    // FIXED: Skip payout step if credit type is showroom or customer
+    if (shouldHidePayout() && step === steps.length - 1) {
+      // If payout is hidden and we're at the step before payout, finish
+      await handleFinish();
       return;
     }
 
@@ -11257,8 +11633,14 @@ const NewPolicyPage = () => {
 
     try {
       await updatePolicy();
-      // NEW: Skip step 3 for new cars
-      const nextStepValue = form.vehicleType === "new" && step === 2 ? 4 : step + 1;
+      // FIXED: Skip step 3 for new cars
+      let nextStepValue = form.vehicleType === "new" && step === 2 ? 4 : step + 1;
+      
+      // FIXED: Skip payout step if credit type is showroom or customer
+      if (shouldHidePayout() && nextStepValue === steps.indexOf("Payout") + 1) {
+        nextStepValue += 1;
+      }
+      
       setStep(nextStepValue);
       setErrors({});
       setSaveMessage("");
@@ -11268,24 +11650,32 @@ const NewPolicyPage = () => {
   };
 
   const prevStep = () => {
-    // NEW: Handle going back from step 4 for new cars
+    // FIXED: Handle going back from step 4 for new cars
     if (form.vehicleType === "new" && step === 4) {
       setStep(2); // Go back to Vehicle Details
-    } else {
+    } 
+    // FIXED: Handle going back when payout is hidden
+    else if (shouldHidePayout() && step === steps.indexOf("Payout") + 1) {
+      setStep(step - 2); // Skip payout step
+    }
+    else {
       setStep((s) => Math.max(s - 1, 1));
     }
     setErrors({});
     setSaveMessage("");
   };
 
-  // NEW: Updated progress calculation to account for skipped step
+  // FIXED: Updated progress calculation to account for skipped steps
   const progressPercent = Math.round(((getDisplayStep(step) - 1) / (getSteps().length - 1)) * 100);
 
-  // NEW: Updated next label to show correct step name
+  // FIXED: Updated next label to show correct step name
   const getNextLabel = () => {
     if (step < steps.length) {
       if (form.vehicleType === "new" && step === 2) {
         return "Next: Insurance Quotes"; // Skip Previous Policy
+      }
+      if (shouldHidePayout() && step === steps.length - 1) {
+        return "Finish"; // Skip Payout and finish directly
       }
       return `Next: ${steps[step]}`;
     }
@@ -11294,7 +11684,7 @@ const NewPolicyPage = () => {
 
   const nextLabel = getNextLabel();
 
-  // ENHANCED: Step props with consistent duration utilities
+  // ENHANCED: Step props with consistent duration utilities and credit type info
   const stepProps = {
     form,
     handleChange,
@@ -11316,7 +11706,9 @@ const NewPolicyPage = () => {
     getPolicyDurationOptions,
     mapQuoteDurationToForm,
     calculateExpiryDates,
-    policyDurationMappings
+    policyDurationMappings,
+    // FIXED: Add credit type utilities
+    shouldHidePayout: shouldHidePayout()
   };
 
   if (loadingPolicy) {
@@ -11377,6 +11769,7 @@ const NewPolicyPage = () => {
               {form.isRenewal ? 'Renew existing insurance policy' : isEditMode ? 'Edit existing insurance case' : 'Create a new insurance case'}
               {isEditMode && " - All fields are pre-filled with existing data"}
               {form.vehicleType && ` - Vehicle Type: ${form.vehicleType === 'new' ? 'New Car' : 'Used Car'}`}
+              {form.creditType && ` - Credit Type: ${form.creditType === 'auto' ? 'Auto Credits' : form.creditType === 'showroom' ? 'Showroom' : 'Customer'}`}
               {form.isRenewal && " - This is a renewal case"}
             </p>
           </div>
@@ -11410,10 +11803,60 @@ const NewPolicyPage = () => {
           </div>
         )}
 
+        {/* Credit Type Info Banner */}
+        {form.creditType && (
+          <div className={`border rounded-xl p-4 mb-6 ${
+            form.creditType === "auto" 
+              ? "bg-blue-50 border-blue-200" 
+              : form.creditType === "showroom"
+              ? "bg-orange-50 border-orange-200"
+              : "bg-green-50 border-green-200"
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${
+                  form.creditType === "auto" 
+                    ? "bg-blue-100 text-blue-600" 
+                    : form.creditType === "showroom"
+                    ? "bg-orange-100 text-orange-600"
+                    : "bg-green-100 text-green-600"
+                }`}>
+                  {form.creditType === "auto" ? <FaCreditCard /> : 
+                   form.creditType === "showroom" ? <FaTags /> : 
+                   <FaUser />}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">
+                    {form.creditType === "auto" ? "Auto Credits" : 
+                     form.creditType === "showroom" ? "Showroom" : 
+                     "Customer"}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {form.creditType === "auto" 
+                      ? "Payout section will be available in Step 8" 
+                      : "Payout section will be hidden"}
+                  </p>
+                </div>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                form.creditType === "auto" 
+                  ? "bg-blue-100 text-blue-800" 
+                  : form.creditType === "showroom"
+                  ? "bg-orange-100 text-orange-800"
+                  : "bg-green-100 text-green-800"
+              }`}>
+                {form.creditType === "auto" ? "AUTO CREDITS" : 
+                 form.creditType === "showroom" ? "SHOWROOM" : 
+                 "CUSTOMER"}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="text-sm text-gray-600">
-              {/* NEW: Updated step display to account for skipped step */}
+              {/* FIXED: Updated step display to account for skipped steps */}
               Step {getDisplayStep(step)} of {getSteps().length}
             </div>
             <div className="text-sm text-gray-500">
@@ -11464,7 +11907,7 @@ const NewPolicyPage = () => {
                   >
                     {title}
                   </div>
-                  {/* NEW: Show vehicle type indicator on step 2 */}
+                  {/* FIXED: Show vehicle type indicator on step 2 */}
                   {title === "Vehicle Details" && form.vehicleType && (
                     <div className={`mt-1 px-2 py-0.5 rounded-full text-xs ${
                       form.vehicleType === "new" 
@@ -11474,10 +11917,16 @@ const NewPolicyPage = () => {
                       {form.vehicleType === "new" ? "NEW" : "USED"}
                     </div>
                   )}
-                  {/* NEW: Show renewal indicator */}
+                  {/* FIXED: Show renewal indicator */}
                   {form.isRenewal && title === "Previous Policy" && (
                     <div className="mt-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
                       PRE-FILLED
+                    </div>
+                  )}
+                  {/* FIXED: Show payout hidden indicator */}
+                  {shouldHidePayout() && title === "Payout" && (
+                    <div className="mt-1 px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-800">
+                      HIDDEN
                     </div>
                   )}
                 </div>
@@ -11489,13 +11938,14 @@ const NewPolicyPage = () => {
         {/* Step components */}
         {step === 1 && <CaseDetails {...stepProps} />}
         {step === 2 && <VehicleDetails {...stepProps} />}
-        {/* NEW: Only show Previous Policy for used cars */}
+        {/* FIXED: Only show Previous Policy for used cars */}
         {step === 3 && form.vehicleType === "used" && <PreviousPolicyDetails {...stepProps} />}
         {step === 4 && <InsuranceQuotes {...stepProps} />}
         {step === 5 && <NewPolicyDetails {...stepProps} acceptedQuote={acceptedQuote} />}
         {step === 6 && <Documents {...stepProps} />}
         {step === 7 && <Payment {...stepProps} totalPremium={totalPremium} />}
-        {step === 8 && <PayoutDetails {...stepProps} />}
+        {/* FIXED: Only show Payout if not hidden */}
+        {step === 8 && !shouldHidePayout() && <PayoutDetails {...stepProps} />}
 
         {/* FIXED FOOTER */}
         <div className="fixed bottom-0 left-0 right-0 bg-gray-50/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg z-50">
@@ -11520,7 +11970,7 @@ const NewPolicyPage = () => {
                 </button>
                 
                 <div className="text-sm text-gray-500 hidden md:block">
-                  {/* NEW: Updated step display */}
+                  {/* FIXED: Updated step display */}
                   Step {getDisplayStep(step)} of {getSteps().length}
                 </div>
               </div>
@@ -11549,7 +11999,6 @@ const NewPolicyPage = () => {
     </div>
   );
 };
-
 function formatPolicyDuration(duration) {
     if (duration.includes('yr') || duration.includes('year')) {
         return duration;

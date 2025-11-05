@@ -38,112 +38,11 @@ import {
   FaChevronDown,
   FaChevronUp
 } from 'react-icons/fa';
-
-// ================== API SERVICE FUNCTIONS ==================
-
-const documentAPI = {
-  async getAllPolicies() {
-    try {
-      console.log('📡 Fetching policies from API...');
-      const response = await fetch('https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1/policies');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ Policies API response:', data);
-      
-      if (Array.isArray(data)) {
-        return data;
-      } else if (data.policies && Array.isArray(data.policies)) {
-        return data.policies;
-      } else if (data.data && Array.isArray(data.data)) {
-        return data.data;
-      } else {
-        console.warn('⚠️ Unexpected API response format:', data);
-        return [];
-      }
-    } catch (error) {
-      console.error('❌ Error fetching policies:', error);
-      throw new Error(`Failed to fetch policies: ${error.message}`);
-    }
-  },
-
-  async uploadDocument(policyId, formData) {
-    try {
-      const policyResponse = await fetch(`https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1/policies/${policyId}`);
-      if (!policyResponse.ok) throw new Error('Failed to fetch policy');
-      const policy = await policyResponse.json();
-
-      const mockDocument = {
-        _id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: formData.get('name'),
-        originalName: formData.get('name'),
-        tag: formData.get('tag'),
-        extension: formData.get('name').split('.').pop(),
-        size: 1024 * 1024,
-        url: URL.createObjectURL(formData.get('document')),
-        uploadedAt: new Date().toISOString(),
-        type: 'uploaded'
-      };
-
-      const updatedPolicy = {
-        ...policy,
-        documents: [...(policy.documents || []), mockDocument]
-      };
-
-      const updateResponse = await fetch(`https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1/policies/${policyId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedPolicy),
-      });
-
-      if (!updateResponse.ok) throw new Error('Failed to update policy with document');
-      
-      return { document: mockDocument };
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      throw error;
-    }
-  },
-
-  async deleteDocument(policyId, documentId) {
-    try {
-      const policyResponse = await fetch(`https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1/policies/${policyId}`);
-      if (!policyResponse.ok) throw new Error('Failed to fetch policy');
-      const policy = await policyResponse.json();
-
-      const updatedDocuments = (policy.documents || []).filter(doc => doc._id !== documentId);
-      
-      const updatedPolicy = {
-        ...policy,
-        documents: updatedDocuments
-      };
-
-      const updateResponse = await fetch(`https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1/policies/${policyId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedPolicy),
-      });
-
-      if (!updateResponse.ok) throw new Error('Failed to delete document');
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Error deleting document:', error);
-      throw error;
-    }
-  }
-};
+import { documentService } from '../../services/documentService';
+import UploadDocumentModal from './UploadDocumentModal';
 
 // ================== DOCUMENT TYPE UTILITIES ==================
 
-// Updated document types with your specific tags
 const documentTypes = {
   'rc': 'RC',
   'form29': 'Form 29',
@@ -182,7 +81,7 @@ const fileTypeIcons = {
   'xlsx': FaFileExcel
 };
 
-// Enhanced file extension detection from your code
+// Enhanced file extension detection
 const getFileExtensionFromFile = (fileObj) => {
   if (!fileObj) return '';
 
@@ -327,18 +226,15 @@ const getFileName = (doc) => {
   return `${docType}_${timestamp}`;
 };
 
-// IMPROVED: Enhanced file extension detection with better PDF detection
 const getFileExtension = (document) => {
   if (!document) return 'pdf';
 
-  // First priority: Check if document explicitly specifies extension
   if (document.extension && document.extension.trim() !== '') {
     const ext = document.extension.toLowerCase().replace('.', '');
     if (ext === 'pdf') return 'pdf';
     return ext;
   }
 
-  // Second priority: Check document type/mime type
   if (document.type) {
     const type = document.type.toLowerCase();
     if (type.includes('pdf') || type === 'application/pdf') return 'pdf';
@@ -346,11 +242,10 @@ const getFileExtension = (document) => {
       if (type.includes('jpeg') || type.includes('jpg')) return 'jpg';
       if (type.includes('png')) return 'png';
       if (type.includes('gif')) return 'gif';
-      return 'jpg'; // default for images
+      return 'jpg';
     }
   }
 
-  // Third priority: Extract from filename
   const fileName = getFileName(document);
   if (fileName && fileName.includes('.')) {
     const parts = fileName.split('.');
@@ -358,11 +253,8 @@ const getFileExtension = (document) => {
       let ext = parts.pop().toLowerCase();
       ext = ext.split('?')[0].split('#')[0];
       
-      // Clean up common issues
       if (ext && ext.length <= 5) {
-        // Handle common PDF misidentifications
         if (ext === 'jpeg' || ext === 'jpg' || ext === 'png') {
-          // Check if filename suggests it's actually a PDF
           if (fileName.toLowerCase().includes('.pdf') || 
               fileName.toLowerCase().includes('policy') ||
               fileName.toLowerCase().includes('document')) {
@@ -374,10 +266,8 @@ const getFileExtension = (document) => {
     }
   }
 
-  // Fourth priority: Check URL for extension hints
   const url = document.url || '';
   if (url) {
-    // Check if URL contains PDF indicators
     if (url.toLowerCase().includes('.pdf') || 
         url.toLowerCase().includes('policy') ||
         url.toLowerCase().includes('document')) {
@@ -395,20 +285,17 @@ const getFileExtension = (document) => {
     }
   }
 
-  // Final fallback: Assume PDF for policy-related documents
   if (document.tag === 'policy' || document.tag === 'insurance') {
     return 'pdf';
   }
 
-  return 'pdf'; // Default to PDF
+  return 'pdf';
 };
 
-// NEW: Function to detect if a file is actually a PDF regardless of extension
 const isActuallyPDF = (document) => {
   const fileName = getFileName(document).toLowerCase();
   const url = (document.url || '').toLowerCase();
   
-  // Check for PDF indicators in filename
   if (fileName.includes('.pdf') || 
       fileName.includes('policy') ||
       fileName.includes('document') ||
@@ -416,7 +303,6 @@ const isActuallyPDF = (document) => {
     return true;
   }
   
-  // Check for PDF indicators in URL
   if (url.includes('.pdf') || 
       url.includes('policy') ||
       url.includes('document') ||
@@ -424,7 +310,6 @@ const isActuallyPDF = (document) => {
     return true;
   }
   
-  // Check document type
   if (document.type && document.type.toLowerCase().includes('pdf')) {
     return true;
   }
@@ -432,7 +317,6 @@ const isActuallyPDF = (document) => {
   return false;
 };
 
-// Get file icon component for display
 const FileIconComponent = ({ document }) => {
   const fileExtension = getFileExtension(document);
   const FileIcon = getFileIcon(fileExtension);
@@ -451,7 +335,6 @@ const DocumentPreviewModal = ({ document, isOpen, onClose }) => {
   if (!isOpen || !document) return null;
 
   const getCorrectFileExtension = (doc) => {
-    // Use our improved detection
     return getFileExtension(doc);
   };
 
@@ -467,7 +350,7 @@ const DocumentPreviewModal = ({ document, isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -572,168 +455,6 @@ const DocumentPreviewModal = ({ document, isOpen, onClose }) => {
   );
 };
 
-// ================== UPLOAD DOCUMENT MODAL ==================
-
-const UploadDocumentModal = ({ isOpen, onClose, policy, onUploadSuccess }) => {
-  const [uploading, setUploading] = useState(false);
-  const [formData, setFormData] = useState({
-    tag: '',
-    file: null
-  });
-  const [errors, setErrors] = useState({});
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setErrors({ file: 'File size must be less than 10MB' });
-        return;
-      }
-      setFormData(prev => ({ ...prev, file }));
-      setErrors(prev => ({ ...prev, file: '' }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const newErrors = {};
-
-    if (!formData.tag) newErrors.tag = 'Document type is required';
-    if (!formData.file) newErrors.file = 'File is required';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('document', formData.file);
-      uploadFormData.append('name', formData.file.name);
-      uploadFormData.append('tag', formData.tag);
-
-      const result = await documentAPI.uploadDocument(policy.policyId, uploadFormData);
-      
-      if (onUploadSuccess) {
-        onUploadSuccess(result.document, policy.policyId);
-      }
-      
-      setFormData({ tag: '', file: null });
-      onClose();
-    } catch (error) {
-      setErrors({ submit: error.message });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900">Upload Document</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100"
-          >
-            <FaTimes className="w-3 h-3" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-4">
-          <div className="space-y-4">
-            {/* Policy Info */}
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <h4 className="text-xs font-semibold text-gray-700 mb-1">Policy Information</h4>
-              <p className="text-xs text-gray-600">{policy.customerName}</p>
-              <p className="text-xs text-gray-600">Policy: {policy.policyNumber}</p>
-              <p className="text-xs text-gray-600">Vehicle: {policy.vehicleRegNo}</p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Document Type
-              </label>
-              <select
-                value={formData.tag}
-                onChange={(e) => setFormData(prev => ({ ...prev, tag: e.target.value }))}
-                className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Select document type</option>
-                {Object.entries(documentTypes).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              {errors.tag && <p className="text-red-500 text-xs mt-0.5">{errors.tag}</p>}
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                File
-              </label>
-              <div className="border border-dashed border-gray-300 rounded p-4 text-center transition-colors hover:border-purple-400">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="file-upload"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <FaCloudUploadAlt className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-gray-900 mb-1">
-                    {formData.file ? formData.file.name : 'Click to upload file'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    PDF, JPG, PNG, DOC, XLS (Max 10MB)
-                  </p>
-                </label>
-              </div>
-              {errors.file && <p className="text-red-500 text-xs mt-0.5">{errors.file}</p>}
-            </div>
-          </div>
-
-          {errors.submit && (
-            <div className="bg-red-100 border border-red-300 text-red-700 px-3 py-2 rounded mt-4 text-xs">
-              {errors.submit}
-            </div>
-          )}
-
-          <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={uploading}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-purple-600 border border-transparent rounded hover:bg-purple-700 disabled:opacity-50 transition-colors"
-            >
-              {uploading ? (
-                <>
-                  <FaSpinner className="w-3 h-3 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <FaUpload className="w-3 h-3" />
-                  Upload Document
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 // ================== ADVANCED SEARCH COMPONENT ==================
 
 const AdvancedSearch = ({ 
@@ -781,7 +502,7 @@ const AdvancedSearch = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-900">Advanced Search</h3>
@@ -949,13 +670,28 @@ const DocumentsTable = () => {
     fetchAllData();
   }, []);
 
+  // Add debugging useEffects
+  useEffect(() => {
+    console.log('📊 Current documents state:', {
+      totalDocuments: documents.length,
+      documents: documents,
+      policiesCount: policies.length
+    });
+  }, [documents, policies]);
+
+  useEffect(() => {
+    if (!isUploadOpen) {
+      console.log('📝 Upload modal closed, current documents:', documents.length);
+    }
+  }, [isUploadOpen]);
+
   const fetchAllData = async () => {
     setLoading(true);
     setError(null);
     try {
       console.log('📡 Fetching policies from API...');
-      const policiesData = await documentAPI.getAllPolicies();
-      console.log('✅ Policies fetched:', policiesData);
+      const policiesData = await documentService.getAllPolicies();
+      console.log('✅ Policies fetched:', policiesData.length);
       
       if (!Array.isArray(policiesData) || policiesData.length === 0) {
         setPolicies([]);
@@ -976,15 +712,21 @@ const DocumentsTable = () => {
         }
 
         const policyDocs = Array.isArray(policy.documents) ? policy.documents : [];
-        console.log(`📋 Policy ${policy._id} has ${policyDocs.length} documents in policy object`);
+        console.log(`📋 Policy ${policy._id} has ${policyDocs.length} documents:`, policyDocs);
 
         if (policyDocs.length > 0) {
-          policyDocs.forEach(doc => {
+          policyDocs.forEach((doc, index) => {
+            // Skip documents without URLs
+            if (!doc.url) {
+              console.warn('⚠️ Document missing URL:', doc);
+              return;
+            }
+
             const customer = policy.customer_details || {};
             
             const enhancedDocument = {
               ...doc,
-              _id: doc._id || doc.id || `doc_${Date.now()}_${Math.random()}`,
+              _id: doc._id || `doc_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
               policyId: policy._id,
               customerName: policy.buyer_type === 'corporate' 
                 ? customer.companyName || customer.contactPersonName || 'Unknown Company'
@@ -996,21 +738,26 @@ const DocumentsTable = () => {
               vehicleMake: policy.vehicle_details?.make || 'N/A',
               vehicleModel: policy.vehicle_details?.model || 'N/A',
               buyerType: policy.buyer_type || 'individual',
-              url: doc.url || doc.fileUrl || '',
-              name: doc.name || doc.fileName || 'Unknown Document',
-              originalName: doc.originalName || doc.name || doc.fileName || 'Unknown Document',
-              extension: getFileExtensionFromFile(doc) || (doc.name ? doc.name.split('.').pop() : ''),
-              type: doc.type || doc.fileType || '',
-              size: doc.size || doc.fileSize || 0,
-              uploadedAt: doc.uploadedAt || doc.createdAt || doc.uploadDate || new Date().toISOString(),
-              tag: doc.tag || doc.category || 'other'
+              url: doc.url,
+              name: doc.name || doc.originalName || 'Unknown Document',
+              originalName: doc.originalName || doc.name || 'Unknown Document',
+              extension: doc.extension || (doc.name ? doc.name.split('.').pop() : ''),
+              type: doc.type || '',
+              size: doc.size || 0,
+              uploadedAt: doc.uploadedAt || new Date().toISOString(),
+              tag: doc.tag || 'other'
             };
+            
+            console.log(`📄 Document ${index}:`, enhancedDocument.name, 'URL:', enhancedDocument.url);
             allDocs.push(enhancedDocument);
           });
+        } else {
+          console.log(`📭 Policy ${policy._id} has no documents`);
         }
       }
       
-      console.log('✅ Total documents found in policies:', allDocs.length);
+      console.log('✅ Total documents extracted:', allDocs.length);
+      console.log('📋 All documents:', allDocs);
       setDocuments(allDocs);
       
     } catch (error) {
@@ -1019,6 +766,39 @@ const DocumentsTable = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUploadSuccess = (newDocument, policyId) => {
+    console.log('✅ Upload success, refreshing data...', newDocument);
+    
+    // Immediately add the new document to local state for instant UI update
+    const policy = policies.find(p => p._id === policyId);
+    if (policy) {
+      const customer = policy.customer_details || {};
+      const enhancedDocument = {
+        ...newDocument,
+        policyId: policyId,
+        customerName: policy.buyer_type === 'corporate' 
+          ? customer.companyName || customer.contactPersonName || 'Unknown Company'
+          : customer.name || 'Unknown Customer',
+        customerMobile: customer.mobile || 'N/A',
+        customerEmail: customer.email || 'N/A',
+        policyNumber: policy.policy_info?.policyNumber || 'N/A',
+        vehicleRegNo: policy.vehicle_details?.regNo || 'N/A',
+        vehicleMake: policy.vehicle_details?.make || 'N/A',
+        vehicleModel: policy.vehicle_details?.model || 'N/A',
+        buyerType: policy.buyer_type || 'individual'
+      };
+      
+      console.log('📝 Adding document to local state:', enhancedDocument);
+      setDocuments(prev => [enhancedDocument, ...prev]);
+    }
+    
+    // Also refresh from server after a short delay to ensure consistency
+    setTimeout(() => {
+      console.log('🔄 Refreshing data from server...');
+      fetchAllData();
+    }, 1500);
   };
 
   const sortDocuments = (docs) => {
@@ -1153,7 +933,6 @@ const DocumentsTable = () => {
     setIsUploadOpen(true);
   };
 
-  // FIXED: Enhanced download function using the same approach as PolicyModal
   const handleDownloadClick = async (document) => {
     const url = document.url;
     if (!url) {
@@ -1173,7 +952,7 @@ const DocumentsTable = () => {
         downloadFileName = downloadFileName.replace(/\.[^/.]+$/, "") + `.${fileExtension}`;
       }
 
-      console.log(`📥 Downloading: ${downloadFileName} (extension: ${fileExtension}) from ${url}`);
+      console.log(`📥 Downloading: ${downloadFileName} from ${url}`);
 
       // Simple approach - create a link and click it
       const link = document.createElement('a');
@@ -1190,11 +969,7 @@ const DocumentsTable = () => {
       
     } catch (error) {
       console.error('❌ Error downloading file:', error);
-      
-      // Fallback: just open in new tab
-      console.log('🔄 Trying fallback method...');
       window.open(url, '_blank');
-      
     } finally {
       setTimeout(() => {
         setDownloadingDocs(prev => ({ ...prev, [docId]: false }));
@@ -1202,35 +977,19 @@ const DocumentsTable = () => {
     }
   };
 
-  // FIXED: Enhanced view function with better PDF detection
   const handleViewClick = (document) => {
     const fileExtension = getFileExtension(document);
     const isActuallyPDFFile = isActuallyPDF(document);
     const isImage = ['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension);
     
-    console.log('👀 Viewing document:', {
-      name: document.name,
-      extension: fileExtension,
-      isActuallyPDF: isActuallyPDFFile,
-      url: document.url
-    });
-    
     if (isActuallyPDFFile || fileExtension === 'pdf') {
-      // For PDFs, open directly in new tab - same as PolicyModal
-      console.log('📄 Opening PDF in new tab');
       window.open(document.url, '_blank');
     } else if (isImage) {
-      // For images, show preview modal
-      console.log('🖼️ Showing image in preview modal');
       setSelectedDocument(document);
       setIsPreviewOpen(true);
     } else {
-      // For other files, try to open in new tab, if fails show preview modal
-      console.log('📎 Opening other file type');
       const newWindow = window.open(document.url, '_blank');
       if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        // If popup blocked, show preview modal
-        console.log('🚫 Popup blocked, showing preview modal');
         setSelectedDocument(document);
         setIsPreviewOpen(true);
       }
@@ -1247,8 +1006,13 @@ const DocumentsTable = () => {
 
     setDeleteLoading(true);
     try {
-      await documentAPI.deleteDocument(documentToDelete.policyId, documentToDelete._id);
-      setDocuments(prev => prev.filter(doc => doc._id !== documentToDelete._id));
+      await documentService.removeDocumentFromPolicy(documentToDelete.policyId, documentToDelete._id);
+      
+      // Refresh data to get the latest from server
+      setTimeout(() => {
+        fetchAllData();
+      }, 500);
+      
       setDeleteConfirmOpen(false);
       setDocumentToDelete(null);
     } catch (error) {
@@ -1262,28 +1026,6 @@ const DocumentsTable = () => {
   const handleCancelDelete = () => {
     setDeleteConfirmOpen(false);
     setDocumentToDelete(null);
-  };
-
-  const handleUploadSuccess = (newDocument, policyId) => {
-    const policy = policies.find(p => p._id === policyId);
-    if (policy) {
-      const customer = policy.customer_details || {};
-      const enhancedDocument = {
-        ...newDocument,
-        policyId: policyId,
-        customerName: policy.buyer_type === 'corporate' 
-          ? customer.companyName || customer.contactPersonName || 'Unknown Company'
-          : customer.name || 'Unknown Customer',
-        customerMobile: customer.mobile || 'N/A',
-        customerEmail: customer.email || 'N/A',
-        policyNumber: policy.policy_info?.policyNumber || 'N/A',
-        vehicleRegNo: policy.vehicle_details?.regNo || 'N/A',
-        vehicleMake: policy.vehicle_details?.make || 'N/A',
-        vehicleModel: policy.vehicle_details?.model || 'N/A',
-        buyerType: policy.buyer_type || 'individual'
-      };
-      setDocuments(prev => [enhancedDocument, ...prev]);
-    }
   };
 
   const handleApplyAdvancedFilters = (filters) => {
@@ -1433,6 +1175,21 @@ const DocumentsTable = () => {
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* Refresh Button */}
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-700 mb-1">Refresh Data</label>
+              <button
+                onClick={() => {
+                  console.log('🔄 Manual refresh triggered');
+                  fetchAllData();
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[100px] justify-center"
+              >
+                <FaSync className="text-xs" />
+                Refresh All
+              </button>
             </div>
 
             {/* Sort Dropdown */}
@@ -1846,7 +1603,7 @@ const DocumentsTable = () => {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmOpen && (
-        <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded max-w-md w-full p-4">
             <div className="flex items-center mb-3">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-3">

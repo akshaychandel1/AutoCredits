@@ -14,15 +14,13 @@ import {
   FaExclamationTriangle
 } from 'react-icons/fa';
 import axios from 'axios';
+import { documentService } from '../services/documentService';
 
 const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
   const [uploading, setUploading] = useState(false);
   const [customTagInputs, setCustomTagInputs] = useState({});
   const [showCustomInputs, setShowCustomInputs] = useState({});
   const [loading, setLoading] = useState(false);
-
-  // API base URL
-  const API_BASE_URL = 'https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1';
 
   // Fetch documents on component mount
   useEffect(() => {
@@ -37,7 +35,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/policies/${form._id}`);
+      const response = await axios.get(`${documentService.API_BASE_URL}/policies/${form._id}`);
       const policyData = response.data;
       
       if (policyData.documents) {
@@ -171,7 +169,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     // Update in database if policy exists
     if (form._id) {
       try {
-        await axios.put(`${API_BASE_URL}/policies/${form._id}`, {
+        await axios.put(`${documentService.API_BASE_URL}/policies/${form._id}`, {
           documentTags: updatedTags
         });
       } catch (error) {
@@ -204,7 +202,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     // Update in database if policy exists
     if (form._id) {
       try {
-        await axios.put(`${API_BASE_URL}/policies/${form._id}`, {
+        await axios.put(`${documentService.API_BASE_URL}/policies/${form._id}`, {
           documentTags: updatedTags
         });
       } catch (error) {
@@ -213,7 +211,7 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     }
   };
 
-  // Handle file selection
+  // Handle file selection - UPDATED to use documentService
   const handleFiles = async (e) => {
     const files = Array.from(e.target.files);
     
@@ -229,38 +227,33 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     setUploading(true);
 
     try {
-      const uploadedFiles = await uploadFiles(files);
-      const existingDocuments = form.documents || [];
-      const newDocuments = [...existingDocuments];
-      
-      uploadedFiles.forEach((uploadedFile, index) => {
-        const docId = `doc_${Date.now()}_${index}`;
-        newDocuments.push({
-          _id: docId,
-          ...uploadedFile
-        });
-      });
-      
-      console.log("📄 Updated documents array:", newDocuments);
-      
-      // Update local state
-      handleChange({
-        target: {
-          name: 'documents',
-          value: newDocuments
-        }
-      });
-
-      // Update in database if policy exists
-      if (form._id) {
+      // Use documentService to upload files and add to policy
+      for (const file of files) {
         try {
-          await axios.put(`${API_BASE_URL}/policies/${form._id}`, {
-            documents: newDocuments
-          });
-        } catch (error) {
-          console.error('Error updating documents in database:', error);
+          console.log(`📤 Uploading file: ${file.name}`);
+          
+          // Step 1: Upload file to storage
+          const uploadedFile = await documentService.uploadFileToStorage(file);
+          console.log('✅ File uploaded to storage:', uploadedFile);
+          
+          // Step 2: Add document to policy (this will append to existing array)
+          const documentData = {
+            ...uploadedFile,
+            tag: 'other' // Default tag, can be changed later
+          };
+
+          await documentService.addDocumentToPolicy(form._id, documentData);
+          console.log('✅ Document added to policy array');
+          
+        } catch (fileError) {
+          console.error(`❌ Error uploading file ${file.name}:`, fileError);
         }
       }
+      
+      // Refresh documents from server to get updated list
+      await fetchDocuments();
+      
+      console.log("✅ All files processed successfully");
       
     } catch (error) {
       console.error("❌ Error uploading files:", error);
@@ -271,192 +264,82 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
     }
   };
 
-  // Upload multiple files
-  const uploadFiles = async (files) => {
-    console.log(`📤 Starting upload for ${files.length} files...`);
-    
-    const uploadPromises = files.map(file => uploadFile(file));
-    const results = await Promise.allSettled(uploadPromises);
-    
-    const successfulUploads = results
-      .filter(result => result.status === 'fulfilled' && result.value)
-      .map(result => result.value);
-    
-    const failedUploads = results.filter(result => result.status === 'rejected');
-    
-    if (failedUploads.length > 0) {
-      console.warn(`⚠️ ${failedUploads.length} files failed to upload`);
-      failedUploads.forEach((result, index) => {
-        console.error(`Failed upload ${index + 1}:`, result.reason);
-      });
-      
-      if (successfulUploads.length === 0) {
-        throw new Error('All files failed to upload');
-      }
-    }
-    
-    console.log(`✅ Successfully uploaded ${successfulUploads.length} files`);
-    return successfulUploads;
-  };
-
-  // Upload single file with enhanced metadata
-  const uploadFile = async (file) => {
-    const fileExtension = getFileExtensionFromFile(file);
-    
-    console.log(`🚀 Starting upload for: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB, type: ${file.type}, detected extension: ${fileExtension})`);
-    
-    try {
-      const fileUrl = await uploadSingleFile(file, fileExtension);
-      
-      console.log(`✅ Upload completed: ${file.name} -> ${fileUrl}`);
-      
-      return {
-        url: fileUrl,
-        name: file.name,
-        originalName: file.name,
-        extension: fileExtension,
-        type: file.type,
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
-        mimeType: file.type,
-        lastModified: file.lastModified
-      };
-      
-    } catch (error) {
-      console.error(`❌ Error uploading file ${file.name}:`, error);
-      throw error;
-    }
-  };
-
-  const uploadSingleFile = async (fileObj, detectedExtension) => {
-    try {
-      const formData = new FormData();
-
-      // Ensure file name includes correct extension
-      let fileName = fileObj.name || `document_${Date.now()}`;
-      const hasExtension = fileName.includes('.');
-      const extension = detectedExtension || getFileExtensionFromFile(fileObj);
-
-      if (!hasExtension && extension) {
-        fileName = `${fileName}.${extension}`;
-      }
-
-      // Append actual file
-      formData.append('file', fileObj);
-
-      // Add comprehensive file metadata
-      formData.append('fileName', fileName); // ✅ full name with extension
-      formData.append('fileType', fileObj.type);
-      formData.append('originalExtension', extension);
-      formData.append('preserveExtension', 'true');
-      formData.append('timestamp', Date.now().toString());
-
-      const config = {
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/files',
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        data: formData,
-        timeout: 60000, // 60s
-      };
-
-      const response = await axios.request(config);
-      console.log(`📡 Upload response for ${fileName}:`, response.data);
-
-      if (!response.data.path) {
-        throw new Error('No file path returned from server');
-      }
-
-      return response.data.path;
-    } catch (error) {
-      console.error(`❌ Error uploading file ${fileObj.name}:`, error);
-      throw new Error(`Upload failed: ${error.message}`);
-    }
-  };
-
-  // Remove document
+  // Remove document - UPDATED to use documentService
   const removeDocument = async (docId) => {
-    const currentDocuments = form.documents || [];
-    const updatedDocuments = currentDocuments.filter(doc => doc._id !== docId);
+    if (!form._id) return;
     
-    const currentTags = form.documentTags || {};
-    const updatedTags = { ...currentTags };
-    delete updatedTags[docId];
-
-    // Update local state
-    handleChange({
-      target: {
-        name: 'documents',
-        value: updatedDocuments
-      }
-    });
-    
-    handleChange({
-      target: {
-        name: 'documentTags',
-        value: updatedTags
-      }
-    });
-
-    // Update in database if policy exists
-    if (form._id) {
-      try {
-        await axios.put(`${API_BASE_URL}/policies/${form._id}`, {
-          documents: updatedDocuments,
-          documentTags: updatedTags
-        });
-      } catch (error) {
-        console.error('Error removing document from database:', error);
-      }
-    }
-
-    setCustomTagInputs(prev => {
-      const newInputs = { ...prev };
-      delete newInputs[docId];
-      return newInputs;
-    });
-
-    setShowCustomInputs(prev => {
-      const newInputs = { ...prev };
-      delete newInputs[docId];
-      return newInputs;
-    });
-  };
-
-  // Clear all documents
-  const clearAllDocuments = async () => {
-    if (window.confirm("Are you sure you want to remove all documents?")) {
-      // Update local state
-      handleChange({
-        target: {
-          name: 'documents',
-          value: []
-        }
-      });
+    try {
+      await documentService.removeDocumentFromPolicy(form._id, docId);
       
+      // Refresh documents from server
+      await fetchDocuments();
+      
+      // Update local tags state
+      const currentTags = form.documentTags || {};
+      const updatedTags = { ...currentTags };
+      delete updatedTags[docId];
+
       handleChange({
         target: {
           name: 'documentTags',
-          value: {}
+          value: updatedTags
         }
       });
-      
-      // Update in database if policy exists
-      if (form._id) {
-        try {
-          await axios.put(`${API_BASE_URL}/policies/${form._id}`, {
-            documents: [],
-            documentTags: {}
-          });
-        } catch (error) {
-          console.error('Error clearing documents from database:', error);
-        }
+
+      setCustomTagInputs(prev => {
+        const newInputs = { ...prev };
+        delete newInputs[docId];
+        return newInputs;
+      });
+
+      setShowCustomInputs(prev => {
+        const newInputs = { ...prev };
+        delete newInputs[docId];
+        return newInputs;
+      });
+
+    } catch (error) {
+      console.error('Error removing document:', error);
+      alert('Failed to remove document');
+    }
+  };
+
+  // Clear all documents - UPDATED to use documentService
+  const clearAllDocuments = async () => {
+    if (!form._id) return;
+    
+    if (window.confirm("Are you sure you want to remove all documents?")) {
+      try {
+        // Get current policy
+        const policy = await documentService.getPolicyById(form._id);
+        
+        // Update policy with empty documents array
+        await documentService.updatePolicyDocuments(form._id, []);
+        
+        // Update local state
+        handleChange({
+          target: {
+            name: 'documents',
+            value: []
+          }
+        });
+        
+        handleChange({
+          target: {
+            name: 'documentTags',
+            value: {}
+          }
+        });
+        
+        setCustomTagInputs({});
+        setShowCustomInputs({});
+        
+        console.log('✅ All documents cleared');
+        
+      } catch (error) {
+        console.error('Error clearing documents:', error);
+        alert('Failed to clear documents');
       }
-      
-      setCustomTagInputs({});
-      setShowCustomInputs({});
     }
   };
 
