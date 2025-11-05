@@ -2303,6 +2303,34 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
             {errors.previousNcbDiscount && <p className="text-red-500 text-xs mt-1">{errors.previousNcbDiscount}</p>}
           </div>
         </div>
+
+        {/* NEW: Remarks Section for Previous Policy */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h4 className="text-md font-semibold text-gray-700 mb-4">
+            Remarks
+          </h4>
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <label className="block mb-1 text-sm font-medium text-gray-600">
+                Previous Policy Remarks
+              </label>
+              <textarea
+                name="previousPolicyRemarks"
+                value={form.previousPolicyRemarks || ""}
+                onChange={handleChange}
+                placeholder="Enter any remarks or notes for the previous policy..."
+                rows={3}
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.previousPolicyRemarks ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.previousPolicyRemarks && <p className="text-red-500 text-xs mt-1">{errors.previousPolicyRemarks}</p>}
+              <p className="text-xs text-gray-500 mt-1">
+                Additional notes or comments about the previous policy
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -5436,6 +5464,34 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
               </p>
             )}
             {errors.totalPremium && <p className="text-red-500 text-xs mt-1">{errors.totalPremium}</p>}
+          </div>
+        </div>
+
+        {/* NEW: Remarks Section for New Policy */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h4 className="text-md font-semibold text-gray-700 mb-4">
+            Remarks
+          </h4>
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <label className="block mb-1 text-sm font-medium text-gray-600">
+                New Policy Remarks
+              </label>
+              <textarea
+                name="newPolicyRemarks"
+                value={form.newPolicyRemarks || ""}
+                onChange={handleChange}
+                placeholder="Enter any remarks or notes for the new policy..."
+                rows={3}
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.newPolicyRemarks ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.newPolicyRemarks && <p className="text-red-500 text-xs mt-1">{errors.newPolicyRemarks}</p>}
+              <p className="text-xs text-gray-500 mt-1">
+                Additional notes or comments about the new policy
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -9442,6 +9498,8 @@ const NewPolicyPage = () => {
     previousTpExpiryDate: "",
     previousDueDate: "",
     previousNcbDiscount: "",
+    // NEW: Previous Policy Remarks
+    previousPolicyRemarks: "",
     // Insurance Quote fields - UPDATED: Added new IDV fields
     insurer: "",
     coverageType: "",
@@ -9467,6 +9525,8 @@ const NewPolicyPage = () => {
     policyType: "",
     odExpiryDate: "",
     tpExpiryDate: "",
+    // NEW: New Policy Remarks
+    newPolicyRemarks: "",
     // Documents
     documents: {},
     documentTags: {},
@@ -9970,6 +10030,8 @@ const NewPolicyPage = () => {
         policyType: "",
         odExpiryDate: "",
         tpExpiryDate: "",
+        // Reset new policy remarks
+        newPolicyRemarks: "",
         // Reset payment fields
         paymentMadeBy: "Customer",
         paymentMode: "",
@@ -10225,6 +10287,8 @@ const fetchRenewalPolicyData = async (policyId) => {
         previousDueDate: renewalData.policy_info?.dueDate || "",
         previousClaimTaken: renewalData.previous_policy?.claimTakenLastYear || "no",
         previousNcbDiscount: renewalData.policy_info?.ncbDiscount || renewalData.previous_policy?.ncbDiscount || "",
+        // NEW: Map previous policy remarks from new policy remarks if available
+        previousPolicyRemarks: renewalData.policy_info?.remarks || renewalData.previous_policy?.remarks || "",
         
         // Renewal fields
         renewal_id: policyId,
@@ -10255,6 +10319,8 @@ const fetchRenewalPolicyData = async (policyId) => {
         policyType: "",
         odExpiryDate: "",
         tpExpiryDate: "",
+        // NEW: Reset new policy remarks
+        newPolicyRemarks: "",
         documents: {},
         documentTags: {},
         paymentMadeBy: "Customer",
@@ -10377,12 +10443,12 @@ const fetchPolicyData = async (policyId) => {
       console.log("✅ Processed insurance quotes with consistent duration and new IDV fields:", processedInsuranceQuotes);
     }
 
-    // CRITICAL FIX: Properly map previous policy data including TP expiry date
+    // CRITICAL FIX: Properly map previous policy data including TP expiry date and remarks
     const previousPolicyData = actualData.previous_policy || {};
     
     console.log("🔍 Previous Policy Data from API:", previousPolicyData);
 
-    // CRITICAL FIX: Properly map new policy data including expiry dates
+    // CRITICAL FIX: Properly map new policy data including expiry dates and remarks
     const policyInfoData = actualData.policy_info || {};
     
     console.log("🔍 New Policy Data from API:", policyInfoData);
@@ -10463,7 +10529,7 @@ const fetchPolicyData = async (policyId) => {
       makeMonth: actualData.vehicle_details?.makeMonth || "",
       makeYear: actualData.vehicle_details?.makeYear || "",
       
-      // Previous policy - CRITICAL FIX: Include all expiry dates
+      // Previous policy - CRITICAL FIX: Include all expiry dates and remarks
       previousInsuranceCompany: previousPolicyData.insuranceCompany || "",
       previousPolicyNumber: previousPolicyData.policyNumber || "",
       previousPolicyType: previousPolicyData.policyType || "",
@@ -10475,6 +10541,8 @@ const fetchPolicyData = async (policyId) => {
       previousTpExpiryDate: previousPolicyData.tpExpiryDate || "",
       previousClaimTaken: previousPolicyData.claimTakenLastYear || "no",
       previousNcbDiscount: previousPolicyData.ncbDiscount || "",
+      // NEW: Previous policy remarks
+      previousPolicyRemarks: previousPolicyData.remarks || "",
       
       // Insurance quotes - use processed quotes with new IDV fields
       insuranceQuotes: processedInsuranceQuotes,
@@ -10490,7 +10558,7 @@ const fetchPolicyData = async (policyId) => {
       cngIdv: actualData.insurance_quote?.cngIdv || "",
       accessoriesIdv: actualData.insurance_quote?.accessoriesIdv || "",
       
-      // Policy info - CRITICAL FIX: Include all expiry dates and policy type
+      // Policy info - CRITICAL FIX: Include all expiry dates, policy type and remarks
       policyIssued: policyInfoData.policyIssued || "",
       insuranceCompany: policyInfoData.insuranceCompany || "",
       policyNumber: policyInfoData.policyNumber || "",
@@ -10505,6 +10573,8 @@ const fetchPolicyData = async (policyId) => {
       policyType: policyInfoData.policyType || "",
       odExpiryDate: policyInfoData.odExpiryDate || "",
       tpExpiryDate: policyInfoData.tpExpiryDate || "",
+      // NEW: New policy remarks
+      newPolicyRemarks: policyInfoData.remarks || "",
       
       // Payment info
       paymentMadeBy: actualData.payment_info?.paymentMadeBy || "Customer",
@@ -10662,6 +10732,12 @@ const fetchPolicyData = async (policyId) => {
     
     // Handle new IDV fields
     if (name === "vehicleIdv" || name === "cngIdv" || name === "accessoriesIdv") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
+    // Handle remarks fields
+    if (name === "previousPolicyRemarks" || name === "newPolicyRemarks") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
@@ -10843,12 +10919,12 @@ const fetchPolicyData = async (policyId) => {
       });
     }
 
-    // Clean up previous policy data with consistent duration handling
+    // Clean up previous policy data with consistent duration handling and remarks
     if (sanitized.previous_policy && sanitized.previous_policy.policyDuration) {
       sanitized.previous_policy.policyDurationLabel = formatPolicyDuration(sanitized.previous_policy.policyDuration);
     }
 
-    // Clean up new policy data with consistent duration handling
+    // Clean up new policy data with consistent duration handling and remarks
     if (sanitized.policy_info && sanitized.policy_info.insuranceDuration) {
       sanitized.policy_info.insuranceDurationLabel = formatPolicyDuration(sanitized.policy_info.insuranceDuration);
     }
@@ -11113,7 +11189,9 @@ const fetchPolicyData = async (policyId) => {
                   tpExpiryDate: form.previousTpExpiryDate || "",
                   dueDate: form.previousDueDate || "",
                   claimTakenLastYear: form.previousClaimTaken || "no",
-                  ncbDiscount: parseFloat(form.previousNcbDiscount) || 0
+                  ncbDiscount: parseFloat(form.previousNcbDiscount) || 0,
+                  // NEW: Include previous policy remarks
+                  remarks: form.previousPolicyRemarks || ""
                 },
                 // FIXED: Include credit type
                 creditType: form.creditType || "auto",
@@ -11147,7 +11225,7 @@ const fetchPolicyData = async (policyId) => {
             };
             break;
           case 5:
-            // FIXED: Include all new policy fields including expiry dates
+            // FIXED: Include all new policy fields including expiry dates and remarks
             updateData = {
               policy_info: {
                 policyIssued: form.policyIssued || "",
@@ -11163,7 +11241,9 @@ const fetchPolicyData = async (policyId) => {
                 totalPremium: parseFloat(form.totalPremium) || 0,
                 policyType: form.policyType || "", // FIXED: Added policyType
                 odExpiryDate: form.odExpiryDate || "", // FIXED: Added odExpiryDate
-                tpExpiryDate: form.tpExpiryDate || "" // FIXED: Added tpExpiryDate
+                tpExpiryDate: form.tpExpiryDate || "", // FIXED: Added tpExpiryDate
+                // NEW: Include new policy remarks
+                remarks: form.newPolicyRemarks || ""
               },
               // FIXED: Include credit type
               creditType: form.creditType || "auto",
@@ -11491,7 +11571,9 @@ const fetchPolicyData = async (policyId) => {
           tpExpiryDate: form.previousTpExpiryDate || "",
           dueDate: form.previousDueDate || "",
           claimTakenLastYear: form.previousClaimTaken || "no",
-          ncbDiscount: parseFloat(form.previousNcbDiscount) || 0
+          ncbDiscount: parseFloat(form.previousNcbDiscount) || 0,
+          // NEW: Include previous policy remarks in final save
+          remarks: form.previousPolicyRemarks || ""
         } : {},
         insurance_quote: {
           insurer: form.insurer,
@@ -11530,7 +11612,9 @@ const fetchPolicyData = async (policyId) => {
           totalPremium: parseFloat(form.totalPremium) || 0,
           policyType: form.policyType || "", // FIXED: Added policyType
           odExpiryDate: form.policyType=="thirdParty"?null:form.odExpiryDate || "", // FIXED: Added odExpiryDate
-          tpExpiryDate: form.policyType=="standalone"?null:form.tpExpiryDate || "" // FIXED: Added tpExpiryDate
+          tpExpiryDate: form.policyType=="standalone"?null:form.tpExpiryDate || "", // FIXED: Added tpExpiryDate
+          // NEW: Include new policy remarks in final save
+          remarks: form.newPolicyRemarks || ""
         },
         documents: documentsArray,
         payment_info: {
