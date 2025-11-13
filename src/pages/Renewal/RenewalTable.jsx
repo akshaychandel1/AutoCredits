@@ -2291,7 +2291,7 @@ const RenewalTable = () => {
 
   const handleEditClick = (policy) => {
     const policyId = policy._id || policy.id;
-    navigate(`/new-policy/${policyId}?renewal=true`);
+    navigate(`/new-policy/?renewal=true&renewal_id=${policyId}`);
   };
 
   const handleDeleteClick = (policy) => {

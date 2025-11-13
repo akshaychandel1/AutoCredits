@@ -211,7 +211,6 @@ const PoliciesPage = () => {
       id: "all", 
       name: "All Policies", 
       count: stats.total,
-      description: "View all insurance policies",
       color: "blue",
       activeClass: "bg-blue-500 text-white border-blue-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-blue-50 border-blue-200"
@@ -220,7 +219,6 @@ const PoliciesPage = () => {
       id: "completed", 
       name: "Completed", 
       count: stats.completed,
-      description: "Policies that are completed",
       color: "green",
       activeClass: "bg-green-500 text-white border-green-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-green-50 border-green-200"
@@ -229,7 +227,6 @@ const PoliciesPage = () => {
       id: "draft", 
       name: "Draft", 
       count: stats.draft,
-      description: "Policies in draft stage",
       color: "yellow",
       activeClass: "bg-yellow-500 text-white border-yellow-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-yellow-50 border-yellow-200"
@@ -238,7 +235,6 @@ const PoliciesPage = () => {
       id: "payment-due", 
       name: "Payment Due", 
       count: stats.paymentDue,
-      description: "Policies with pending or partial payments",
       color: "red",
       activeClass: "bg-red-500 text-white border-red-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-red-50 border-red-200"
@@ -247,7 +243,6 @@ const PoliciesPage = () => {
       id: "fully-paid", 
       name: "Fully Paid", 
       count: stats.fullyPaid,
-      description: "Policies with complete payments",
       color: "emerald",
       activeClass: "bg-emerald-500 text-white border-emerald-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-emerald-50 border-emerald-200"
@@ -256,7 +251,6 @@ const PoliciesPage = () => {
       id: "new-vehicle", 
       name: "New Vehicle", 
       count: stats.newVehicle,
-      description: "Policies for new vehicles",
       color: "indigo",
       activeClass: "bg-indigo-500 text-white border-indigo-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-indigo-50 border-indigo-200"
@@ -265,7 +259,6 @@ const PoliciesPage = () => {
       id: "used-vehicle", 
       name: "Used Vehicle", 
       count: stats.usedVehicle,
-      description: "Policies for used vehicles",
       color: "gray",
       activeClass: "bg-gray-500 text-white border-gray-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
@@ -274,7 +267,6 @@ const PoliciesPage = () => {
       id: "corporate", 
       name: "Corporate", 
       count: stats.corporate,
-      description: "Corporate buyer policies",
       color: "purple",
       activeClass: "bg-purple-500 text-white border-purple-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-purple-50 border-purple-200"
@@ -283,7 +275,6 @@ const PoliciesPage = () => {
       id: "individual", 
       name: "Individual", 
       count: stats.individual,
-      description: "Individual buyer policies",
       color: "pink",
       activeClass: "bg-pink-500 text-white border-pink-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-pink-50 border-pink-200"
@@ -352,13 +343,6 @@ const PoliciesPage = () => {
                   )}
                 </button>
               ))}
-            </div>
-            
-            {/* Tab descriptions - show for active tab */}
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <p className="text-sm text-gray-600 text-center">
-                {tabs.find(tab => tab.id === activeTab)?.description}
-              </p>
             </div>
           </div>
         </div>

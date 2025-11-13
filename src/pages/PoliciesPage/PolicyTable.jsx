@@ -43,7 +43,7 @@ import {
 
 // ================== PAYMENT BREAKDOWN CALCULATION ==================
 
-// Calculate payment components function - IMPROVED: Better payment calculation
+// Calculate payment components function - SIMPLIFIED: Clear payment tracking
 const calculatePaymentComponents = (policy, paymentLedger = []) => {
   const totalPremium = policy.policy_info?.totalPremium || policy.insurance_quote?.premium || 0;
   
@@ -52,84 +52,181 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
     .filter(payment => payment.type === "subvention_refund")
     .reduce((sum, payment) => sum + (payment.amount || 0), 0);
   
-  // Calculate ALL customer payments (including subvention refunds for total paid calculation)
-  const totalCustomerPaidAmount = paymentLedger
-    .filter(payment => 
-      payment.paymentMadeBy === "Customer"
-    )
-    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  // Calculate effective amount payable after subvention refunds
+  const effectivePayable = Math.max(totalPremium - subventionRefundAmount, 0);
   
-  // Calculate customer paid amount (excluding subvention refunds for due calculation)
+  // Calculate customer payments (excluding subvention refunds)
   const customerPaidAmount = paymentLedger
     .filter(payment => 
       payment.paymentMadeBy === "Customer" && 
-      payment.type !== "subvention_refund" &&
-      !payment.mode?.toLowerCase().includes('subvention') &&
-      !payment.description?.toLowerCase().includes('subvention refund')
+      payment.type !== "subvention_refund"
     )
     .reduce((sum, payment) => sum + (payment.amount || 0), 0);
   
-  // Calculate effective amount payable after subvention refunds only
-  const effectivePayable = Math.max(totalPremium - subventionRefundAmount, 0);
+  // Calculate in-house payments made on behalf of customer
+  const inHouseCustomerPayments = paymentLedger
+    .filter(payment => 
+      payment.paymentMadeBy === "In House" && 
+      payment.payoutBy === "Customer" &&
+      payment.type !== "auto_credit"
+    )
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+
+  // Total collected from customer (direct + in-house on behalf)
+  const totalCollectedFromCustomer = customerPaidAmount + inHouseCustomerPayments;
   
   // Calculate remaining amount to be paid by customer
-  const remainingCustomerAmount = Math.max(effectivePayable - customerPaidAmount, 0);
+  const remainingCustomerAmount = Math.max(effectivePayable - totalCollectedFromCustomer, 0);
   
-  // Calculate auto credit amount (should be total premium)
+  // Check if auto credit exists
   const autoCreditEntry = paymentLedger.find(payment => payment.type === "auto_credit");
+  const hasAutoCredit = !!autoCreditEntry;
   const autoCreditAmount = autoCreditEntry ? autoCreditEntry.amount : 0;
 
-  // FIX: Calculate payment progress considering auto credit
-  const effectivePaidAmount = autoCreditAmount > 0 ? autoCreditAmount : totalCustomerPaidAmount;
-  const paymentProgress = effectivePayable > 0 
-    ? Math.min((effectivePaidAmount / effectivePayable) * 100, 100)
-    : 100;
+  // Check payment sources
+  const hasCustomerPayments = customerPaidAmount > 0;
+  const hasInHousePayments = paymentLedger.some(payment => 
+    payment.paymentMadeBy === "In House" && payment.type !== "auto_credit"
+  );
 
-  // Check payment made by type
-  const hasCustomerPayments = totalCustomerPaidAmount > 0;
-  const hasInHousePayments = paymentLedger.some(payment => payment.paymentMadeBy === "In House");
-  const hasAutoCredit = autoCreditAmount > 0;
-  
-  // FIX: Improved payment made by logic
-  const paymentMadeBy = hasAutoCredit ? 'Customer' : 
-                       hasInHousePayments ? 'In House' : 
-                       hasCustomerPayments ? 'Customer' : 'Not Paid';
+  // SIMPLIFIED: Payment status calculation
+  let paymentStatus = 'pending';
+  let paymentMadeBy = 'Not Paid';
+
+  if (hasAutoCredit) {
+    // In House payment scenario - track customer payment status
+    if (remainingCustomerAmount <= 0) {
+      paymentStatus = 'fully paid';
+      paymentMadeBy = 'In House';
+    } else if (totalCollectedFromCustomer > 0) {
+      paymentStatus = 'partially paid';
+      paymentMadeBy = 'In House';
+    } else {
+      paymentStatus = 'pending';
+      paymentMadeBy = 'In House';
+    }
+  } else if (hasInHousePayments) {
+    // Only In House payments (no auto credit)
+    if (remainingCustomerAmount <= 0) {
+      paymentStatus = 'fully paid';
+      paymentMadeBy = 'In House';
+    } else {
+      paymentStatus = 'partially paid';
+      paymentMadeBy = 'In House';
+    }
+  } else if (hasCustomerPayments) {
+    // Customer payment scenario
+    if (remainingCustomerAmount <= 0) {
+      paymentStatus = 'fully paid';
+      paymentMadeBy = 'Customer';
+    } else {
+      paymentStatus = 'partially paid';
+      paymentMadeBy = 'Customer';
+    }
+  }
+
+  // Calculate payment progress
+  const paymentProgress = effectivePayable > 0 
+    ? Math.min((totalCollectedFromCustomer / effectivePayable) * 100, 100)
+    : 100;
 
   return {
     totalPremium,
     subventionRefundAmount,
     customerPaidAmount,
-    totalCustomerPaidAmount,
+    inHouseCustomerPayments,
+    totalCollectedFromCustomer,
     remainingCustomerAmount,
     effectivePayable,
     paymentProgress,
     paymentMadeBy,
+    paymentStatus,
     hasInHousePayments,
     autoCreditAmount,
     hasAutoCredit,
-    effectivePaidAmount,
     netPremiumAfterDiscounts: effectivePayable
   };
 };
 
-// Function to get payment status - IMPROVED: Consistent calculation
+// Function to get payment status - SIMPLIFIED: Use consistent calculation
 const getPaymentStatus = (policy) => {
   if (policy.payment_info?.paymentStatus) {
     return policy.payment_info.paymentStatus.toLowerCase();
   }
   
   const components = calculatePaymentComponents(policy, policy.payment_ledger || []);
+  return components.paymentStatus;
+};
+
+// ================== STATUS NORMALIZATION ==================
+
+// Normalize policy status to ensure clean separation
+const normalizePolicyStatus = (status) => {
+  if (!status) return 'draft';
   
-  // FIX: Improved status calculation with tolerance for rounding errors
-  const tolerance = 0.01; // 1 paisa tolerance
+  const statusMap = {
+    'payment completed': 'completed',
+    'payment_completed': 'completed',
+    'paid': 'completed',
+    'payment_paid': 'completed',
+    'success': 'completed',
+    'successful': 'completed',
+    'active': 'completed',
+    'activated': 'completed',
+    'in force': 'completed',
+    'live': 'completed',
+    'cancelled': 'closed',
+    'canceled': 'closed',
+    'terminated': 'closed',
+    'void': 'closed',
+  };
   
-  if (components.effectivePaidAmount >= (components.effectivePayable - tolerance) && components.effectivePayable > 0) {
-    return 'fully paid';
-  } else if (components.effectivePaidAmount > 0) {
-    return 'partially paid';
-  } else {
-    return 'pending';
-  }
+  return statusMap[status.toLowerCase()] || status;
+};
+
+// Status display function
+const getStatusDisplay = (status) => {
+  const normalizedStatus = normalizePolicyStatus(status);
+  
+  const statusConfig = {
+    completed: { 
+      text: 'Completed', 
+      class: 'bg-blue-100 text-blue-800 border border-blue-200',
+      icon: FaCheckCircle,
+      description: 'Policy purchase process completed'
+    },
+    draft: { 
+      text: 'Draft', 
+      class: 'bg-amber-100 text-amber-800 border border-amber-200',
+      icon: FaClock,
+      description: 'Policy is saved but not finalized'
+    },
+    expired: { 
+      text: 'Expired', 
+      class: 'bg-rose-100 text-rose-800 border border-rose-200',
+      icon: FaExclamationTriangle,
+      description: 'Policy coverage has ended'
+    },
+    closed: { 
+      text: 'Closed', 
+      class: 'bg-gray-100 text-gray-800 border border-gray-200',
+      icon: FaTimes,
+      description: 'Policy has been closed or cancelled'
+    },
+    pending: { 
+      text: 'Pending', 
+      class: 'bg-purple-100 text-purple-800 border border-purple-200',
+      icon: FaClock,
+      description: 'Awaiting processing or approval'
+    }
+  };
+
+  return statusConfig[normalizedStatus] || { 
+    text: 'Draft',
+    class: 'bg-amber-100 text-amber-800 border border-amber-200',
+    icon: FaClock,
+    description: 'Policy is saved but not finalized'
+  };
 };
 
 // ================== CSV EXPORT UTILITY ==================
@@ -139,12 +236,10 @@ const getExpiryDateForCSV = (policy) => {
   const policyInfo = policy.policy_info || {};
   const policyType = (policy.insurance_quote?.coverageType || policy.insurance_category || '').toLowerCase();
   
-  // For Third Party policies, use tpExpiryDate
   if (policyType.includes('third party') || policyType.includes('tp')) {
     return policyInfo.tpExpiryDate || policyInfo.dueDate || 'N/A';
   }
   
-  // For Standalone OD, Comprehensive, and all other policies, use odExpiryDate
   return policyInfo.odExpiryDate || policyInfo.dueDate || 'N/A';
 };
 
@@ -222,6 +317,8 @@ const exportToCSV = (policies, selectedRows = []) => {
       return policy.insurance_category || 'Insurance';
     };
 
+    const normalizedStatus = normalizePolicyStatus(policy.status);
+
     return [
       policy._id || policy.id || 'N/A',
       getCustomerName(),
@@ -243,7 +340,7 @@ const exportToCSV = (policies, selectedRows = []) => {
       `₹${(policyInfo.totalPremium || insuranceQuote.premium || 0).toLocaleString('en-IN')}`,
       `₹${(policyInfo.idvAmount || insuranceQuote.idv || 0).toLocaleString('en-IN')}`,
       `${policyInfo.ncbDiscount || insuranceQuote.ncb || 0}%`,
-      policy.status || 'N/A',
+      normalizedStatus || 'N/A',
       getPaymentStatus(policy),
       formatDateForCSV(policy.created_at || policy.ts),
       formatDateForCSV(getExpiryDateForCSV(policy)),
@@ -275,30 +372,33 @@ const exportToCSV = (policies, selectedRows = []) => {
 
 const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
   const components = calculatePaymentComponents(policy, paymentLedger);
-  const paymentStatus = getPaymentStatus(policy);
 
-  // FIX: Use the consistent calculation from the main function
-  const displayPaidAmount = components.effectivePaidAmount;
-  const displayDueAmount = Math.max(components.effectivePayable - components.effectivePaidAmount, 0);
-  
-  // FIX: Use consistent progress calculation
+  // Use the consistent calculation from the main function
+  const displayPaidAmount = components.totalCollectedFromCustomer;
+  const displayDueAmount = components.remainingCustomerAmount;
   const displayProgress = components.paymentProgress;
-
-  // FIX: Use the actual payment status from the main function
-  const displayPaymentStatus = paymentStatus;
+  const displayPaymentStatus = components.paymentStatus;
   const displayPaymentMadeBy = components.paymentMadeBy;
+
+  // Status display configuration
+  const getStatusDisplayConfig = (status) => {
+    const statusConfig = {
+      'fully paid': { class: 'bg-green-100 text-green-800', text: 'Paid' },
+      'partially paid': { class: 'bg-yellow-100 text-yellow-800', text: 'Partial' },
+      'pending': { class: 'bg-red-100 text-red-800', text: 'Pending' }
+    };
+    
+    return statusConfig[status] || { class: 'bg-gray-100 text-gray-800', text: status };
+  };
+
+  const statusDisplay = getStatusDisplayConfig(displayPaymentStatus);
 
   return (
     <div className="space-y-1.5 p-1.5 bg-gray-50 rounded border border-gray-200 text-xs">
-      {/* Status Header - FIXED: Use actual payment status */}
+      {/* Status Header */}
       <div className="flex items-center justify-between">
-        <span className={`font-medium px-1 py-0.5 rounded text-xs ${
-          displayPaymentStatus === 'fully paid' ? 'bg-green-100 text-green-800' :
-          displayPaymentStatus === 'partially paid' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
-        }`}>
-          {displayPaymentStatus === 'fully paid' ? 'Paid' :
-           displayPaymentStatus === 'partially paid' ? 'Partial' : 'Pending'}
+        <span className={`font-medium px-1 py-0.5 rounded text-xs ${statusDisplay.class}`}>
+          {statusDisplay.text}
         </span>
         
         <div className={`px-1 py-0.5 rounded text-xs ${
@@ -306,12 +406,11 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
           displayPaymentMadeBy === 'Customer' ? 'bg-blue-100 text-blue-800' :
           'bg-gray-100 text-gray-800'
         }`}>
-          {displayPaymentMadeBy === 'In House' ? 'In House' :
-           displayPaymentMadeBy === 'Customer' ? 'Customer' : 'Not Paid'}
+          {displayPaymentMadeBy}
         </div>
       </div>
       
-      {/* Payment Breakdown - FIXED: Use consistent amounts */}
+      {/* Payment Breakdown */}
       <div className="space-y-0.5">
         <div className="flex justify-between">
           <span className="text-gray-600">Premium:</span>
@@ -344,7 +443,7 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
         )}
       </div>
       
-      {/* Progress Bar - FIXED: Use consistent progress */}
+      {/* Progress Bar */}
       <div className="pt-2">
         <div className="flex justify-between text-xs text-gray-500 mb-1">
           <span>Payment Progress</span>
@@ -361,7 +460,7 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
         </div>
       </div>
 
-      {/* Auto Credit Info - Show only if auto credit exists */}
+      {/* Auto Credit Info */}
       {components.hasAutoCredit && (
         <div className="pt-1 border-t border-gray-200">
           <div className="flex justify-between text-xs">
@@ -375,8 +474,6 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
     </div>
   );
 };
-
-// ... (rest of the code remains exactly the same - AdvancedSearch component and PolicyTable component)
 
 // ================== ADVANCED SEARCH COMPONENT ==================
 
@@ -885,54 +982,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     setDeleteLoading(false);
   };
 
-  const getStatusDisplay = (status) => {
-    const statusConfig = {
-      active: { 
-        text: 'Active', 
-        class: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-        icon: FaCheckCircle,
-        description: 'Policy is currently protecting the customer'
-      },
-      completed: { 
-        text: 'Completed', 
-        class: 'bg-blue-100 text-blue-800 border border-blue-200',
-        icon: FaCheckCircle,
-        description: 'Policy purchased but coverage starts later'
-      },
-      draft: { 
-        text: 'Draft', 
-        class: 'bg-amber-100 text-amber-800 border border-amber-200',
-        icon: FaClock,
-        description: 'Policy is saved but not finalized'
-      },
-      pending: { 
-        text: 'Pending', 
-        class: 'bg-purple-100 text-purple-800 border border-purple-200',
-        icon: FaClock,
-        description: 'Awaiting processing or approval'
-      },
-      expired: { 
-        text: 'Expired', 
-        class: 'bg-rose-100 text-rose-800 border border-rose-200',
-        icon: FaExclamationTriangle,
-        description: 'Policy coverage has ended'
-      },
-      'payment completed': {
-        text: 'Paid',
-        class: 'bg-green-100 text-green-800 border border-green-200',
-        icon: FaCheckCircle,
-        description: 'Payment completed for policy'
-      }
-    };
-
-    return statusConfig[status] || { 
-      text: status, 
-      class: 'bg-gray-100 text-gray-800 border border-gray-200',
-      icon: FaTag,
-      description: 'Policy status'
-    };
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -995,17 +1044,15 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     return policy.insurance_category || 'Insurance';
   };
 
-  // UPDATED: Get expiry date based on policy type - clean single expiry date for status column
+  // Get expiry date based on policy type
   const getExpiryDate = (policy) => {
     const policyInfo = policy.policy_info || {};
     const policyType = getPolicyType(policy).toLowerCase();
     
-    // For Third Party policies, use tpExpiryDate
     if (policyType.includes('third party') || policyType.includes('tp')) {
       return policyInfo.tpExpiryDate || policyInfo.dueDate || 'N/A';
     }
     
-    // For Standalone OD, Comprehensive, and all other policies, use odExpiryDate
     return policyInfo.odExpiryDate || policyInfo.dueDate || 'N/A';
   };
 
@@ -1269,7 +1316,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {paginatedPolicies.map((policy) => {
-                const statusDisplay = getStatusDisplay(policy.status);
+                const normalizedStatus = normalizePolicyStatus(policy.status);
+                const statusDisplay = getStatusDisplay(normalizedStatus);
                 const StatusIcon = statusDisplay.icon;
                 const customer = getCustomerDetails(policy);
                 const vehicleInfo = getVehicleInfo(policy);
@@ -1613,35 +1661,10 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                   <span className="text-gray-600">Created Date:</span>
                                   <span className="font-medium">{formatDate(policy.created_at || policy.ts)}</span>
                                 </div>
-                                
-                                {/* UPDATED: Show proper expiry dates based on policy type */}
-                                {policy.policy_info && (
-                                  <>
-                                    {/* Show single expiry date for status display */}
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Policy Expiry:</span>
-                                      <span className="font-medium">{formatDate(expiryDate)}</span>
-                                    </div>
-                                    
-                                    {/* Show detailed expiry information in expanded view */}
-                                    {policyType.toLowerCase().includes('comprehensive') && (
-                                      <>
-                                        {policy.policy_info.odExpiryDate && (
-                                          <div className="flex justify-between">
-                                            <span className="text-gray-600 text-xs">OD Expiry:</span>
-                                            <span className="font-medium text-xs">{formatDate(policy.policy_info.odExpiryDate)}</span>
-                                          </div>
-                                        )}
-                                        {policy.policy_info.tpExpiryDate && (
-                                          <div className="flex justify-between">
-                                            <span className="text-gray-600 text-xs">TP Expiry:</span>
-                                            <span className="font-medium text-xs">{formatDate(policy.policy_info.tpExpiryDate)}</span>
-                                          </div>
-                                        )}
-                                      </>
-                                    )}
-                                  </>
-                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Policy Expiry:</span>
+                                  <span className="font-medium">{formatDate(expiryDate)}</span>
+                                </div>
                               </div>
                             </div>
                           </div>

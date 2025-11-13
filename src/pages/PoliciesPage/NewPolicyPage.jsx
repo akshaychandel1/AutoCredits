@@ -6,7 +6,7 @@ import { z } from 'zod';
 import {
   FaCar, FaInfoCircle,FaPlus,FaArrowRight, FaCalculator,
   FaMapMarkerAlt,FaCheckCircle,FaExclamationTriangle,FaCloudUploadAlt,FaListAlt,FaExternalLinkAlt, FaTags,FaTag,FaSpinner,FaMoneyBillWave, FaEdit,FaHistory ,
-  FaUser,FaReceipt,FaEye,FaDownload,FaGift,
+  FaUser,FaReceipt,FaEye,FaDownload,FaGift,FaUserTie,
   FaPhone,FaFileContract,FaShieldAlt,FaUsers,
   FaEnvelope,
   FaSave,
@@ -426,16 +426,63 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     "Daughter-in-law",
   ];
 
-  // Credit type options
+  // Credit type options - UPDATED: Added Broker option
   const creditTypeOptions = [
-    { value: "auto", label: "Auto Credits" },
+    { value: "auto", label: "Autocredits India LLP" },
+    { value: "broker", label: "Broker" }, // NEW: Added Broker option
     { value: "showroom", label: "Showroom" },
     { value: "customer", label: "Customer" }
+  ];
+
+  // Broker name suggestions - NEW: Added broker name options
+  const brokerNameOptions = [
+    "ABC Insurance Brokers",
+    "XYZ Financial Services", 
+    "SecureLife Insurance Brokers",
+    "Prime Risk Solutions",
+    "Global Insurance Partners",
+    "Reliance Insurance Brokers",
+    "Pioneer Risk Advisors",
+    "Capital Insurance Services",
+    "Heritage Insurance Brokers",
+    "Summit Risk Management"
+  ];
+
+  // NEW: Agent names for source origin
+  const agentNameOptions = [
+    "Rahul Sharma",
+    "Priya Patel",
+    "Amit Kumar",
+    "Sneha Desai",
+    "Vikram Singh",
+    "Anjali Mehta",
+    "Rajesh Gupta",
+    "Pooja Reddy",
+    "Sanjay Malhotra",
+    "Neha Choudhary",
+    "Karan Joshi",
+    "Divya Iyer",
+    "Arun Khanna",
+    "Swati Nair",
+    "Deepak Verma",
+    "Maya Srinivasan",
+    "Rohit Bajaj",
+    "Shweta Kapoor",
+    "Nitin Agarwal",
+    "Tanvi Shah"
   ];
 
   // State for relationship suggestions
   const [relationshipSuggestions, setRelationshipSuggestions] = useState([]);
   const [showRelationshipSuggestions, setShowRelationshipSuggestions] = useState(false);
+  
+  // NEW: State for broker name suggestions
+  const [brokerNameSuggestions, setBrokerNameSuggestions] = useState([]);
+  const [showBrokerNameSuggestions, setShowBrokerNameSuggestions] = useState(false);
+  
+  // NEW: State for source origin (agent name) suggestions
+  const [agentNameSuggestions, setAgentNameSuggestions] = useState([]);
+  const [showAgentNameSuggestions, setShowAgentNameSuggestions] = useState(false);
   
   // State for pincode loading
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
@@ -581,6 +628,40 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     }
   };
 
+  // NEW: Handle broker name input change for auto-suggest
+  const handleBrokerNameChange = (e) => {
+    const value = e.target.value;
+    handleChange(e);
+    
+    if (value) {
+      const filtered = brokerNameOptions.filter(broker =>
+        broker.toLowerCase().includes(value.toLowerCase())
+      );
+      setBrokerNameSuggestions(filtered);
+      setShowBrokerNameSuggestions(true);
+    } else {
+      setBrokerNameSuggestions([]);
+      setShowBrokerNameSuggestions(false);
+    }
+  };
+
+  // NEW: Handle source origin (agent name) input change for auto-suggest
+  const handleSourceOriginChange = (e) => {
+    const value = e.target.value;
+    handleChange(e);
+    
+    if (value) {
+      const filtered = agentNameOptions.filter(agent =>
+        agent.toLowerCase().includes(value.toLowerCase())
+      );
+      setAgentNameSuggestions(filtered);
+      setShowAgentNameSuggestions(true);
+    } else {
+      setAgentNameSuggestions([]);
+      setShowAgentNameSuggestions(false);
+    }
+  };
+
   // Select relationship from suggestions
   const selectRelationship = (relation) => {
     handleChange({
@@ -593,6 +674,30 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     setRelationshipSuggestions([]);
   };
 
+  // NEW: Select broker name from suggestions
+  const selectBrokerName = (brokerName) => {
+    handleChange({
+      target: {
+        name: 'brokerName',
+        value: brokerName
+      }
+    });
+    setShowBrokerNameSuggestions(false);
+    setBrokerNameSuggestions([]);
+  };
+
+  // NEW: Select source origin (agent name) from suggestions
+  const selectSourceOrigin = (agentName) => {
+    handleChange({
+      target: {
+        name: 'sourceOrigin',
+        value: agentName
+      }
+    });
+    setShowAgentNameSuggestions(false);
+    setAgentNameSuggestions([]);
+  };
+
   // Handle vehicle type change (New Car / Used Car)
   const handleVehicleTypeChange = (vehicleType) => {
     handleChange({
@@ -603,22 +708,27 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     });
   };
 
-  // Handle credit type change
+  // UPDATED: Handle credit type change with broker logic
   const handleCreditTypeChange = (e) => {
     const { value } = e.target;
     handleChange(e);
     
-    // Update form state to track if payout should be hidden
+    // UPDATED: Update form state to track if payout should be hidden
+    // Payout should be available for auto and broker, hidden for showroom and customer
+    const hidePayout = value === "showroom" || value === "customer";
     handleChange({
       target: {
         name: 'hidePayout',
-        value: value === "showroom" || value === "customer"
+        value: hidePayout
       }
     });
   };
 
-  // Check if payout should be hidden
+  // UPDATED: Check if payout should be hidden
   const shouldHidePayout = form.creditType === "showroom" || form.creditType === "customer";
+
+  // NEW: Check if broker name field should be enabled
+  const shouldEnableBrokerName = form.creditType === "broker";
 
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
@@ -703,7 +813,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           {errors.vehicleType && <p className="text-red-500 text-xs mt-1">{errors.vehicleType}</p>}
           
           {/* Vehicle Type Tag Display */}
-          {form.vehicleType && (
+          {/* {form.vehicleType && (
             <div className="mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 form.vehicleType === "new" 
@@ -726,10 +836,10 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   : "Step 3 (Previous Policy) will be required for used vehicles"}
               </p>
             </div>
-          )}
+          )} */}
         </div>
 
-        {/* Credit Type Dropdown - NEW FIELD */}
+        {/* Credit Type Dropdown - UPDATED: Added Broker option */}
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Policy Done By *
@@ -751,18 +861,24 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           {errors.creditType && <p className="text-red-500 text-xs mt-1">{errors.creditType}</p>}
           
           {/* Credit Type Info */}
-          {form.creditType && (
+          {/* {form.creditType && (
             <div className="mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 form.creditType === "auto" 
                   ? "bg-blue-100 text-blue-800" 
+                  : form.creditType === "broker"
+                  ? "bg-purple-100 text-purple-800"
                   : form.creditType === "showroom"
                   ? "bg-orange-100 text-orange-800"
                   : "bg-green-100 text-green-800"
               }`}>
                 {form.creditType === "auto" ? (
                   <>
-                    <FaCreditCard className="mr-1" /> Auto Credits
+                    <FaCreditCard className="mr-1" /> Autocredits India LLP
+                  </>
+                ) : form.creditType === "broker" ? (
+                  <>
+                    <FaUserTie className="mr-1" /> Broker
                   </>
                 ) : form.creditType === "showroom" ? (
                   <>
@@ -775,16 +891,122 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 )}
               </span>
               <p className="text-xs text-gray-500 mt-1">
-                {form.creditType === "auto" 
+                {form.creditType === "auto" || form.creditType === "broker"
                   ? "Payout section will be available" 
                   : "Payout section will be hidden"}
               </p>
             </div>
-          )}
+          )} */}
         </div>
 
-        {/* Empty div to maintain grid layout */}
-        <div></div>
+        {/* NEW: Broker Name Field - Only enabled when Broker is selected */}
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Broker Name {shouldEnableBrokerName && "*"}
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              name="brokerName"
+              value={form.brokerName || ""}
+              onChange={handleBrokerNameChange}
+              onFocus={() => {
+                if (shouldEnableBrokerName) {
+                  if (form.brokerName) {
+                    const filtered = brokerNameOptions.filter(broker =>
+                      broker.toLowerCase().includes(form.brokerName.toLowerCase())
+                    );
+                    setBrokerNameSuggestions(filtered);
+                    setShowBrokerNameSuggestions(true);
+                  } else {
+                    setBrokerNameSuggestions(brokerNameOptions);
+                    setShowBrokerNameSuggestions(true);
+                  }
+                }
+              }}
+              onBlur={() => {
+                setTimeout(() => setShowBrokerNameSuggestions(false), 200);
+              }}
+              placeholder={shouldEnableBrokerName ? "Select or type broker name" : "Select Broker first"}
+              disabled={!shouldEnableBrokerName}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                !shouldEnableBrokerName 
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                  : errors.brokerName ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            
+            {/* Broker Name Suggestions Dropdown */}
+            {showBrokerNameSuggestions && shouldEnableBrokerName && brokerNameSuggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {brokerNameSuggestions.map((broker, index) => (
+                  <div
+                    key={index}
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                    onClick={() => selectBrokerName(broker)}
+                  >
+                    {broker}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {errors.brokerName && <p className="text-red-500 text-xs mt-1">{errors.brokerName}</p>}
+          {/* {!shouldEnableBrokerName && (
+            <p className="text-gray-400 text-xs mt-1">Enable by selecting "Broker" in Policy Done By</p>
+          )} */}
+        </div>
+
+        {/* NEW: Source Origin Field - Agent Name Auto-suggestion */}
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Source Origin
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              name="sourceOrigin"
+              value={form.sourceOrigin || ""}
+              onChange={handleSourceOriginChange}
+              onFocus={() => {
+                if (form.sourceOrigin) {
+                  const filtered = agentNameOptions.filter(agent =>
+                    agent.toLowerCase().includes(form.sourceOrigin.toLowerCase())
+                  );
+                  setAgentNameSuggestions(filtered);
+                  setShowAgentNameSuggestions(true);
+                } else {
+                  setAgentNameSuggestions(agentNameOptions);
+                  setShowAgentNameSuggestions(true);
+                }
+              }}
+              onBlur={() => {
+                setTimeout(() => setShowAgentNameSuggestions(false), 200);
+              }}
+              placeholder="Select or type agent name"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.sourceOrigin ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            
+            {/* Agent Name Suggestions Dropdown */}
+            {showAgentNameSuggestions && agentNameSuggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {agentNameSuggestions.map((agent, index) => (
+                  <div
+                    key={index}
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                    onClick={() => selectSourceOrigin(agent)}
+                  >
+                    {agent}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {errors.sourceOrigin && <p className="text-red-500 text-xs mt-1">{errors.sourceOrigin}</p>}
+          <p className="text-gray-400 text-xs mt-1">From where we got the policy client</p>
+        </div>
 
         {/* Individual Fields */}
         {form.buyer_type === "individual" && (
@@ -1316,8 +1538,8 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           </div>
         </div>
 
-        {/* Credit Type Summary */}
-        {form.creditType && (
+        {/* Credit Type Summary - UPDATED: Added Broker info */}
+        {/* {form.creditType && (
           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h4 className="text-md font-semibold text-gray-700 mb-2">Credit Type Summary</h4>
             <div className="flex items-center justify-between">
@@ -1325,22 +1547,26 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 <div className={`p-2 rounded-full ${
                   form.creditType === "auto" 
                     ? "bg-blue-100 text-blue-600" 
+                    : form.creditType === "broker"
+                    ? "bg-purple-100 text-purple-600"
                     : form.creditType === "showroom"
                     ? "bg-orange-100 text-orange-600"
                     : "bg-green-100 text-green-600"
                 }`}>
                   {form.creditType === "auto" ? <FaCreditCard /> : 
+                   form.creditType === "broker" ? <FaUserTie /> :
                    form.creditType === "showroom" ? <FaTags /> : 
                    <FaUser />}
                 </div>
                 <div>
                   <p className="font-medium text-gray-800">
-                    {form.creditType === "auto" ? "Auto Credits" : 
+                    {form.creditType === "auto" ? "Autocredits India LLP" : 
+                     form.creditType === "broker" ? "Broker" + (form.brokerName ? ` - ${form.brokerName}` : "") :
                      form.creditType === "showroom" ? "Showroom" : 
                      "Customer"}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {form.creditType === "auto" 
+                    {form.creditType === "auto" || form.creditType === "broker"
                       ? "Payout section will be available in Step 8" 
                       : "Payout section will be hidden"}
                   </p>
@@ -1349,20 +1575,23 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                 form.creditType === "auto" 
                   ? "bg-blue-100 text-blue-800" 
+                  : form.creditType === "broker"
+                  ? "bg-purple-100 text-purple-800"
                   : form.creditType === "showroom"
                   ? "bg-orange-100 text-orange-800"
                   : "bg-green-100 text-green-800"
               }`}>
-                {form.creditType === "auto" ? "AUTO CREDITS" : 
+                {form.creditType === "auto" ? "Autocredits India LLP" : 
+                 form.creditType === "broker" ? "BROKER" :
                  form.creditType === "showroom" ? "SHOWROOM" : 
                  "CUSTOMER"}
               </span>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Vehicle Type Summary */}
-        {form.vehicleType && (
+        {/* {form.vehicleType && (
           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h4 className="text-md font-semibold text-gray-700 mb-2">Vehicle Type Summary</h4>
             <div className="flex items-center justify-between">
@@ -1392,7 +1621,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
               </span>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
@@ -1697,6 +1926,24 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           {errors.variant && <p className="text-red-500 text-xs mt-1">{errors.variant}</p>}
         </div>
 
+        {/* NEW: Cubic Capacity (cc) field */}
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Cubic Capacity (cc)
+          </label>
+          <input
+            type="text"
+            name="cubicCapacity"
+            value={form.cubicCapacity || ""}
+            onChange={handleChange}
+            placeholder="Enter cubic capacity"
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              errors.cubicCapacity ? "border-red-500" : "border-gray-300"
+            }`}
+          />
+          {errors.cubicCapacity && <p className="text-red-500 text-xs mt-1">{errors.cubicCapacity}</p>}
+        </div>
+
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Engine Number *
@@ -1731,6 +1978,26 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
             style={{ textTransform: 'uppercase' }}
           />
           {errors.chassisNo && <p className="text-red-500 text-xs mt-1">{errors.chassisNo}</p>}
+        </div>
+
+        {/* NEW: Types of Vehicle dropdown */}
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-600">
+            Types of Vehicle
+          </label>
+          <select
+            name="vehicleTypeCategory"
+            value={form.vehicleTypeCategory || "4 wheeler"}
+            onChange={handleChange}
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+              errors.vehicleTypeCategory ? "border-red-500" : "border-gray-300"
+            }`}
+          >
+            <option value="4 wheeler">Four Wheeler</option>
+            <option value="two wheeler">Two Wheeler</option>
+            <option value="commercial">Commercial Vehicle</option>
+          </select>
+          {errors.vehicleTypeCategory && <p className="text-red-500 text-xs mt-1">{errors.vehicleTypeCategory}</p>}
         </div>
 
         <div className="md:col-span-2">
@@ -1790,37 +2057,36 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
 // ================== STEP 3: Previous Policy Details ==================
 const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Insurance companies options
- const insuranceCompanies = [
-  "Acko General Insurance Limited",
-  "Agriculture Insurance Company of India Limited",
-  "Bajaj General Insurance Limited",
-  "Cholamandalam MS General Insurance Company Limited",
-  "ECGC Limited",
-  "Generali Central Insurance Company Limited",
-  "Go Digit General Insurance Limited",
-  "HDFC ERGO General Insurance Company Limited",
-  "ICICI Lombard General Insurance Company Limited",
-  "IFFCO TOKIO General Insurance Company Limited",
-  "Zurich Kotak General Insurance Company (India) Limited",
-  "Kshema General Insurance Limited",
-  "Liberty General Insurance Limited",
-  "Magma General Insurance Limited",
-  "National Insurance Company Limited",
-  "Navi General Insurance Limited",
-  "Raheja QBE General Insurance Co. Ltd.",
-  "Reliance General Insurance Company Limited",
-  "Royal Sundaram General Insurance Company Limited",
-  "SBI General Insurance Company Limited",
-  "Shriram General Insurance Company Limited",
-  "Tata AIG General Insurance Company Limited",
-  "The New India Assurance Company Limited",
-  "The Oriental Insurance Company Limited",
-  "United India Insurance Company Limited",
-  "Universal Sompo General Insurance Company Limited",
-  "Zuno General Insurance Ltd. ",
-  "Bharti Axa General Insurance Co. Ltd"
-];
-
+  const insuranceCompanies = [
+    "Acko General Insurance Limited",
+    "Agriculture Insurance Company of India Limited",
+    "Bajaj General Insurance Limited",
+    "Cholamandalam MS General Insurance Company Limited",
+    "ECGC Limited",
+    "Generali Central Insurance Company Limited",
+    "Go Digit General Insurance Limited",
+    "HDFC ERGO General Insurance Company Limited",
+    "ICICI Lombard General Insurance Company Limited",
+    "IFFCO TOKIO General Insurance Company Limited",
+    "Zurich Kotak General Insurance Company (India) Limited",
+    "Kshema General Insurance Limited",
+    "Liberty General Insurance Limited",
+    "Magma General Insurance Limited",
+    "National Insurance Company Limited",
+    "Navi General Insurance Limited",
+    "Raheja QBE General Insurance Co. Ltd.",
+    "Reliance General Insurance Company Limited",
+    "Royal Sundaram General Insurance Company Limited",
+    "SBI General Insurance Company Limited",
+    "Shriram General Insurance Company Limited",
+    "Tata AIG General Insurance Company Limited",
+    "The New India Assurance Company Limited",
+    "The Oriental Insurance Company Limited",
+    "United India Insurance Company Limited",
+    "Universal Sompo General Insurance Company Limited",
+    "Zuno General Insurance Ltd. ",
+    "Bharti Axa General Insurance Co. Ltd"
+  ];
 
   // NCB options
   const ncbOptions = [0, 20, 25, 35, 45, 50];
@@ -1831,6 +2097,86 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     { value: "standalone", label: "Stand Alone OD" },
     { value: "thirdParty", label: "Third Party" }
   ];
+
+  // Hypothecation Bank options
+  const hypothecationBanks = [
+    "Not Applicable",
+    "AU Small Finance Bank",
+    "Aditya Birla Finance",
+    "Axis Bank",
+    "Bajaj Finance",
+    "Bandhan Bank",
+    "Bank of Baroda",
+    "Bank of India",
+    "Bank of Maharashtra",
+    "Berar Finance",
+    "Canara Bank",
+    "Capri Global Capital",
+    "Central Bank of India",
+    "Cholamandalam Investment & Finance",
+    "City Union Bank",
+    "Clix Capital",
+    "DCB Bank",
+    "DMI Finance",
+    "Dhanlaxmi Bank",
+    "ESAF Small Finance Bank",
+    "Electronica Finance",
+    "Equitas Small Finance Bank",
+    "Esskay Fincorp",
+    "Federal Bank",
+    "Fullerton India (SMFG India Credit)",
+    "HDB Financial Services",
+    "HDFC Bank",
+    "Hero FinCorp",
+    "Hinduja Leyland Finance",
+    "ICICI Bank",
+    "IDBI Bank",
+    "IDFC FIRST Bank",
+    "IIFL Finance",
+    "InCred Financial Services",
+    "Indian Bank",
+    "Indian Overseas Bank",
+    "IndusInd Bank",
+    "JM Financial Products",
+    "Jammu & Kashmir Bank",
+    "Jana Small Finance Bank",
+    "Karnataka Bank",
+    "Karur Vysya Bank",
+    "Kotak Mahindra Bank",
+    "Kotak Mahindra Prime",
+    "L&T Finance",
+    "MAS Financial Services",
+    "Mahindra & Mahindra Financial Services",
+    "Manappuram Finance",
+    "Muthoot Capital Services",
+    "Muthoot Finance",
+    "Navi Finserv",
+    "Northern Arc Capital",
+    "Piramal Capital & Housing Finance",
+    "Poonawalla Fincorp",
+    "Punjab & Sind Bank",
+    "Punjab National Bank",
+    "RBL Bank",
+    "Shriram Finance",
+    "South Indian Bank",
+    "State Bank of India",
+    "Sundaram Finance",
+    "Suryoday Small Finance Bank",
+    "TVS Credit Services",
+    "Tata Capital Financial Services",
+    "Tata Motors Finance",
+    "Toyota Financial Services India",
+    "U GRO Capital",
+    "UCO Bank",
+    "Ujjivan Small Finance Bank",
+    "Union Bank of India",
+    "Veritas Finance",
+    "Vistaar Financial Services",
+    "Vivriti Capital",
+    "Volkswagen Finance Private Limited",
+    "WheelsEMI Private Limited",
+    "YES Bank",
+];
 
   // Policy duration options based on policy type
   const getPolicyDurations = (policyType) => {
@@ -1851,6 +2197,8 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
   const [showNcbSuggestions, setShowNcbSuggestions] = useState(false);
   const [durationSuggestions, setDurationSuggestions] = useState([]);
   const [showDurationSuggestions, setShowDurationSuggestions] = useState(false);
+  const [hypothecationSuggestions, setHypothecationSuggestions] = useState([]);
+  const [showHypothecationSuggestions, setShowHypothecationSuggestions] = useState(false);
 
   // Calculate policy end date based on policy type
   const calculatePolicyEndDate = (startDate, duration, policyType) => {
@@ -1995,6 +2343,22 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
     }
   };
 
+  // NEW: Hypothecation auto-suggest handler
+  const handleHypothecationChange = (e) => {
+    const value = e.target.value;
+    handleChange(e);
+    
+    if (value) {
+      const filtered = hypothecationBanks.filter(bank =>
+        bank.toLowerCase().includes(value.toLowerCase())
+      );
+      setHypothecationSuggestions(filtered);
+      setShowHypothecationSuggestions(true);
+    } else {
+      setShowHypothecationSuggestions(false);
+    }
+  };
+
   // Select from suggestions
   const selectInsuranceCompany = (company) => {
     handleChange({ target: { name: 'previousInsuranceCompany', value: company } });
@@ -2009,6 +2373,12 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
   const selectDuration = (duration) => {
     handleDurationChange(duration);
     setShowDurationSuggestions(false);
+  };
+
+  // NEW: Select hypothecation from suggestions
+  const selectHypothecation = (bank) => {
+    handleChange({ target: { name: 'previousHypothecation', value: bank } });
+    setShowHypothecationSuggestions(false);
   };
 
   // Get placeholder text for duration field
@@ -2403,6 +2773,55 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
               )}
             </div>
             {errors.previousNcbDiscount && <p className="text-red-500 text-xs mt-1">{errors.previousNcbDiscount}</p>}
+          </div>
+
+          {/* NEW: Hypothecation Field */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Hypothecation
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="previousHypothecation"
+                value={form.previousHypothecation || ""}
+                onChange={handleHypothecationChange}
+                onFocus={() => {
+                  if (form.previousHypothecation) {
+                    const filtered = hypothecationBanks.filter(bank =>
+                      bank.toLowerCase().includes(form.previousHypothecation.toLowerCase())
+                    );
+                    setHypothecationSuggestions(filtered);
+                  } else {
+                    setHypothecationSuggestions(hypothecationBanks);
+                  }
+                  setShowHypothecationSuggestions(true);
+                }}
+                onBlur={() => setTimeout(() => setShowHypothecationSuggestions(false), 200)}
+                placeholder="Type bank name or select Not Applicable"
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.previousHypothecation ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              
+              {showHypothecationSuggestions && hypothecationSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {hypothecationSuggestions.map((bank, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                      onClick={() => selectHypothecation(bank)}
+                    >
+                      {bank}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {errors.previousHypothecation && <p className="text-red-500 text-xs mt-1">{errors.previousHypothecation}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              Select the bank if vehicle is financed, otherwise select "Not Applicable"
+            </p>
           </div>
         </div>
 
@@ -4548,36 +4967,36 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
   // Insurance companies dropdown options (same as InsuranceQuotes)
   const [insuranceCompanySuggestions, setInsuranceCompanySuggestions] = useState([]);
   const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = useState(false);
-   const insuranceCompanies = [
-  "Acko General Insurance Limited",
-  "Agriculture Insurance Company of India Limited",
-  "Bajaj General Insurance Limited",
-  "Cholamandalam MS General Insurance Company Limited",
-  "ECGC Limited",
-  "Generali Central Insurance Company Limited",
-  "Go Digit General Insurance Limited",
-  "HDFC ERGO General Insurance Company Limited",
-  "ICICI Lombard General Insurance Company Limited",
-  "IFFCO TOKIO General Insurance Company Limited",
-  "Zurich Kotak General Insurance Company (India) Limited",
-  "Kshema General Insurance Limited",
-  "Liberty General Insurance Limited",
-  "Magma General Insurance Limited",
-  "National Insurance Company Limited",
-  "Navi General Insurance Limited",
-  "Raheja QBE General Insurance Co. Ltd.",
-  "Reliance General Insurance Company Limited",
-  "Royal Sundaram General Insurance Company Limited",
-  "SBI General Insurance Company Limited",
-  "Shriram General Insurance Company Limited",
-  "Tata AIG General Insurance Company Limited",
-  "The New India Assurance Company Limited",
-  "The Oriental Insurance Company Limited",
-  "United India Insurance Company Limited",
-  "Universal Sompo General Insurance Company Limited",
-  "Zuno General Insurance Ltd. ",
-  "Bharti Axa General Insurance Co. Ltd"
-];
+  const insuranceCompanies = [
+    "Acko General Insurance Limited",
+    "Agriculture Insurance Company of India Limited",
+    "Bajaj General Insurance Limited",
+    "Cholamandalam MS General Insurance Company Limited",
+    "ECGC Limited",
+    "Generali Central Insurance Company Limited",
+    "Go Digit General Insurance Limited",
+    "HDFC ERGO General Insurance Company Limited",
+    "ICICI Lombard General Insurance Company Limited",
+    "IFFCO TOKIO General Insurance Company Limited",
+    "Zurich Kotak General Insurance Company (India) Limited",
+    "Kshema General Insurance Limited",
+    "Liberty General Insurance Limited",
+    "Magma General Insurance Limited",
+    "National Insurance Company Limited",
+    "Navi General Insurance Limited",
+    "Raheja QBE General Insurance Co. Ltd.",
+    "Reliance General Insurance Company Limited",
+    "Royal Sundaram General Insurance Company Limited",
+    "SBI General Insurance Company Limited",
+    "Shriram General Insurance Company Limited",
+    "Tata AIG General Insurance Company Limited",
+    "The New India Assurance Company Limited",
+    "The Oriental Insurance Company Limited",
+    "United India Insurance Company Limited",
+    "Universal Sompo General Insurance Company Limited",
+    "Zuno General Insurance Ltd. ",
+    "Bharti Axa General Insurance Co. Ltd"
+  ];
 
   // NCB options dropdown (same as InsuranceQuotes)
   const ncbOptions = [0, 20, 25, 35, 45, 50];
@@ -4588,6 +5007,90 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     { value: "standalone", label: "Stand Alone OD" },
     { value: "thirdParty", label: "Third Party" }
   ];
+
+  // Hypothecation Bank options
+ const hypothecationBanks = [
+    "Not Applicable",
+    "AU Small Finance Bank",
+    "Aditya Birla Finance",
+    "Axis Bank",
+    "Bajaj Finance",
+    "Bandhan Bank",
+    "Bank of Baroda",
+    "Bank of India",
+    "Bank of Maharashtra",
+    "Berar Finance",
+    "Canara Bank",
+    "Capri Global Capital",
+    "Central Bank of India",
+    "Cholamandalam Investment & Finance",
+    "City Union Bank",
+    "Clix Capital",
+    "DCB Bank",
+    "DMI Finance",
+    "Dhanlaxmi Bank",
+    "ESAF Small Finance Bank",
+    "Electronica Finance",
+    "Equitas Small Finance Bank",
+    "Esskay Fincorp",
+    "Federal Bank",
+    "Fullerton India (SMFG India Credit)",
+    "HDB Financial Services",
+    "HDFC Bank",
+    "Hero FinCorp",
+    "Hinduja Leyland Finance",
+    "ICICI Bank",
+    "IDBI Bank",
+    "IDFC FIRST Bank",
+    "IIFL Finance",
+    "InCred Financial Services",
+    "Indian Bank",
+    "Indian Overseas Bank",
+    "IndusInd Bank",
+    "JM Financial Products",
+    "Jammu & Kashmir Bank",
+    "Jana Small Finance Bank",
+    "Karnataka Bank",
+    "Karur Vysya Bank",
+    "Kotak Mahindra Bank",
+    "Kotak Mahindra Prime",
+    "L&T Finance",
+    "MAS Financial Services",
+    "Mahindra & Mahindra Financial Services",
+    "Manappuram Finance",
+    "Muthoot Capital Services",
+    "Muthoot Finance",
+    "Navi Finserv",
+    "Northern Arc Capital",
+    "Piramal Capital & Housing Finance",
+    "Poonawalla Fincorp",
+    "Punjab & Sind Bank",
+    "Punjab National Bank",
+    "RBL Bank",
+    "Shriram Finance",
+    "South Indian Bank",
+    "State Bank of India",
+    "Sundaram Finance",
+    "Suryoday Small Finance Bank",
+    "TVS Credit Services",
+    "Tata Capital Financial Services",
+    "Tata Motors Finance",
+    "Toyota Financial Services India",
+    "U GRO Capital",
+    "UCO Bank",
+    "Ujjivan Small Finance Bank",
+    "Union Bank of India",
+    "Veritas Finance",
+    "Vistaar Financial Services",
+    "Vivriti Capital",
+    "Volkswagen Finance Private Limited",
+    "WheelsEMI Private Limited",
+    "YES Bank",
+];
+
+  // State for auto-suggest
+  const [hypothecationSuggestions, setHypothecationSuggestions] = useState([]);
+  const [showHypothecationSuggestions, setShowHypothecationSuggestions] = useState(false);
 
   // UPDATED: Policy duration options based on vehicle type and policy type
   const getPolicyDurationOptions = (vehicleType, policyType) => {
@@ -4937,6 +5440,28 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
     setShowInsuranceCompanySuggestions(false);
   };
 
+  // NEW: Hypothecation auto-suggest handler
+  const handleHypothecationChange = (e) => {
+    const value = e.target.value;
+    handleChange(e);
+    
+    if (value) {
+      const filtered = hypothecationBanks.filter(bank =>
+        bank.toLowerCase().includes(value.toLowerCase())
+      );
+      setHypothecationSuggestions(filtered);
+      setShowHypothecationSuggestions(true);
+    } else {
+      setShowHypothecationSuggestions(false);
+    }
+  };
+
+  // NEW: Select hypothecation from suggestions
+  const selectHypothecation = (bank) => {
+    handleChange({ target: { name: 'hypothecation', value: bank } });
+    setShowHypothecationSuggestions(false);
+  };
+
   // ENHANCED: Auto-fill effect with better quote handling
   useEffect(() => {
     if (acceptedQuote) {
@@ -5080,72 +5605,6 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
         </div>
       </div>
 
-      {/* Duration Mapping Info */}
-      {/* {acceptedQuote && form.insuranceDuration && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-start space-x-3">
-            <FaInfoCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-blue-800 mb-2">Duration Mapped from Accepted Quote</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Quote Duration:</span>
-                  <span className="bg-blue-100 px-2 py-1 rounded text-blue-800">
-                    {acceptedQuote.policyDuration} {acceptedQuote.policyDurationLabel && `(${acceptedQuote.policyDurationLabel})`}
-                  </span>
-                  <FaArrowRight className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium">Policy Duration:</span>
-                  <span className="bg-green-100 px-2 py-1 rounded text-green-800">
-                    {form.insuranceDuration} {selectedDurationOption?.label && `(${selectedDurationOption.label})`}
-                  </span>
-                </div>
-                <p className="text-xs text-blue-600 mt-2">
-                  Duration automatically mapped from accepted quote based on vehicle type and policy type. You can edit this if needed.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
-
-      {/* Quote Acceptance Status Banner */}
-      {/* {acceptedQuote ? (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <FaCheckCircle className="w-6 h-6 text-green-600" />
-              <div>
-                <h4 className="font-semibold text-green-800">
-                  {lastAcceptedQuoteId === acceptedQuote.id ? "Quote Accepted & Auto-Filled" : "New Quote Accepted - Updating..."}
-                </h4>
-                <p className="text-sm text-green-600">
-                  {acceptedQuote.insuranceCompany} - ₹{acceptedQuote.totalPremium?.toLocaleString('en-IN')}
-                  {acceptedQuote.ncbDiscount > 0 && ` (with ${acceptedQuote.ncbDiscount}% NCB)`}
-                  {acceptedQuote.policyDurationLabel && ` - ${acceptedQuote.policyDurationLabel}`}
-                </p>
-              </div>
-            </div>
-            <div className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
-              {lastAcceptedQuoteId === acceptedQuote.id ? "✅ Ready for Policy Creation" : "🔄 Updating Fields..."}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <FaExclamationTriangle className="w-5 h-5 text-yellow-600" />
-            <div>
-              <p className="text-yellow-700 text-sm font-medium">
-                <strong>Case Status: Pending Quote Acceptance</strong>
-              </p>
-              <p className="text-yellow-600 text-sm">
-                Please accept a quote in Step 4 to auto-fill policy details
-              </p>
-            </div>
-          </div>
-        </div>
-      )} */}
-
       <div className="border rounded-xl p-5 mb-6">
         <h4 className="text-md font-semibold text-gray-700 mb-4">
           Policy Information {acceptedQuote && (
@@ -5157,57 +5616,57 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          
          {/* Insurance Company - Auto-suggestion */}
-<div>
-  <label className="block mb-1 text-sm font-medium text-gray-600">
-    Insurance Company *
-  </label>
-  <div className="relative">
-    <input
-      type="text"
-      name="insuranceCompany"
-      value={form.insuranceCompany || ""}
-      onChange={handleInsuranceCompanyChange}
-      onFocus={() => {
-        if (form.insuranceCompany) {
-          const filtered = insuranceCompanies.filter(company =>
-            company.toLowerCase().includes(form.insuranceCompany.toLowerCase())
-          );
-          setInsuranceCompanySuggestions(filtered);
-        } else {
-          setInsuranceCompanySuggestions(insuranceCompanies);
-        }
-        setShowInsuranceCompanySuggestions(true);
-      }}
-      onBlur={() => setTimeout(() => setShowInsuranceCompanySuggestions(false), 200)}
-      placeholder="Type insurance company"
-      className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-        errors.insuranceCompany ? "border-red-500" : "border-gray-300"
-      }`}
-    />
-    
-    {showInsuranceCompanySuggestions && insuranceCompanySuggestions.length > 0 && (
-      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-        {insuranceCompanySuggestions.map((company, index) => (
-          <div
-            key={index}
-            className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-            onMouseDown={(e) => e.preventDefault()} // Prevent input blur
-            onClick={() => selectInsuranceCompany(company)}
-          >
-            {company}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Insurance Company *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="insuranceCompany"
+                value={form.insuranceCompany || ""}
+                onChange={handleInsuranceCompanyChange}
+                onFocus={() => {
+                  if (form.insuranceCompany) {
+                    const filtered = insuranceCompanies.filter(company =>
+                      company.toLowerCase().includes(form.insuranceCompany.toLowerCase())
+                    );
+                    setInsuranceCompanySuggestions(filtered);
+                  } else {
+                    setInsuranceCompanySuggestions(insuranceCompanies);
+                  }
+                  setShowInsuranceCompanySuggestions(true);
+                }}
+                onBlur={() => setTimeout(() => setShowInsuranceCompanySuggestions(false), 200)}
+                placeholder="Type insurance company"
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.insuranceCompany ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              
+              {showInsuranceCompanySuggestions && insuranceCompanySuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {insuranceCompanySuggestions.map((company, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                      onMouseDown={(e) => e.preventDefault()} // Prevent input blur
+                      onClick={() => selectInsuranceCompany(company)}
+                    >
+                      {company}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {acceptedQuote && form.insuranceCompany === acceptedQuote.insuranceCompany && (
+              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                <FaCheckCircle className="w-3 h-3" />
+                From accepted quote
+              </p>
+            )}
+            {errors.insuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.insuranceCompany}</p>}
           </div>
-        ))}
-      </div>
-    )}
-  </div>
-  {acceptedQuote && form.insuranceCompany === acceptedQuote.insuranceCompany && (
-    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-      <FaCheckCircle className="w-3 h-3" />
-      From accepted quote
-    </p>
-  )}
-  {errors.insuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.insuranceCompany}</p>}
-</div>
 
           {/* Policy Type */}
           <div>
@@ -5331,18 +5790,10 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
                     (direct mapping)
                   </span>
                 )}
-                {/* <span className="text-gray-500 ml-1">• Editable</span> */}
               </p>
             )}
             
             {errors.insuranceDuration && <p className="text-red-500 text-xs mt-1">{errors.insuranceDuration}</p>}
-            
-            {/* Duration Options Info - UPDATED */}
-            {/* {form.policyType === "comprehensive" && (
-              <p className="text-xs text-blue-600 mt-1">
-                Available: 1yr OD + 1yr TP, 1yr OD + 3yr TP, 2yr OD + 3yr TP, 3yr OD + 3yr TP
-              </p>
-            )} */}
           </div>
 
           {/* OD Expiry Date - Show for Standalone and Comprehensive */}
@@ -5480,6 +5931,55 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
               </p>
             )}
             {errors.totalPremium && <p className="text-red-500 text-xs mt-1">{errors.totalPremium}</p>}
+          </div>
+
+          {/* NEW: Hypothecation Field */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-600">
+              Hypothecation
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="hypothecation"
+                value={form.hypothecation || ""}
+                onChange={handleHypothecationChange}
+                onFocus={() => {
+                  if (form.hypothecation) {
+                    const filtered = hypothecationBanks.filter(bank =>
+                      bank.toLowerCase().includes(form.hypothecation.toLowerCase())
+                    );
+                    setHypothecationSuggestions(filtered);
+                  } else {
+                    setHypothecationSuggestions(hypothecationBanks);
+                  }
+                  setShowHypothecationSuggestions(true);
+                }}
+                onBlur={() => setTimeout(() => setShowHypothecationSuggestions(false), 200)}
+                placeholder="Type bank name or select Not Applicable"
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.hypothecation ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              
+              {showHypothecationSuggestions && hypothecationSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {hypothecationSuggestions.map((bank, index) => (
+                    <div
+                      key={index}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                      onClick={() => selectHypothecation(bank)}
+                    >
+                      {bank}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {errors.hypothecation && <p className="text-red-500 text-xs mt-1">{errors.hypothecation}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              Select the bank if vehicle is financed, otherwise select "Not Applicable"
+            </p>
           </div>
         </div>
 
@@ -8843,7 +9343,7 @@ const Payment = ({
       )}
 
       {/* Next Step Button - UPDATED: Always enabled if there are payments */}
-      <div className="mt-6 flex justify-between items-center">
+      {/* <div className="mt-6 flex justify-between items-center">
         <div className="text-sm text-gray-600">
           {paymentLedger.length > 0 ? (
             customerRemainingAmount <= 0 ? (
@@ -8864,7 +9364,7 @@ const Payment = ({
           {isSaving ? "Saving..." : "Proceed to Payout"} 
           <FaArrowRight />
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };
@@ -9619,6 +10119,10 @@ const NewPolicyPage = () => {
     // FIXED: Don't hardcode default, let API data determine it
     creditType: "", // Changed from "auto" to empty string
     hidePayout: false,
+    // NEW: Added brokerName field
+    brokerName: "",
+    // NEW: Added sourceOrigin field
+    sourceOrigin: "",
     // Corporate fields
     companyName: "",
     employeeName: "",
@@ -9649,8 +10153,12 @@ const NewPolicyPage = () => {
     make: "",
     model: "",
     variant: "",
+    // NEW: Added cubicCapacity field
+    cubicCapacity: "",
     engineNo: "",
     chassisNo: "",
+    // NEW: Added vehicleTypeCategory field
+    vehicleTypeCategory: "4 wheeler",
     makeMonth: "",
     makeYear: "",
     // Previous Policy fields
@@ -9664,6 +10172,8 @@ const NewPolicyPage = () => {
     previousTpExpiryDate: "",
     previousDueDate: "",
     previousNcbDiscount: "",
+    // NEW: Previous Policy Hypothecation
+    previousHypothecation: "",
     // NEW: Previous Policy Remarks
     previousPolicyRemarks: "",
     // Insurance Quote fields - UPDATED: Added new IDV fields
@@ -9691,6 +10201,8 @@ const NewPolicyPage = () => {
     policyType: "",
     odExpiryDate: "",
     tpExpiryDate: "",
+    // NEW: New Policy Hypothecation
+    hypothecation: "",
     // NEW: New Policy Remarks
     newPolicyRemarks: "",
     // Documents
@@ -9970,7 +10482,7 @@ const NewPolicyPage = () => {
     };
   };
 
-  // NEW: Check if payout should be hidden based on credit type
+  // UPDATED: Check if payout should be hidden based on credit type
   const shouldHidePayout = () => {
     return form.creditType === "showroom" || form.creditType === "customer";
   };
@@ -10142,11 +10654,13 @@ const NewPolicyPage = () => {
   useEffect(() => {
     console.log("💳 Credit Type Debug:", {
       currentCreditType: form.creditType,
+      brokerName: form.brokerName,
+      sourceOrigin: form.sourceOrigin,
       hidePayout: form.hidePayout,
       step: step,
       policyId: policyId
     });
-  }, [form.creditType, form.hidePayout, step, policyId]);
+  }, [form.creditType, form.brokerName, form.sourceOrigin, form.hidePayout, step, policyId]);
 
   // DEBUG: Track credit type loading
   useEffect(() => {
@@ -10154,10 +10668,12 @@ const NewPolicyPage = () => {
       policyId: id,
       isEditMode: isEditMode,
       currentCreditType: form.creditType,
+      brokerName: form.brokerName,
+      sourceOrigin: form.sourceOrigin,
       loadingPolicy: loadingPolicy,
       step: step
     });
-  }, [id, isEditMode, form.creditType, loadingPolicy, step]);
+  }, [id, isEditMode, form.creditType, form.brokerName, form.sourceOrigin, loadingPolicy, step]);
 
   // FIXED: Optimized quote acceptance handler with renewal reset logic
   const handleQuoteAccepted = useCallback((quote) => {
@@ -10196,6 +10712,8 @@ const NewPolicyPage = () => {
         policyType: "",
         odExpiryDate: "",
         tpExpiryDate: "",
+        // Reset new policy hypothecation
+        hypothecation: "",
         // Reset new policy remarks
         newPolicyRemarks: "",
         // Reset payment fields
@@ -10355,468 +10873,492 @@ const NewPolicyPage = () => {
   }, [form.isRenewal, loadingPolicy, step, acceptedQuote]);
 
   // ENHANCED: Function to fetch renewal policy data for both new renewals and editing existing renewals
-const fetchRenewalPolicyData = async (policyId) => {
-  setLoadingPolicy(true);
-  try {
-    console.log("🔍 Fetching renewal policy data for ID:", policyId);
-    const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
-    const policyData = response.data;
-    
-    console.log("📦 Full Renewal API Response:", policyData);
-    
-    if (!policyData || !policyData.data) {
-      console.error("❌ No renewal policy data received from API");
-      setSaveMessage("❌ No renewal policy data found for this ID");
-      return;
-    }
+  const fetchRenewalPolicyData = async (policyId) => {
+    setLoadingPolicy(true);
+    try {
+      console.log("🔍 Fetching renewal policy data for ID:", policyId);
+      const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
+      const policyData = response.data;
+      
+      console.log("📦 Full Renewal API Response:", policyData);
+      
+      if (!policyData || !policyData.data) {
+        console.error("❌ No renewal policy data received from API");
+        setSaveMessage("❌ No renewal policy data found for this ID");
+        return;
+      }
 
-    const renewalData = policyData.data;
-    console.log("📊 Renewal Policy Data:", renewalData);
-    
-    // CRITICAL FIX: Properly load credit type from renewal data
-    const creditTypeFromRenewal = renewalData.creditType || 
-                                 renewalData.customer_details?.creditType || 
-                                 "auto";
-    
-    console.log("💳 Renewal Credit Type Loading Debug:", {
-      rootCreditType: renewalData.creditType,
-      customerDetailsCreditType: renewalData.customer_details?.creditType,
-      finalCreditType: creditTypeFromRenewal
-    });
-    
-    // Check if this is a new renewal (creating from existing policy) 
-    // or editing an existing renewal policy
-    const isNewRenewal = !renewalData.isRenewal; // If the source policy is not already a renewal
-    
-    if (isNewRenewal) {
-      console.log("🔄 Creating NEW renewal from existing policy");
-      // Map renewal policy data to current form for NEW renewal case
-      // Only populate Case Details, Vehicle Details, and Previous Policy
-      const renewalFormData = {
-        // Basic info
-        buyer_type: renewalData.buyer_type || "individual",
-        vehicleType: "used", // Renewals are always used vehicles
-        insurance_category: renewalData.insurance_category || "motor",
-        status: "draft",
-        // FIXED: Properly preserve credit type from source policy
-        creditType: creditTypeFromRenewal,
-        hidePayout: creditTypeFromRenewal === "showroom" || creditTypeFromRenewal === "customer",
+      const renewalData = policyData.data;
+      console.log("📊 Renewal Policy Data:", renewalData);
+      
+      // CRITICAL FIX: Properly load credit type from renewal data
+      const creditTypeFromRenewal = renewalData.creditType || 
+                                   renewalData.customer_details?.creditType || 
+                                   "auto";
+      
+      console.log("💳 Renewal Credit Type Loading Debug:", {
+        rootCreditType: renewalData.creditType,
+        customerDetailsCreditType: renewalData.customer_details?.creditType,
+        finalCreditType: creditTypeFromRenewal
+      });
+      
+      // Check if this is a new renewal (creating from existing policy) 
+      // or editing an existing renewal policy
+      const isNewRenewal = !renewalData.isRenewal; // If the source policy is not already a renewal
+      
+      if (isNewRenewal) {
+        console.log("🔄 Creating NEW renewal from existing policy");
+        // Map renewal policy data to current form for NEW renewal case
+        // Only populate Case Details, Vehicle Details, and Previous Policy
+        const renewalFormData = {
+          // Basic info
+          buyer_type: renewalData.buyer_type || "individual",
+          vehicleType: "used", // Renewals are always used vehicles
+          insurance_category: renewalData.insurance_category || "motor",
+          status: "draft",
+          // FIXED: Properly preserve credit type from source policy
+          creditType: creditTypeFromRenewal,
+          hidePayout: creditTypeFromRenewal === "showroom" || creditTypeFromRenewal === "customer",
+          // NEW: Preserve broker name if exists
+          brokerName: renewalData.brokerName || renewalData.customer_details?.brokerName || "",
+          // NEW: Preserve source origin if exists
+          sourceOrigin: renewalData.sourceOrigin || renewalData.customer_details?.sourceOrigin || "",
+          
+          // Customer details
+          customerName: renewalData.customer_details?.name || "",
+          mobile: renewalData.customer_details?.mobile || "",
+          email: renewalData.customer_details?.email || "",
+          employeeName: renewalData.customer_details?.employeeName || "",
+          age: renewalData.customer_details?.age || "",
+          gender: renewalData.customer_details?.gender || "",
+          panNumber: renewalData.customer_details?.panNumber || "",
+          aadhaarNumber: renewalData.customer_details?.aadhaarNumber || "",
+          residenceAddress: renewalData.customer_details?.residenceAddress || "",
+          pincode: renewalData.customer_details?.pincode || "",
+          city: renewalData.customer_details?.city || "",
+          alternatePhone: renewalData.customer_details?.alternatePhone || "",
+          
+          // Corporate fields
+          companyName: renewalData.customer_details?.companyName || "",
+          contactPersonName: renewalData.customer_details?.contactPersonName || "",
+          companyPanNumber: renewalData.customer_details?.companyPanNumber || "",
+          gstNumber: renewalData.customer_details?.gstNumber || "",
+          
+          // Nominee
+          nomineeName: renewalData.nominee?.name || "",
+          relation: renewalData.nominee?.relation || "",
+          nomineeAge: renewalData.nominee?.age || "",
+          
+          // Reference
+          referenceName: renewalData.reference?.name || renewalData.refrence?.name || "",
+          referencePhone: renewalData.reference?.phone || renewalData.refrence?.phone || "",
+          
+          // Vehicle details
+          regNo: renewalData.vehicle_details?.regNo || "",
+          make: renewalData.vehicle_details?.make || "",
+          model: renewalData.vehicle_details?.model || "",
+          variant: renewalData.vehicle_details?.variant || "",
+          cubicCapacity: renewalData.vehicle_details?.cubicCapacity || "",
+          vehicleTypeCategory: renewalData.vehicle_details?.vehicleTypeCategory || "4 wheeler",
+          engineNo: renewalData.vehicle_details?.engineNo || "",
+          chassisNo: renewalData.vehicle_details?.chassisNo || "",
+          makeMonth: renewalData.vehicle_details?.makeMonth || "",
+          makeYear: renewalData.vehicle_details?.makeYear || "",
+          
+          // Map new policy data from renewal to previous policy for the renewal case
+          previousInsuranceCompany: renewalData.policy_info?.insuranceCompany || "",
+          previousPolicyNumber: renewalData.policy_info?.policyNumber || "",
+          previousPolicyType: renewalData.policy_info?.policyType || "",
+          previousIssueDate: renewalData.policy_info?.issueDate || "",
+          previousPolicyStartDate: renewalData.policy_info?.policyStartDate || "",
+          previousPolicyDuration: renewalData.policy_info?.insuranceDuration || "",
+          previousPolicyEndDate: renewalData.policy_info?.odExpiryDate || renewalData.policy_info?.tpExpiryDate || "",
+          previousTpExpiryDate: renewalData.policy_info?.tpExpiryDate || "",
+          previousDueDate: renewalData.policy_info?.dueDate || "",
+          previousClaimTaken: renewalData.previous_policy?.claimTakenLastYear || "no",
+          previousNcbDiscount: renewalData.policy_info?.ncbDiscount || renewalData.previous_policy?.ncbDiscount || "",
+          // NEW: Map previous policy hypothecation from new policy hypothecation if available
+          previousHypothecation: renewalData.policy_info?.hypothecation || renewalData.previous_policy?.hypothecation || "",
+          // NEW: Map previous policy remarks from new policy remarks if available
+          previousPolicyRemarks: renewalData.policy_info?.remarks || renewalData.previous_policy?.remarks || "",
+          
+          // Renewal fields
+          renewal_id: policyId,
+          isRenewal: true,
+          
+          // CRITICAL: Reset all subsequent steps for new renewal including new IDV fields
+          insuranceQuotes: [],
+          insurer: "",
+          coverageType: "",
+          premium: "",
+          idv: "",
+          ncb: "",
+          duration: "",
+          vehicleIdv: "",
+          cngIdv: "",
+          accessoriesIdv: "",
+          policyIssued: "",
+          insuranceCompany: "",
+          policyNumber: "",
+          covernoteNumber: "",
+          issueDate: "",
+          policyStartDate: "",
+          dueDate: "",
+          ncbDiscount: "",
+          insuranceDuration: "",
+          idvAmount: "",
+          totalPremium: "",
+          policyType: "",
+          odExpiryDate: "",
+          tpExpiryDate: "",
+          // NEW: Reset new policy hypothecation
+          hypothecation: "",
+          // NEW: Reset new policy remarks
+          newPolicyRemarks: "",
+          documents: {},
+          documentTags: {},
+          paymentMadeBy: "Customer",
+          paymentMode: "",
+          paymentAmount: "",
+          paymentDate: "",
+          transactionId: "",
+          receiptDate: "",
+          bankName: "",
+          subvention_payment: "No Subvention",
+          paymentStatus: "Payment Pending",
+          totalPaidAmount: 0,
+          netPremium: "",
+          odAddonPercentage: 10,
+          odAddonAmount: "",
+          netAmount: "",
+          odAmount: "",
+          ncbAmount: "",
+          subVention: "",
+          policyPrefilled: true
+        };
         
-        // Customer details
-        customerName: renewalData.customer_details?.name || "",
-        mobile: renewalData.customer_details?.mobile || "",
-        email: renewalData.customer_details?.email || "",
-        employeeName: renewalData.customer_details?.employeeName || "",
-        age: renewalData.customer_details?.age || "",
-        gender: renewalData.customer_details?.gender || "",
-        panNumber: renewalData.customer_details?.panNumber || "",
-        aadhaarNumber: renewalData.customer_details?.aadhaarNumber || "",
-        residenceAddress: renewalData.customer_details?.residenceAddress || "",
-        pincode: renewalData.customer_details?.pincode || "",
-        city: renewalData.customer_details?.city || "",
-        alternatePhone: renewalData.customer_details?.alternatePhone || "",
+        console.log("✅ NEW Renewal Form Data Prepared with credit type:", {
+          creditType: renewalFormData.creditType,
+          brokerName: renewalFormData.brokerName,
+          sourceOrigin: renewalFormData.sourceOrigin,
+          hidePayout: renewalFormData.hidePayout
+        });
+        setForm(renewalFormData);
+        
+        // CRITICAL: Clear accepted quote for new renewal
+        setAcceptedQuote(null);
+        setPaymentLedger([]);
+        
+        setSaveMessage("✅ Renewal case initialized! Previous policy data has been populated. Please proceed with new insurance quotes.");
+        
+      } else {
+        console.log("📝 Editing EXISTING renewal policy");
+        // This is editing an existing renewal policy - use the regular fetchPolicyData logic
+        // but ensure renewal flags are preserved and accepted quote is cleared
+        await fetchPolicyData(policyId);
+        
+        // Ensure renewal flags are set and clear accepted quote
+        setForm(prev => ({
+          ...prev,
+          isRenewal: true,
+          renewal_id: renewalData.renewal_id || policyId
+        }));
+        
+        // Clear accepted quote for renewal edit
+        setAcceptedQuote(null);
+        console.log("🔄 Cleared accepted quote for renewal edit case");
+      }
+      
+    } catch (error) {
+      console.error("❌ Error fetching renewal policy data:", error);
+      setSaveMessage(`❌ Error loading renewal data: ${error.message}`);
+    } finally {
+      setLoadingPolicy(false);
+    }
+  };
+
+  // ENHANCED: Function to fetch policy data with consistent duration handling and new IDV fields
+  const fetchPolicyData = async (policyId) => {
+    setLoadingPolicy(true);
+    try {
+      console.log("🔍 Fetching policy data for ID:", policyId);
+      const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
+      const policyData = response.data;
+      
+      console.log("📦 Full API Response:", policyData);
+      
+      if (!policyData || !policyData.data) {
+        console.error("❌ No policy data received from API");
+        setSaveMessage("❌ No policy data found for this ID");
+        return;
+      }
+
+      const actualData = policyData.data;
+      console.log("📊 Actual Policy Data:", actualData);
+      
+      // CRITICAL FIX: Properly load credit type from API data
+      // First check if creditType exists at root level, then check customer_details
+      const creditTypeFromAPI = actualData.creditType || 
+                               actualData.customer_details?.creditType || 
+                               "auto";
+      
+      console.log("💳 Credit Type Loading Debug:", {
+        rootCreditType: actualData.creditType,
+        customerDetailsCreditType: actualData.customer_details?.creditType,
+        finalCreditType: creditTypeFromAPI
+      });
+
+      // FIXED: Process insurance quotes with consistent duration handling and new IDV fields
+      let processedInsuranceQuotes = [];
+      if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
+        processedInsuranceQuotes = actualData.insurance_quotes.map(quote => {
+          // Ensure NCB discount amount is calculated if missing
+          let ncbDiscountAmount = quote.ncbDiscountAmount;
+          if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
+            ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
+          }
+
+          // ENHANCED: Use consistent policy duration formatting
+          let policyDurationLabel = quote.policyDurationLabel;
+          if (!policyDurationLabel && quote.policyDuration) {
+            policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
+          }
+
+          return {
+            ...quote,
+            ncbDiscountAmount: ncbDiscountAmount || 0,
+            policyDurationLabel: policyDurationLabel || quote.policyDuration,
+            odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0)),
+            // Ensure new IDV fields are included
+            vehicleIdv: quote.vehicleIdv || 0,
+            cngIdv: quote.cngIdv || 0,
+            accessoriesIdv: quote.accessoriesIdv || 0
+          };
+        });
+        
+        console.log("✅ Processed insurance quotes with consistent duration and new IDV fields:", processedInsuranceQuotes);
+      }
+
+      // CRITICAL FIX: Properly map previous policy data including TP expiry date, hypothecation and remarks
+      const previousPolicyData = actualData.previous_policy || {};
+      
+      console.log("🔍 Previous Policy Data from API:", previousPolicyData);
+
+      // CRITICAL FIX: Properly map new policy data including expiry dates, hypothecation and remarks
+      const policyInfoData = actualData.policy_info || {};
+      
+      console.log("🔍 New Policy Data from API:", policyInfoData);
+
+      // Transform documents array to object with tagging
+      const documentsObject = {};
+      const documentTagsObject = {};
+      if (actualData.documents && Array.isArray(actualData.documents)) {
+        actualData.documents.forEach((doc, index) => {
+          const docId = `doc_${index}`;
+          documentsObject[docId] = doc;
+          documentTagsObject[docId] = doc.tag || "";
+        });
+      }
+
+      // Find accepted quote from processed insurance quotes
+      let acceptedQuoteData = null;
+      if (processedInsuranceQuotes.length > 0) {
+        acceptedQuoteData = processedInsuranceQuotes.find(quote => quote.accepted === true);
+        if (!acceptedQuoteData && processedInsuranceQuotes.length > 0) {
+          acceptedQuoteData = processedInsuranceQuotes[0];
+        }
+      }
+
+      // NEW: Clear accepted quote if this is a renewal case
+      if (actualData.isRenewal) {
+        console.log("🔄 Renewal case detected - clearing accepted quote");
+        acceptedQuoteData = null;
+      }
+
+      // Create a clean transformed data object with ALL fields properly mapped including credit type, broker name, and source origin
+      const transformedData = {
+        // Basic info
+        buyer_type: actualData.buyer_type || "individual",
+        vehicleType: actualData.vehicleType || "used",
+        insurance_category: actualData.insurance_category || "motor",
+        status: actualData.status || "draft",
+        // CRITICAL FIX: Properly load credit type from API
+        creditType: creditTypeFromAPI,
+        hidePayout: actualData.hidePayout || (creditTypeFromAPI === "showroom" || creditTypeFromAPI === "customer"),
+        // NEW: Load broker name
+        brokerName: actualData.brokerName || actualData.customer_details?.brokerName || "",
+        // NEW: Load source origin
+        sourceOrigin: actualData.sourceOrigin || actualData.customer_details?.sourceOrigin || "",
+        
+        // Customer details - handle both individual and corporate
+        customerName: actualData.customer_details?.name || "",
+        mobile: actualData.customer_details?.mobile || "",
+        email: actualData.customer_details?.email || "",
+        employeeName: actualData.customer_details?.employeeName || "",
+        age: actualData.customer_details?.age || "",
+        gender: actualData.customer_details?.gender || "",
+        panNumber: actualData.customer_details?.panNumber || "",
+        aadhaarNumber: actualData.customer_details?.aadhaarNumber || "",
+        residenceAddress: actualData.customer_details?.residenceAddress || "",
+        pincode: actualData.customer_details?.pincode || "",
+        city: actualData.customer_details?.city || "",
+        alternatePhone: actualData.customer_details?.alternatePhone || "",
         
         // Corporate fields
-        companyName: renewalData.customer_details?.companyName || "",
-        contactPersonName: renewalData.customer_details?.contactPersonName || "",
-        companyPanNumber: renewalData.customer_details?.companyPanNumber || "",
-        gstNumber: renewalData.customer_details?.gstNumber || "",
+        companyName: actualData.customer_details?.companyName || "",
+        contactPersonName: actualData.customer_details?.contactPersonName || "",
+        companyPanNumber: actualData.customer_details?.companyPanNumber || "",
+        gstNumber: actualData.customer_details?.gstNumber || "",
         
         // Nominee
-        nomineeName: renewalData.nominee?.name || "",
-        relation: renewalData.nominee?.relation || "",
-        nomineeAge: renewalData.nominee?.age || "",
+        nomineeName: actualData.nominee?.name || "",
+        relation: actualData.nominee?.relation || "",
+        nomineeAge: actualData.nominee?.age || "",
         
-        // Reference
-        referenceName: renewalData.reference?.name || renewalData.refrence?.name || "",
-        referencePhone: renewalData.reference?.phone || renewalData.refrence?.phone || "",
+        // Reference - FIXED: Corrected spelling
+        referenceName: actualData.reference?.name || actualData.refrence?.name || "",
+        referencePhone: actualData.reference?.phone || actualData.refrence?.phone || "",
         
         // Vehicle details
-        regNo: renewalData.vehicle_details?.regNo || "",
-        make: renewalData.vehicle_details?.make || "",
-        model: renewalData.vehicle_details?.model || "",
-        variant: renewalData.vehicle_details?.variant || "",
-        engineNo: renewalData.vehicle_details?.engineNo || "",
-        chassisNo: renewalData.vehicle_details?.chassisNo || "",
-        makeMonth: renewalData.vehicle_details?.makeMonth || "",
-        makeYear: renewalData.vehicle_details?.makeYear || "",
+        regNo: actualData.vehicle_details?.regNo || "",
+        make: actualData.vehicle_details?.make || "",
+        model: actualData.vehicle_details?.model || "",
+        variant: actualData.vehicle_details?.variant || "",
+        cubicCapacity: actualData.vehicle_details?.cubicCapacity || "",
+        vehicleTypeCategory: actualData.vehicle_details?.vehicleTypeCategory || "4 wheeler",
+        engineNo: actualData.vehicle_details?.engineNo || "",
+        chassisNo: actualData.vehicle_details?.chassisNo || "",
+        makeMonth: actualData.vehicle_details?.makeMonth || "",
+        makeYear: actualData.vehicle_details?.makeYear || "",
         
-        // Map new policy data from renewal to previous policy for the renewal case
-        previousInsuranceCompany: renewalData.policy_info?.insuranceCompany || "",
-        previousPolicyNumber: renewalData.policy_info?.policyNumber || "",
-        previousPolicyType: renewalData.policy_info?.policyType || "",
-        previousIssueDate: renewalData.policy_info?.issueDate || "",
-        previousPolicyStartDate: renewalData.policy_info?.policyStartDate || "",
-        previousPolicyDuration: renewalData.policy_info?.insuranceDuration || "",
-        previousPolicyEndDate: renewalData.policy_info?.odExpiryDate || renewalData.policy_info?.tpExpiryDate || "",
-        previousTpExpiryDate: renewalData.policy_info?.tpExpiryDate || "",
-        previousDueDate: renewalData.policy_info?.dueDate || "",
-        previousClaimTaken: renewalData.previous_policy?.claimTakenLastYear || "no",
-        previousNcbDiscount: renewalData.policy_info?.ncbDiscount || renewalData.previous_policy?.ncbDiscount || "",
-        // NEW: Map previous policy remarks from new policy remarks if available
-        previousPolicyRemarks: renewalData.policy_info?.remarks || renewalData.previous_policy?.remarks || "",
+        // Previous policy - CRITICAL FIX: Include all expiry dates, hypothecation and remarks
+        previousInsuranceCompany: previousPolicyData.insuranceCompany || "",
+        previousPolicyNumber: previousPolicyData.policyNumber || "",
+        previousPolicyType: previousPolicyData.policyType || "",
+        previousIssueDate: previousPolicyData.issueDate || "",
+        previousDueDate: previousPolicyData.dueDate || "",
+        previousPolicyStartDate: previousPolicyData.policyStartDate || "", 
+        previousPolicyDuration: previousPolicyData.policyDuration || "",
+        previousPolicyEndDate: previousPolicyData.policyEndDate || "",
+        previousTpExpiryDate: previousPolicyData.tpExpiryDate || "",
+        previousClaimTaken: previousPolicyData.claimTakenLastYear || "no",
+        previousNcbDiscount: previousPolicyData.ncbDiscount || "",
+        // NEW: Previous policy hypothecation
+        previousHypothecation: previousPolicyData.hypothecation || "",
+        // NEW: Previous policy remarks
+        previousPolicyRemarks: previousPolicyData.remarks || "",
+        
+        // Insurance quotes - use processed quotes with new IDV fields
+        insuranceQuotes: processedInsuranceQuotes,
+        
+        // Insurance quote (legacy) - UPDATED: Include new IDV fields
+        insurer: actualData.insurance_quote?.insurer || "",
+        coverageType: actualData.insurance_quote?.coverageType || "",
+        premium: actualData.insurance_quote?.premium || "",
+        idv: actualData.insurance_quote?.idv || "",
+        ncb: actualData.insurance_quote?.ncb || "",
+        duration: actualData.insurance_quote?.duration || "",
+        vehicleIdv: actualData.insurance_quote?.vehicleIdv || "",
+        cngIdv: actualData.insurance_quote?.cngIdv || "",
+        accessoriesIdv: actualData.insurance_quote?.accessoriesIdv || "",
+        
+        // Policy info - CRITICAL FIX: Include all expiry dates, policy type, hypothecation and remarks
+        policyIssued: policyInfoData.policyIssued || "",
+        insuranceCompany: policyInfoData.insuranceCompany || "",
+        policyNumber: policyInfoData.policyNumber || "",
+        covernoteNumber: policyInfoData.covernoteNumber || "",
+        issueDate: policyInfoData.issueDate || "",
+        policyStartDate: policyInfoData.policyStartDate || "",
+        dueDate: policyInfoData.dueDate || "",
+        ncbDiscount: policyInfoData.ncbDiscount || "",
+        insuranceDuration: policyInfoData.insuranceDuration || "",
+        idvAmount: policyInfoData.idvAmount || "",
+        totalPremium: policyInfoData.totalPremium || "",
+        policyType: policyInfoData.policyType || "",
+        odExpiryDate: policyInfoData.odExpiryDate || "",
+        tpExpiryDate: policyInfoData.tpExpiryDate || "",
+        // NEW: New policy hypothecation
+        hypothecation: policyInfoData.hypothecation || "",
+        // NEW: New policy remarks
+        newPolicyRemarks: policyInfoData.remarks || "",
+        
+        // Payment info
+        paymentMadeBy: actualData.payment_info?.paymentMadeBy || "Customer",
+        paymentMode: actualData.payment_info?.paymentMode || "",
+        paymentAmount: actualData.payment_info?.paymentAmount || "",
+        paymentDate: actualData.payment_info?.paymentDate || "",
+        transactionId: actualData.payment_info?.transactionId || "",
+        receiptDate: actualData.payment_info?.receiptDate || "",
+        bankName: actualData.payment_info?.bankName || "",
+        subvention_payment: actualData.payment_info?.subvention_payment || "No Subvention",
+        paymentStatus: actualData.payment_info?.paymentStatus || "Payment Pending",
+        totalPaidAmount: actualData.payment_info?.totalPaidAmount || 0,
+         
+        // Payout
+        netPremium: actualData.payout?.netPremium || "",
+        odAmount: actualData.payout?.odAmount || "",
+        ncbAmount: actualData.payout?.ncbAmount || "",
+        subVention: actualData.payout?.subVention || "",
+        odAddonPercentage: actualData.payout?.odAddonPercentage || 10,
+        odAddonAmount: actualData.payout?.odAddonAmount || "",
+        netAmount: actualData.payout?.netAmount || "",
+        
+        // Documents as object
+        documents: documentsObject,
+        documentTags: documentTagsObject,
         
         // Renewal fields
-        renewal_id: policyId,
-        isRenewal: true,
+        renewal_id: actualData.renewal_id || "",
+        isRenewal: actualData.isRenewal || false,
         
-        // CRITICAL: Reset all subsequent steps for new renewal including new IDV fields
-        insuranceQuotes: [],
-        insurer: "",
-        coverageType: "",
-        premium: "",
-        idv: "",
-        ncb: "",
-        duration: "",
-        vehicleIdv: "",
-        cngIdv: "",
-        accessoriesIdv: "",
-        policyIssued: "",
-        insuranceCompany: "",
-        policyNumber: "",
-        covernoteNumber: "",
-        issueDate: "",
-        policyStartDate: "",
-        dueDate: "",
-        ncbDiscount: "",
-        insuranceDuration: "",
-        idvAmount: "",
-        totalPremium: "",
-        policyType: "",
-        odExpiryDate: "",
-        tpExpiryDate: "",
-        // NEW: Reset new policy remarks
-        newPolicyRemarks: "",
-        documents: {},
-        documentTags: {},
-        paymentMadeBy: "Customer",
-        paymentMode: "",
-        paymentAmount: "",
-        paymentDate: "",
-        transactionId: "",
-        receiptDate: "",
-        bankName: "",
-        subvention_payment: "No Subvention",
-        paymentStatus: "Payment Pending",
-        totalPaidAmount: 0,
-        netPremium: "",
-        odAddonPercentage: 10,
-        odAddonAmount: "",
-        netAmount: "",
-        odAmount: "",
-        ncbAmount: "",
-        subVention: "",
+        // System fields
+        ts: actualData.ts || Date.now(),
+        created_by: actualData.created_by || "ADMIN123",
         policyPrefilled: true
       };
       
-      console.log("✅ NEW Renewal Form Data Prepared with credit type:", {
-        creditType: renewalFormData.creditType,
-        hidePayout: renewalFormData.hidePayout
-      });
-      setForm(renewalFormData);
-      
-      // CRITICAL: Clear accepted quote for new renewal
-      setAcceptedQuote(null);
-      setPaymentLedger([]);
-      
-      setSaveMessage("✅ Renewal case initialized! Previous policy data has been populated. Please proceed with new insurance quotes.");
-      
-    } else {
-      console.log("📝 Editing EXISTING renewal policy");
-      // This is editing an existing renewal policy - use the regular fetchPolicyData logic
-      // but ensure renewal flags are preserved and accepted quote is cleared
-      await fetchPolicyData(policyId);
-      
-      // Ensure renewal flags are set and clear accepted quote
-      setForm(prev => ({
-        ...prev,
-        isRenewal: true,
-        renewal_id: renewalData.renewal_id || policyId
-      }));
-      
-      // Clear accepted quote for renewal edit
-      setAcceptedQuote(null);
-      console.log("🔄 Cleared accepted quote for renewal edit case");
-    }
-    
-  } catch (error) {
-    console.error("❌ Error fetching renewal policy data:", error);
-    setSaveMessage(`❌ Error loading renewal data: ${error.message}`);
-  } finally {
-    setLoadingPolicy(false);
-  }
-};
-
-  // ENHANCED: Function to fetch policy data with consistent duration handling and new IDV fields
-const fetchPolicyData = async (policyId) => {
-  setLoadingPolicy(true);
-  try {
-    console.log("🔍 Fetching policy data for ID:", policyId);
-    const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
-    const policyData = response.data;
-    
-    console.log("📦 Full API Response:", policyData);
-    
-    if (!policyData || !policyData.data) {
-      console.error("❌ No policy data received from API");
-      setSaveMessage("❌ No policy data found for this ID");
-      return;
-    }
-
-    const actualData = policyData.data;
-    console.log("📊 Actual Policy Data:", actualData);
-    
-    // CRITICAL FIX: Properly load credit type from API data
-    // First check if creditType exists at root level, then check customer_details
-    const creditTypeFromAPI = actualData.creditType || 
-                             actualData.customer_details?.creditType || 
-                             "auto";
-    
-    console.log("💳 Credit Type Loading Debug:", {
-      rootCreditType: actualData.creditType,
-      customerDetailsCreditType: actualData.customer_details?.creditType,
-      finalCreditType: creditTypeFromAPI
-    });
-
-    // FIXED: Process insurance quotes with consistent duration handling and new IDV fields
-    let processedInsuranceQuotes = [];
-    if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
-      processedInsuranceQuotes = actualData.insurance_quotes.map(quote => {
-        // Ensure NCB discount amount is calculated if missing
-        let ncbDiscountAmount = quote.ncbDiscountAmount;
-        if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
-          ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
-        }
-
-        // ENHANCED: Use consistent policy duration formatting
-        let policyDurationLabel = quote.policyDurationLabel;
-        if (!policyDurationLabel && quote.policyDuration) {
-          policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
-        }
-
-        return {
-          ...quote,
-          ncbDiscountAmount: ncbDiscountAmount || 0,
-          policyDurationLabel: policyDurationLabel || quote.policyDuration,
-          odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0)),
-          // Ensure new IDV fields are included
-          vehicleIdv: quote.vehicleIdv || 0,
-          cngIdv: quote.cngIdv || 0,
-          accessoriesIdv: quote.accessoriesIdv || 0
-        };
+      console.log("✅ Transformed Form Data with proper credit type loading:", {
+        creditType: transformedData.creditType,
+        brokerName: transformedData.brokerName,
+        sourceOrigin: transformedData.sourceOrigin,
+        hidePayout: transformedData.hidePayout
       });
       
-      console.log("✅ Processed insurance quotes with consistent duration and new IDV fields:", processedInsuranceQuotes);
-    }
-
-    // CRITICAL FIX: Properly map previous policy data including TP expiry date and remarks
-    const previousPolicyData = actualData.previous_policy || {};
-    
-    console.log("🔍 Previous Policy Data from API:", previousPolicyData);
-
-    // CRITICAL FIX: Properly map new policy data including expiry dates and remarks
-    const policyInfoData = actualData.policy_info || {};
-    
-    console.log("🔍 New Policy Data from API:", policyInfoData);
-
-    // Transform documents array to object with tagging
-    const documentsObject = {};
-    const documentTagsObject = {};
-    if (actualData.documents && Array.isArray(actualData.documents)) {
-      actualData.documents.forEach((doc, index) => {
-        const docId = `doc_${index}`;
-        documentsObject[docId] = doc;
-        documentTagsObject[docId] = doc.tag || "";
-      });
-    }
-
-    // Find accepted quote from processed insurance quotes
-    let acceptedQuoteData = null;
-    if (processedInsuranceQuotes.length > 0) {
-      acceptedQuoteData = processedInsuranceQuotes.find(quote => quote.accepted === true);
-      if (!acceptedQuoteData && processedInsuranceQuotes.length > 0) {
-        acceptedQuoteData = processedInsuranceQuotes[0];
+      setForm(transformedData);
+      
+      // Set accepted quote from processed quotes (only if not renewal)
+      if (acceptedQuoteData && !actualData.isRenewal) {
+        console.log("✅ Setting accepted quote from processed data:", acceptedQuoteData.insuranceCompany);
+        setAcceptedQuote(acceptedQuoteData);
+      } else if (actualData.isRenewal) {
+        console.log("🔄 Renewal case - not setting accepted quote");
+        setAcceptedQuote(null);
       }
+      
+      // Set payment ledger from payment history if available
+      if (actualData.payment_ledger && Array.isArray(actualData.payment_ledger)) {
+        console.log("💰 Setting payment ledger from API:", actualData.payment_ledger);
+        setPaymentLedger(actualData.payment_ledger);
+      } else if (actualData.payment_info?.paymentHistory && Array.isArray(actualData.payment_info.paymentHistory)) {
+        console.log("💰 Setting payment ledger from payment history:", actualData.payment_info.paymentHistory);
+        setPaymentLedger(actualData.payment_info.paymentHistory);
+      } else {
+        console.log("💰 No payment ledger found in API response");
+        setPaymentLedger([]);
+      }
+      
+      setSaveMessage("✅ Policy data loaded successfully! You can now edit the form.");
+      
+    } catch (error) {
+      console.error("❌ Error fetching policy data:", error);
+      console.error("❌ Error details:", error.response?.data);
+      setSaveMessage(`❌ Error loading policy data: ${error.message}`);
+    } finally {
+      setLoadingPolicy(false);
     }
+  };
 
-    // NEW: Clear accepted quote if this is a renewal case
-    if (actualData.isRenewal) {
-      console.log("🔄 Renewal case detected - clearing accepted quote");
-      acceptedQuoteData = null;
-    }
-
-    // Create a clean transformed data object with ALL fields properly mapped including credit type
-    const transformedData = {
-      // Basic info
-      buyer_type: actualData.buyer_type || "individual",
-      vehicleType: actualData.vehicleType || "used",
-      insurance_category: actualData.insurance_category || "motor",
-      status: actualData.status || "draft",
-      // CRITICAL FIX: Properly load credit type from API
-      creditType: creditTypeFromAPI,
-      hidePayout: actualData.hidePayout || (creditTypeFromAPI === "showroom" || creditTypeFromAPI === "customer"),
-      
-      // Customer details - handle both individual and corporate
-      customerName: actualData.customer_details?.name || "",
-      mobile: actualData.customer_details?.mobile || "",
-      email: actualData.customer_details?.email || "",
-      employeeName: actualData.customer_details?.employeeName || "",
-      age: actualData.customer_details?.age || "",
-      gender: actualData.customer_details?.gender || "",
-      panNumber: actualData.customer_details?.panNumber || "",
-      aadhaarNumber: actualData.customer_details?.aadhaarNumber || "",
-      residenceAddress: actualData.customer_details?.residenceAddress || "",
-      pincode: actualData.customer_details?.pincode || "",
-      city: actualData.customer_details?.city || "",
-      alternatePhone: actualData.customer_details?.alternatePhone || "",
-      
-      // Corporate fields
-      companyName: actualData.customer_details?.companyName || "",
-      contactPersonName: actualData.customer_details?.contactPersonName || "",
-      companyPanNumber: actualData.customer_details?.companyPanNumber || "",
-      gstNumber: actualData.customer_details?.gstNumber || "",
-      
-      // Nominee
-      nomineeName: actualData.nominee?.name || "",
-      relation: actualData.nominee?.relation || "",
-      nomineeAge: actualData.nominee?.age || "",
-      
-      // Reference - FIXED: Corrected spelling
-      referenceName: actualData.reference?.name || actualData.refrence?.name || "",
-      referencePhone: actualData.reference?.phone || actualData.refrence?.phone || "",
-      
-      // Vehicle details
-      regNo: actualData.vehicle_details?.regNo || "",
-      make: actualData.vehicle_details?.make || "",
-      model: actualData.vehicle_details?.model || "",
-      variant: actualData.vehicle_details?.variant || "",
-      engineNo: actualData.vehicle_details?.engineNo || "",
-      chassisNo: actualData.vehicle_details?.chassisNo || "",
-      makeMonth: actualData.vehicle_details?.makeMonth || "",
-      makeYear: actualData.vehicle_details?.makeYear || "",
-      
-      // Previous policy - CRITICAL FIX: Include all expiry dates and remarks
-      previousInsuranceCompany: previousPolicyData.insuranceCompany || "",
-      previousPolicyNumber: previousPolicyData.policyNumber || "",
-      previousPolicyType: previousPolicyData.policyType || "",
-      previousIssueDate: previousPolicyData.issueDate || "",
-      previousDueDate: previousPolicyData.dueDate || "",
-      previousPolicyStartDate: previousPolicyData.policyStartDate || "", 
-      previousPolicyDuration: previousPolicyData.policyDuration || "",
-      previousPolicyEndDate: previousPolicyData.policyEndDate || "",
-      previousTpExpiryDate: previousPolicyData.tpExpiryDate || "",
-      previousClaimTaken: previousPolicyData.claimTakenLastYear || "no",
-      previousNcbDiscount: previousPolicyData.ncbDiscount || "",
-      // NEW: Previous policy remarks
-      previousPolicyRemarks: previousPolicyData.remarks || "",
-      
-      // Insurance quotes - use processed quotes with new IDV fields
-      insuranceQuotes: processedInsuranceQuotes,
-      
-      // Insurance quote (legacy) - UPDATED: Include new IDV fields
-      insurer: actualData.insurance_quote?.insurer || "",
-      coverageType: actualData.insurance_quote?.coverageType || "",
-      premium: actualData.insurance_quote?.premium || "",
-      idv: actualData.insurance_quote?.idv || "",
-      ncb: actualData.insurance_quote?.ncb || "",
-      duration: actualData.insurance_quote?.duration || "",
-      vehicleIdv: actualData.insurance_quote?.vehicleIdv || "",
-      cngIdv: actualData.insurance_quote?.cngIdv || "",
-      accessoriesIdv: actualData.insurance_quote?.accessoriesIdv || "",
-      
-      // Policy info - CRITICAL FIX: Include all expiry dates, policy type and remarks
-      policyIssued: policyInfoData.policyIssued || "",
-      insuranceCompany: policyInfoData.insuranceCompany || "",
-      policyNumber: policyInfoData.policyNumber || "",
-      covernoteNumber: policyInfoData.covernoteNumber || "",
-      issueDate: policyInfoData.issueDate || "",
-      policyStartDate: policyInfoData.policyStartDate || "",
-      dueDate: policyInfoData.dueDate || "",
-      ncbDiscount: policyInfoData.ncbDiscount || "",
-      insuranceDuration: policyInfoData.insuranceDuration || "",
-      idvAmount: policyInfoData.idvAmount || "",
-      totalPremium: policyInfoData.totalPremium || "",
-      policyType: policyInfoData.policyType || "",
-      odExpiryDate: policyInfoData.odExpiryDate || "",
-      tpExpiryDate: policyInfoData.tpExpiryDate || "",
-      // NEW: New policy remarks
-      newPolicyRemarks: policyInfoData.remarks || "",
-      
-      // Payment info
-      paymentMadeBy: actualData.payment_info?.paymentMadeBy || "Customer",
-      paymentMode: actualData.payment_info?.paymentMode || "",
-      paymentAmount: actualData.payment_info?.paymentAmount || "",
-      paymentDate: actualData.payment_info?.paymentDate || "",
-      transactionId: actualData.payment_info?.transactionId || "",
-      receiptDate: actualData.payment_info?.receiptDate || "",
-      bankName: actualData.payment_info?.bankName || "",
-      subvention_payment: actualData.payment_info?.subvention_payment || "No Subvention",
-      paymentStatus: actualData.payment_info?.paymentStatus || "Payment Pending",
-      totalPaidAmount: actualData.payment_info?.totalPaidAmount || 0,
-       
-      // Payout
-      netPremium: actualData.payout?.netPremium || "",
-      odAmount: actualData.payout?.odAmount || "",
-      ncbAmount: actualData.payout?.ncbAmount || "",
-      subVention: actualData.payout?.subVention || "",
-      odAddonPercentage: actualData.payout?.odAddonPercentage || 10,
-      odAddonAmount: actualData.payout?.odAddonAmount || "",
-      netAmount: actualData.payout?.netAmount || "",
-      
-      // Documents as object
-      documents: documentsObject,
-      documentTags: documentTagsObject,
-      
-      // Renewal fields
-      renewal_id: actualData.renewal_id || "",
-      isRenewal: actualData.isRenewal || false,
-      
-      // System fields
-      ts: actualData.ts || Date.now(),
-      created_by: actualData.created_by || "ADMIN123",
-      policyPrefilled: true
-    };
-    
-    console.log("✅ Transformed Form Data with proper credit type loading:", {
-      creditType: transformedData.creditType,
-      hidePayout: transformedData.hidePayout
-    });
-    
-    setForm(transformedData);
-    
-    // Set accepted quote from processed quotes (only if not renewal)
-    if (acceptedQuoteData && !actualData.isRenewal) {
-      console.log("✅ Setting accepted quote from processed data:", acceptedQuoteData.insuranceCompany);
-      setAcceptedQuote(acceptedQuoteData);
-    } else if (actualData.isRenewal) {
-      console.log("🔄 Renewal case - not setting accepted quote");
-      setAcceptedQuote(null);
-    }
-    
-    // Set payment ledger from payment history if available
-    if (actualData.payment_ledger && Array.isArray(actualData.payment_ledger)) {
-      console.log("💰 Setting payment ledger from API:", actualData.payment_ledger);
-      setPaymentLedger(actualData.payment_ledger);
-    } else if (actualData.payment_info?.paymentHistory && Array.isArray(actualData.payment_info.paymentHistory)) {
-      console.log("💰 Setting payment ledger from payment history:", actualData.payment_info.paymentHistory);
-      setPaymentLedger(actualData.payment_info.paymentHistory);
-    } else {
-      console.log("💰 No payment ledger found in API response");
-      setPaymentLedger([]);
-    }
-    
-    setSaveMessage("✅ Policy data loaded successfully! You can now edit the form.");
-    
-  } catch (error) {
-    console.error("❌ Error fetching policy data:", error);
-    console.error("❌ Error details:", error.response?.data);
-    setSaveMessage(`❌ Error loading policy data: ${error.message}`);
-  } finally {
-    setLoadingPolicy(false);
-  }
-};
-
-  // Enhanced handleChange to properly handle all field types including new IDV fields and credit type
+  // Enhanced handleChange to properly handle all field types including new IDV fields, credit type, broker name, and source origin
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (errors[name]) {
@@ -10885,14 +11427,30 @@ const fetchPolicyData = async (policyId) => {
       return;
     }
     
-    // NEW: Handle credit type change with payout visibility logic
+    // UPDATED: Handle credit type change with payout visibility logic and broker name reset
     if (name === "creditType") {
       const hidePayout = value === "showroom" || value === "customer";
+      // Clear broker name if credit type is changed from broker to something else
+      const brokerName = value === "broker" ? form.brokerName : "";
+      
       setForm((f) => ({ 
         ...f, 
         [name]: value,
-        hidePayout: hidePayout
+        hidePayout: hidePayout,
+        brokerName: brokerName
       }));
+      return;
+    }
+    
+    // Handle broker name change
+    if (name === "brokerName") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
+    // NEW: Handle source origin change
+    if (name === "sourceOrigin") {
+      setForm((f) => ({ ...f, [name]: value }));
       return;
     }
     
@@ -10902,8 +11460,26 @@ const fetchPolicyData = async (policyId) => {
       return;
     }
     
+    // Handle hypothecation fields
+    if (name === "previousHypothecation" || name === "hypothecation") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
     // Handle remarks fields
     if (name === "previousPolicyRemarks" || name === "newPolicyRemarks") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
+    // NEW: Handle cubic capacity field
+    if (name === "cubicCapacity") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
+    // NEW: Handle vehicle type category field
+    if (name === "vehicleTypeCategory") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
@@ -11085,12 +11661,13 @@ const fetchPolicyData = async (policyId) => {
       });
     }
 
-    // Clean up previous policy data with consistent duration handling and remarks
+    // Clean up previous policy data with consistent duration handling, hypothecation and remarks
     if (sanitized.previous_policy && sanitized.previous_policy.policyDuration) {
       sanitized.previous_policy.policyDurationLabel = formatPolicyDuration(sanitized.previous_policy.policyDuration);
+      sanitized.previous_policy.renewal_id = renewalPolicyId;
     }
 
-    // Clean up new policy data with consistent duration handling and remarks
+    // Clean up new policy data with consistent duration handling, hypothecation and remarks
     if (sanitized.policy_info && sanitized.policy_info.insuranceDuration) {
       sanitized.policy_info.insuranceDurationLabel = formatPolicyDuration(sanitized.policy_info.insuranceDuration);
     }
@@ -11139,7 +11716,7 @@ const fetchPolicyData = async (policyId) => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type - INCLUDING CREDIT TYPE
+      // Prepare customer details based on buyer type - INCLUDING CREDIT TYPE, BROKER NAME, AND SOURCE ORIGIN
       const customerDetails = {
         name: form.customerName || "",
         mobile: form.mobile || "",
@@ -11158,7 +11735,11 @@ const fetchPolicyData = async (policyId) => {
         companyPanNumber: form.companyPanNumber || "",
         gstNumber: form.gstNumber || "",
         // CRITICAL: Include creditType in customer_details
-        creditType: form.creditType || "auto"
+        creditType: form.creditType || "auto",
+        // NEW: Include broker name in customer_details
+        brokerName: form.brokerName || "",
+        // NEW: Include source origin in customer_details
+        sourceOrigin: form.sourceOrigin || ""
       };
 
       const policyData = {
@@ -11178,6 +11759,10 @@ const fetchPolicyData = async (policyId) => {
         status: form.status || "pending",
         // FIXED: Include credit type in policy data - CRITICAL FOR DB STORAGE
         creditType: form.creditType || "auto",
+        // NEW: Include broker name in policy data
+        brokerName: form.brokerName || "",
+        // NEW: Include source origin in policy data
+        sourceOrigin: form.sourceOrigin || "",
         hidePayout: form.hidePayout || false,
         insurance_quotes: form.insuranceQuotes || [],
         ts: Date.now(),
@@ -11195,7 +11780,9 @@ const fetchPolicyData = async (policyId) => {
       console.log("💳 CREDIT TYPE IN CREATE:", {
         formCreditType: form.creditType,
         sanitizedCreditType: sanitizedData.creditType,
-        customerDetailsCreditType: customerDetails.creditType
+        customerDetailsCreditType: customerDetails.creditType,
+        brokerName: form.brokerName,
+        sourceOrigin: form.sourceOrigin
       });
 
       const response = await axios.post(`${API_BASE_URL}/policies`, sanitizedData, {
@@ -11294,7 +11881,11 @@ const fetchPolicyData = async (policyId) => {
               companyPanNumber: form.companyPanNumber || "",
               gstNumber: form.gstNumber || "",
               // CRITICAL: Include creditType in customer_details
-              creditType: form.creditType || "auto"
+              creditType: form.creditType || "auto",
+              // NEW: Include broker name in customer_details
+              brokerName: form.brokerName || "",
+              // NEW: Include source origin in customer_details
+              sourceOrigin: form.sourceOrigin || ""
             };
 
             updateData = {
@@ -11312,6 +11903,10 @@ const fetchPolicyData = async (policyId) => {
               },
               // FIXED: Include credit type in step 1 update
               creditType: form.creditType || "auto",
+              // NEW: Include broker name in step 1 update
+              brokerName: form.brokerName || "",
+              // NEW: Include source origin in step 1 update
+              sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
               policyPrefilled: form.policyPrefilled || false,
               // Include renewal fields
@@ -11326,6 +11921,8 @@ const fetchPolicyData = async (policyId) => {
                 make: form.make || "",
                 model: form.model || "",
                 variant: form.variant || "",
+                cubicCapacity: form.cubicCapacity || "",
+                vehicleTypeCategory: form.vehicleTypeCategory || "4 wheeler",
                 engineNo: form.engineNo || "",
                 chassisNo: form.chassisNo || "",
                 makeMonth: form.makeMonth || "",
@@ -11334,6 +11931,10 @@ const fetchPolicyData = async (policyId) => {
               vehicleType: form.vehicleType,
               // FIXED: Include credit type in all updates
               creditType: form.creditType || "auto",
+              // NEW: Include broker name in all updates
+              brokerName: form.brokerName || "",
+              // NEW: Include source origin in all updates
+              sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
@@ -11356,11 +11957,17 @@ const fetchPolicyData = async (policyId) => {
                   dueDate: form.previousDueDate || "",
                   claimTakenLastYear: form.previousClaimTaken || "no",
                   ncbDiscount: parseFloat(form.previousNcbDiscount) || 0,
+                  // NEW: Include previous policy hypothecation
+                  hypothecation: form.previousHypothecation || "",
                   // NEW: Include previous policy remarks
                   remarks: form.previousPolicyRemarks || ""
                 },
                 // FIXED: Include credit type
                 creditType: form.creditType || "auto",
+                // NEW: Include broker name
+                brokerName: form.brokerName || "",
+                // NEW: Include source origin
+                sourceOrigin: form.sourceOrigin || "",
                 hidePayout: form.hidePayout || false,
                 // Include renewal fields
                 renewal_id: form.renewal_id || "",
@@ -11384,6 +11991,10 @@ const fetchPolicyData = async (policyId) => {
               },
               // FIXED: Include credit type
               creditType: form.creditType || "auto",
+              // NEW: Include broker name
+              brokerName: form.brokerName || "",
+              // NEW: Include source origin
+              sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
@@ -11391,7 +12002,7 @@ const fetchPolicyData = async (policyId) => {
             };
             break;
           case 5:
-            // FIXED: Include all new policy fields including expiry dates and remarks
+            // FIXED: Include all new policy fields including expiry dates, hypothecation and remarks
             updateData = {
               policy_info: {
                 policyIssued: form.policyIssued || "",
@@ -11408,11 +12019,17 @@ const fetchPolicyData = async (policyId) => {
                 policyType: form.policyType || "", // FIXED: Added policyType
                 odExpiryDate: form.odExpiryDate || "", // FIXED: Added odExpiryDate
                 tpExpiryDate: form.tpExpiryDate || "", // FIXED: Added tpExpiryDate
+                // NEW: Include new policy hypothecation
+                hypothecation: form.hypothecation || "",
                 // NEW: Include new policy remarks
                 remarks: form.newPolicyRemarks || ""
               },
               // FIXED: Include credit type
               creditType: form.creditType || "auto",
+              // NEW: Include broker name
+              brokerName: form.brokerName || "",
+              // NEW: Include source origin
+              sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
@@ -11430,6 +12047,10 @@ const fetchPolicyData = async (policyId) => {
               documents: documentsArray,
               // FIXED: Include credit type
               creditType: form.creditType || "auto",
+              // NEW: Include broker name
+              brokerName: form.brokerName || "",
+              // NEW: Include source origin
+              sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
@@ -11457,6 +12078,10 @@ const fetchPolicyData = async (policyId) => {
               payment_ledger: paymentLedger,
               // FIXED: Include credit type
               creditType: form.creditType || "auto",
+              // NEW: Include broker name
+              brokerName: form.brokerName || "",
+              // NEW: Include source origin
+              sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
               // Include renewal fields
               renewal_id: form.renewal_id || "",
@@ -11479,6 +12104,10 @@ const fetchPolicyData = async (policyId) => {
                 payment_ledger: paymentLedger,
                 // FIXED: Include credit type
                 creditType: form.creditType || "auto",
+                // NEW: Include broker name
+                brokerName: form.brokerName || "",
+                // NEW: Include source origin
+                sourceOrigin: form.sourceOrigin || "",
                 hidePayout: form.hidePayout || false,
                 // Include renewal fields
                 renewal_id: form.renewal_id || "",
@@ -11488,6 +12117,10 @@ const fetchPolicyData = async (policyId) => {
               updateData = {
                 // FIXED: Include credit type even when payout is hidden
                 creditType: form.creditType || "auto",
+                // NEW: Include broker name even when payout is hidden
+                brokerName: form.brokerName || "",
+                // NEW: Include source origin even when payout is hidden
+                sourceOrigin: form.sourceOrigin || "",
                 hidePayout: form.hidePayout || false,
                 // Include renewal fields
                 renewal_id: form.renewal_id || "",
@@ -11499,6 +12132,10 @@ const fetchPolicyData = async (policyId) => {
             updateData = {
               // FIXED: Include credit type in all updates
               creditType: form.creditType || "auto",
+              // NEW: Include broker name in all updates
+              brokerName: form.brokerName || "",
+              // NEW: Include source origin in all updates
+              sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
               // Include renewal fields in all updates
               renewal_id: form.renewal_id || "",
@@ -11546,6 +12183,8 @@ const fetchPolicyData = async (policyId) => {
         insuranceQuotesLength: sanitizedUpdateData.insurance_quotes?.length || 0,
         vehicleType: form.vehicleType,
         creditType: form.creditType,
+        brokerName: form.brokerName,
+        sourceOrigin: form.sourceOrigin,
         sanitizedCreditType: sanitizedUpdateData.creditType,
         hidePayout: form.hidePayout,
         isRenewal: form.isRenewal,
@@ -11633,6 +12272,8 @@ const fetchPolicyData = async (policyId) => {
 
       console.log("💾 Save & Exit - Current form state:", {
         creditType: form.creditType,
+        brokerName: form.brokerName,
+        sourceOrigin: form.sourceOrigin,
         hidePayout: form.hidePayout,
         step: step
       });
@@ -11670,7 +12311,7 @@ const fetchPolicyData = async (policyId) => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type - INCLUDING CREDIT TYPE
+      // Prepare customer details based on buyer type - INCLUDING CREDIT TYPE, BROKER NAME, AND SOURCE ORIGIN
       const customerDetails = {
         name: form.customerName,
         mobile: form.mobile,
@@ -11689,7 +12330,11 @@ const fetchPolicyData = async (policyId) => {
         companyPanNumber: form.companyPanNumber || "",
         gstNumber: form.gstNumber || "",
         // CRITICAL: Include creditType in customer_details for final save
-        creditType: form.creditType || "auto"
+        creditType: form.creditType || "auto",
+        // NEW: Include broker name in customer_details for final save
+        brokerName: form.brokerName || "",
+        // NEW: Include source origin in customer_details for final save
+        sourceOrigin: form.sourceOrigin || ""
       };
 
       // Convert documents object to array for final save
@@ -11721,6 +12366,8 @@ const fetchPolicyData = async (policyId) => {
           make: form.make,
           model: form.model,
           variant: form.variant,
+          cubicCapacity: form.cubicCapacity,
+          vehicleTypeCategory: form.vehicleTypeCategory,
           engineNo: form.engineNo,
           chassisNo: form.chassisNo,
           makeMonth: form.makeMonth,
@@ -11738,6 +12385,8 @@ const fetchPolicyData = async (policyId) => {
           dueDate: form.previousDueDate || "",
           claimTakenLastYear: form.previousClaimTaken || "no",
           ncbDiscount: parseFloat(form.previousNcbDiscount) || 0,
+          // NEW: Include previous policy hypothecation in final save
+          hypothecation: form.previousHypothecation || "",
           // NEW: Include previous policy remarks in final save
           remarks: form.previousPolicyRemarks || ""
         } : {},
@@ -11779,6 +12428,8 @@ const fetchPolicyData = async (policyId) => {
           policyType: form.policyType || "", // FIXED: Added policyType
           odExpiryDate: form.policyType=="thirdParty"?null:form.odExpiryDate || "", // FIXED: Added odExpiryDate
           tpExpiryDate: form.policyType=="standalone"?null:form.tpExpiryDate || "", // FIXED: Added tpExpiryDate
+          // NEW: Include new policy hypothecation in final save
+          hypothecation: form.hypothecation || "",
           // NEW: Include new policy remarks in final save
           remarks: form.newPolicyRemarks || ""
         },
@@ -11813,6 +12464,10 @@ const fetchPolicyData = async (policyId) => {
         policyPrefilled: form.policyPrefilled || false,
         // FIXED: CRITICAL - Include credit type in final save to store in database
         creditType: form.creditType || "auto",
+        // NEW: CRITICAL - Include broker name in final save to store in database
+        brokerName: form.brokerName || "",
+        // NEW: CRITICAL - Include source origin in final save to store in database
+        sourceOrigin: form.sourceOrigin || "",
         hidePayout: form.hidePayout || false,
         // Include renewal fields in final save
         renewal_id: form.renewal_id || "",
@@ -11824,11 +12479,15 @@ const fetchPolicyData = async (policyId) => {
 
       console.log(`✅ Finalizing policy with vehicle type:`, form.vehicleType);
       console.log(`✅ Finalizing policy with credit type:`, form.creditType);
+      console.log(`✅ Finalizing policy with broker name:`, form.brokerName);
+      console.log(`✅ Finalizing policy with source origin:`, form.sourceOrigin);
       console.log(`🔍 FINAL SAVE - CREDIT TYPE CHECK:`, {
         formCreditType: form.creditType,
         finalDataCreditType: finalData.creditType,
         sanitizedCreditType: sanitizedFinalData.creditType,
-        customerDetailsCreditType: customerDetails.creditType
+        customerDetailsCreditType: customerDetails.creditType,
+        brokerName: form.brokerName,
+        sourceOrigin: form.sourceOrigin
       });
       console.log(`✅ Finalizing policy ${policyId} with complete data including new IDV fields:`, sanitizedFinalData);
 
@@ -12019,7 +12678,8 @@ const fetchPolicyData = async (policyId) => {
               {form.isRenewal ? 'Renew existing insurance policy' : isEditMode ? 'Edit existing insurance case' : 'Create a new insurance case'}
               {isEditMode && " - All fields are pre-filled with existing data"}
               {form.vehicleType && ` - Vehicle Type: ${form.vehicleType === 'new' ? 'New Car' : 'Used Car'}`}
-              {form.creditType && ` - Credit Type: ${form.creditType === 'auto' ? 'Auto Credits' : form.creditType === 'showroom' ? 'Showroom' : 'Customer'}`}
+              {form.creditType && ` - Credit Type: ${form.creditType === 'auto' ? 'Autocredits India LLP' : form.creditType === 'broker' ? 'Broker' + (form.brokerName ? ` - ${form.brokerName}` : '') : form.creditType === 'showroom' ? 'Showroom' : 'Customer'}`}
+              {form.sourceOrigin && ` - Source Origin: ${form.sourceOrigin}`}
               {form.isRenewal && " - This is a renewal case"}
             </p>
           </div>
@@ -12032,7 +12692,7 @@ const fetchPolicyData = async (policyId) => {
         </div>
 
         {/* Renewal Info Banner */}
-        {/* {form.isRenewal && (
+        {form.isRenewal && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -12051,13 +12711,15 @@ const fetchPolicyData = async (policyId) => {
               </span>
             </div>
           </div>
-        )} */}
+        )}
 
         {/* Credit Type Info Banner */}
-        {/* {form.creditType && (
+        {form.creditType && (
           <div className={`border rounded-xl p-4 mb-6 ${
             form.creditType === "auto" 
               ? "bg-blue-50 border-blue-200" 
+              : form.creditType === "broker"
+              ? "bg-purple-50 border-purple-200"
               : form.creditType === "showroom"
               ? "bg-orange-50 border-orange-200"
               : "bg-green-50 border-green-200"
@@ -12067,22 +12729,26 @@ const fetchPolicyData = async (policyId) => {
                 <div className={`p-2 rounded-full ${
                   form.creditType === "auto" 
                     ? "bg-blue-100 text-blue-600" 
+                    : form.creditType === "broker"
+                    ? "bg-purple-100 text-purple-600"
                     : form.creditType === "showroom"
                     ? "bg-orange-100 text-orange-600"
                     : "bg-green-100 text-green-600"
                 }`}>
                   {form.creditType === "auto" ? <FaCreditCard /> : 
+                   form.creditType === "broker" ? <FaUserTie /> :
                    form.creditType === "showroom" ? <FaTags /> : 
                    <FaUser />}
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-800">
-                    {form.creditType === "auto" ? "Auto Credits" : 
+                    {form.creditType === "auto" ? "Autocredits India LLP" : 
+                     form.creditType === "broker" ? "Broker" + (form.brokerName ? ` - ${form.brokerName}` : "") :
                      form.creditType === "showroom" ? "Showroom" : 
                      "Customer"}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    {form.creditType === "auto" 
+                    {form.creditType === "auto" || form.creditType === "broker"
                       ? "Payout section will be available in Step 8" 
                       : "Payout section will be hidden"}
                   </p>
@@ -12091,17 +12757,20 @@ const fetchPolicyData = async (policyId) => {
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                 form.creditType === "auto" 
                   ? "bg-blue-100 text-blue-800" 
+                  : form.creditType === "broker"
+                  ? "bg-purple-100 text-purple-800"
                   : form.creditType === "showroom"
                   ? "bg-orange-100 text-orange-800"
                   : "bg-green-100 text-green-800"
               }`}>
-                {form.creditType === "auto" ? "AUTO CREDITS" : 
+                {form.creditType === "auto" ? "Autocredits India LLP" : 
+                 form.creditType === "broker" ? "BROKER" :
                  form.creditType === "showroom" ? "SHOWROOM" : 
                  "CUSTOMER"}
               </span>
             </div>
           </div>
-        )} */}
+        )}
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
