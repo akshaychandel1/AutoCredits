@@ -431,13 +431,9 @@ const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1
 const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Relationship options for auto-suggest
   const relationshipOptions = [
-    "Spouse", "Son", "Mother", "Father", "Daughter", "Child", "Parent", "Sibling", "Grandparent", "Grandchild",
-    "Uncle", "Aunt", "Nephew", "Niece", "Cousin", "Father-in-law",
+    "Spouse", "Son", "Mother", "Father", "Daughter", "Child", "Brother", "Sister", "Grandparent", "Father-in-law",
     "Mother-in-law", "Brother-in-law", "Sister-in-law", "Son-in-law",
-    "Daughter-in-law", "Step Father", "Step Mother", "Step Son",
-    "Step Daughter", "Step Brother", "Step Sister", "Adopted Son",
-    "Adopted Daughter", "Foster Child", "Legal Guardian", "Trust",
-    "Friend", "Business Partner", "Employee", "Employer", "Other"
+    "Daughter-in-law",
   ];
 
   // Credit type options
