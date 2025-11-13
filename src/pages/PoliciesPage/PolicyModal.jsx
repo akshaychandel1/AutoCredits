@@ -257,7 +257,8 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       policyDuration: quote.policyDuration || 1,
       ncbDiscount: quote.ncbDiscount || 0,
       odAmount: parseInt(quote.odAmount) || 0,
-      thirdPartyAmount: parseInt(quote.thirdPartyAmount) || 0
+      thirdPartyAmount: parseInt(quote.thirdPartyAmount) || 0,
+      addOnsPremium: parseInt(quote.addOnsPremium) || 0
     };
   };
 
@@ -323,25 +324,27 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     };
   };
 
-  // Get payout details - UPDATED to use correct OD amount
+  // Get payout details - UPDATED to show correct OD + Addons total
   const getPayoutDetails = () => {
     const payout = policy.payout || {};
     
-    // Get OD amount from accepted quote if available
+    // Get OD + Addons total from accepted quote
     const acceptedQuote = getAcceptedQuote();
     const odAmountFromQuote = acceptedQuote?.odAmount || 0;
+    const addonsFromQuote = acceptedQuote?.addOnsPremium || 0;
+    const odAddonTotalFromQuote = odAmountFromQuote + addonsFromQuote;
     
-    // Use payout OD amount if available, otherwise fallback to quote OD amount
-    const odAmount = payout.odAmount || odAmountFromQuote;
+    // Use payout OD amount if available, otherwise fallback to quote OD+Addons total
+    // But prefer the calculated OD+Addons total from quote
+    const odAddonAmount = odAddonTotalFromQuote > 0 ? odAddonTotalFromQuote : (payout.odAddonAmount || payout.odAmount || 0);
     
     return {
       netPremium: payout.netPremium || 0,
-      odAmount: odAmount,
+      odAddonAmount: odAddonAmount, // This is now OD + Addons total
       ncbAmount: payout.ncbAmount || 0,
       subVention: payout.subVention || 0,
       netAmount: payout.netAmount || 0,
-      odAddonPercentage: payout.odAddonPercentage || 0,
-      odAddonAmount: payout.odAddonAmount || 0
+      odAddonPercentage: payout.odAddonPercentage || 0
     };
   };
 
@@ -376,25 +379,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       totalSubvention: totalSubvention,
       paymentLedger: paymentLedger
     };
-  };
-
-  // Get documents with tagging information
-  const getDocuments = () => {
-    // Handle both array and object format documents
-    let documents = [];
-    
-    if (Array.isArray(policy.documents)) {
-      documents = policy.documents;
-    } else if (typeof policy.documents === 'object' && policy.documents !== null) {
-      // Convert object format to array
-      documents = Object.entries(policy.documents).map(([docId, doc]) => ({
-        id: docId,
-        ...doc,
-        tag: policy.documentTags?.[docId] || ''
-      }));
-    }
-    
-    return documents;
   };
 
   // Function to get file icon based on file type
@@ -501,6 +485,37 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     return 'pdf'; // Default fallback
   };
 
+  // Get documents with tagging information - UPDATED to handle both formats
+  const getDocuments = () => {
+    // Handle both array and object format documents
+    let documents = [];
+    
+    if (Array.isArray(policy.documents)) {
+      documents = policy.documents;
+    } else if (typeof policy.documents === 'object' && policy.documents !== null) {
+      // Convert object format to array
+      documents = Object.entries(policy.documents).map(([docId, doc]) => ({
+        id: docId,
+        ...doc,
+        tag: policy.documentTags?.[docId] || ''
+      }));
+    }
+    
+    return documents;
+  };
+
+  // Function to get display name for document - NEW: Shows tag or file type
+  const getDocumentDisplayName = (document) => {
+    // Priority 1: Use tag if available
+    if (document.tag && document.tag.trim() !== '') {
+      return document.tag;
+    }
+    
+    // Priority 2: Use file type as fallback
+    const extension = getFileExtension(document);
+    return extension.toUpperCase() + ' File';
+  };
+
   // Robust download function that works in all environments
   const handleDownload = async (document) => {
     const url = document.url;
@@ -528,10 +543,9 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       
       let downloadFileName = fileName;
       
-      // if (!downloadFileName.includes('.')) {
+      if (!downloadFileName.includes('.')) {
         downloadFileName = `${downloadFileName}.${fileExtension}`;
-        //      }
-        // console.log("hiiiiiiiiiiii",fileExtension,downloadFileName ,fileName);
+      }
 
       // Method 1: Simple and reliable anchor tag approach
       const link = window.document.createElement('a');
@@ -1142,7 +1156,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Documents Section - ENHANCED with Download All and Better Download Handling */}
+              {/* Documents Section - UPDATED: Compact design showing only tags or file types */}
               {documents.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                   <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 px-5 py-4 border-b border-indigo-200">
@@ -1178,35 +1192,22 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                   <div className="p-5">
                     <div className="space-y-3">
                       {documents.map((document, index) => {
-                        const fileName = getFileName(document);
+                        const displayName = getDocumentDisplayName(document);
                         const fileExtension = getFileExtension(document);
                         const isDownloading = downloadingDocs[document.id || document._id || document.url];
                         
                         return (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                               {getFileIcon(document)}
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium text-gray-900 text-sm truncate" title={fileName}>
-                                  {fileName}
+                                <div className="font-medium text-gray-900 text-sm">
+                                  {displayName}
                                 </div>
-                                {document.tag && (
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <FaTag className="w-3 h-3 text-gray-400" />
-                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                      {document.tag}
-                                    </span>
-                                  </div>
-                                )}
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-xs text-gray-500 bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">
                                     {fileExtension.toUpperCase()}
                                   </span>
-                                  {document.size && (
-                                    <span className="text-xs text-gray-500">
-                                      {formatFileSize(document.size)}
-                                    </span>
-                                  )}
                                   <span className="text-xs text-gray-400">
                                     Click to download
                                   </span>
@@ -1225,7 +1226,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                                 onClick={() => handleDownload(document)}
                                 disabled={isDownloading}
                                 className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded disabled:opacity-50 transition-colors"
-                                title={`Download ${fileName}`}
+                                title={`Download ${displayName}`}
                               >
                                 {isDownloading ? (
                                   <FaSpinner className="w-4 h-4 animate-spin" />
@@ -1242,8 +1243,8 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* Payout Details - UPDATED with correct OD amount */}
-              {(payout.netPremium > 0 || payout.odAmount > 0) && (
+              {/* Payout Details - UPDATED with correct OD + Addons amount */}
+              {(payout.netPremium > 0 || payout.odAddonAmount > 0) && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                   <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-5 py-4 border-b border-emerald-200">
                     <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
@@ -1259,8 +1260,8 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       <span className="font-semibold text-gray-900">₹{payout.netPremium.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">OD Amount</span>
-                      <span className="font-semibold text-gray-900">₹{payout.odAmount.toLocaleString('en-IN')}</span>
+                      <span className="text-sm text-gray-600">OD + Addons Amount</span>
+                      <span className="font-semibold text-gray-900">₹{payout.odAddonAmount.toLocaleString('en-IN')}</span>
                     </div>
                     {payout.ncbAmount > 0 && (
                       <div className="flex justify-between items-center">

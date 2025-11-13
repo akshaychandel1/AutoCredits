@@ -1,7 +1,7 @@
 // src/services/documentService.js
 import axios from 'axios';
 
-const API_BASE_URL = 'https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1';
+const API_BASE_URL = 'https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1';
 
 export const documentService = {
   // Upload file directly to the SAME endpoint as fetching
@@ -16,7 +16,7 @@ export const documentService = {
       formData.append('timestamp', Date.now().toString());
 
       // Use the SAME endpoint as fetching
-      const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/files`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

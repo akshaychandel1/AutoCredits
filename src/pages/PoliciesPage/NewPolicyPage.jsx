@@ -1,4 +1,4 @@
-import React ,{ useState, useEffect, useRef, useCallback } from "react"; 
+import React ,{ useState, useEffect, useRef, useCallback, useMemo } from "react"; 
 import {jsPDF} from 'jspdf'
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -35,16 +35,6 @@ import {
 import PDFGenerationService from "./PDFGenerationService";
 import { useLocation } from 'react-router-dom';
 
-import icici from './logos/ICICI.jpeg'
-import hdfc from './logos/hdfc.jpeg'
-import bajaj from './logos/bajaj.jpeg'
-import indiau from './logos/indiaunited.jpeg'
-import uindia from './logos/unitedindia.jpeg'
-import nis from './logos/nis.jpeg'
-import orient from './logos/orient.jpeg'
-import tata from './logos/tata.jpeg'
-import reliance from './logos/reliance.png'
-import chola from './logos/chola.png'
 import INRCurrencyInput from "../../components/INRCurrencyInput";
 // ================== VALIDATION RULES ==================
 const validationRules = {
@@ -446,12 +436,91 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // State for relationship suggestions
   const [relationshipSuggestions, setRelationshipSuggestions] = useState([]);
   const [showRelationshipSuggestions, setShowRelationshipSuggestions] = useState(false);
+  
+  // State for pincode loading
+  const [isPincodeLoading, setIsPincodeLoading] = useState(false);
+  const [pincodeError, setPincodeError] = useState('');
+
+  // Base API URL
+  const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app";
 
   // Format text to have first letter uppercase and other letters lowercase
   const formatName = (text) => {
     return text.replace(/\w\S*/g, (txt) => {
       return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
     });
+  };
+
+  // Fetch city from pincode using reliable public API
+  const fetchCityFromPincode = async (pincode) => {
+    if (!pincode || pincode.length !== 6) return;
+    
+    setIsPincodeLoading(true);
+    setPincodeError('');
+    
+    try {
+      console.log('🔍 Fetching city for pincode:', pincode);
+      
+      // Use reliable public pincode API
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('📊 API Response data:', data);
+      
+      if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.[0]?.District) {
+        const cityName = data[0].PostOffice[0].District;
+        const formattedCity = formatName(cityName);
+        
+        handleChange({
+          target: {
+            name: 'city',
+            value: formattedCity
+          }
+        });
+        setPincodeError('');
+        console.log('✅ City found:', formattedCity);
+      } else {
+        setPincodeError('Pincode not found. Please enter city manually.');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching pincode data:', error);
+      setPincodeError('Unable to fetch city data. Please enter city manually.');
+    } finally {
+      setIsPincodeLoading(false);
+    }
+  };
+
+  // Pincode change handler with proper API triggering
+  const handlePincodeChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Allow only numbers and limit to 6 digits
+    const numbersOnly = value.replace(/[^\d]/g, '').slice(0, 6);
+    
+    handleChange({
+      target: {
+        name: name,
+        value: numbersOnly
+      }
+    });
+    
+    // Clear previous errors
+    setPincodeError('');
+    
+    console.log('🔢 Pincode input:', numbersOnly, 'Length:', numbersOnly.length);
+    
+    // Fetch city when pincode is exactly 6 digits
+    if (numbersOnly.length === 6) {
+      console.log('🚀 Triggering API call for pincode:', numbersOnly);
+      // Immediate API call without delay
+      fetchCityFromPincode(numbersOnly);
+    }
   };
 
   // Handle text input change with formatting
@@ -487,12 +556,10 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Handle uppercase input (for PAN, GST, etc.)
   const handleUppercaseChange = (e) => {
     const { name, value } = e.target;
-    // Convert to uppercase for display but store original value
-    const uppercaseValue = value.toUpperCase();
     handleChange({
       target: {
         name: name,
-        value: value // Store original case for backend
+        value: value
       }
     });
   };
@@ -636,7 +703,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           {errors.vehicleType && <p className="text-red-500 text-xs mt-1">{errors.vehicleType}</p>}
           
           {/* Vehicle Type Tag Display */}
-          {/* {form.vehicleType && (
+          {form.vehicleType && (
             <div className="mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 form.vehicleType === "new" 
@@ -659,13 +726,13 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   : "Step 3 (Previous Policy) will be required for used vehicles"}
               </p>
             </div>
-          )} */}
+          )}
         </div>
 
         {/* Credit Type Dropdown - NEW FIELD */}
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
-            Credit Type *
+            Policy Done By *
           </label>
           <select
             name="creditType"
@@ -684,7 +751,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           {errors.creditType && <p className="text-red-500 text-xs mt-1">{errors.creditType}</p>}
           
           {/* Credit Type Info */}
-          {/* {form.creditType && (
+          {form.creditType && (
             <div className="mt-2">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 form.creditType === "auto" 
@@ -713,7 +780,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   : "Payout section will be hidden"}
               </p>
             </div>
-          )} */}
+          )}
         </div>
 
         {/* Empty div to maintain grid layout */}
@@ -1075,23 +1142,39 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           {errors.residenceAddress && <p className="text-red-500 text-xs mt-1">{errors.residenceAddress}</p>}
         </div>
 
+        {/* Pincode Field with Auto-fetch */}
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Pincode *
           </label>
-          <input
-            type="text"
-            name="pincode"
-            value={form.pincode || ""}
-            onChange={handleChange}
-            placeholder="123456"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.pincode ? "border-red-500" : "border-gray-300"
-            }`}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              name="pincode"
+              value={form.pincode || ""}
+              onChange={handlePincodeChange}
+              placeholder="Enter 6-digit pincode"
+              maxLength={6}
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.pincode ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {isPincodeLoading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <FaSpinner className="animate-spin text-purple-600" />
+              </div>
+            )}
+          </div>
           {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
+          {pincodeError && <p className="text-red-500 text-xs mt-1">{pincodeError}</p>}
+          {form.pincode && form.pincode.length === 6 && !isPincodeLoading && form.city && (
+            <p className="text-green-600 text-xs mt-1 flex items-center">
+              <FaCheckCircle className="mr-1" /> City auto-filled: {form.city}
+            </p>
+          )}
         </div>
 
+        {/* City Field */}
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
             City *
@@ -1234,7 +1317,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
         </div>
 
         {/* Credit Type Summary */}
-        {/* {form.creditType && (
+        {form.creditType && (
           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h4 className="text-md font-semibold text-gray-700 mb-2">Credit Type Summary</h4>
             <div className="flex items-center justify-between">
@@ -1276,10 +1359,10 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
               </span>
             </div>
           </div>
-        )} */}
+        )}
 
         {/* Vehicle Type Summary */}
-        {/* {form.vehicleType && (
+        {form.vehicleType && (
           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h4 className="text-md font-semibold text-gray-700 mb-2">Vehicle Type Summary</h4>
             <div className="flex items-center justify-between">
@@ -1309,7 +1392,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
               </span>
             </div>
           </div>
-        )} */}
+        )}
       </div>
     </div>
   );
@@ -1707,14 +1790,37 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
 // ================== STEP 3: Previous Policy Details ==================
 const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Insurance companies options
-  const insuranceCompanies = [
-    "ICICI Lombard", "HDFC Ergo", "Bajaj Allianz", "New India Assurance", 
-    "United India", "National Insurance", "Oriental Insurance", "Tata AIG",
-    "Reliance General", "Cholamandalam", "SBI General", "Royal Sundaram",
-    "Go Digit", "Acko", "Liberty General", "Future Generali", "IFFCO Tokio",
-    "Shriram General", "Edelweiss General", "Kotak General", "Magma HDI",
-    "Raheja QBE", "Universal Sompo", "Bharti AXA", "Aditya Birla Health"
-  ];
+ const insuranceCompanies = [
+  "Acko General Insurance Limited",
+  "Agriculture Insurance Company of India Limited",
+  "Bajaj General Insurance Limited",
+  "Cholamandalam MS General Insurance Company Limited",
+  "ECGC Limited",
+  "Generali Central Insurance Company Limited",
+  "Go Digit General Insurance Limited",
+  "HDFC ERGO General Insurance Company Limited",
+  "ICICI Lombard General Insurance Company Limited",
+  "IFFCO TOKIO General Insurance Company Limited",
+  "Zurich Kotak General Insurance Company (India) Limited",
+  "Kshema General Insurance Limited",
+  "Liberty General Insurance Limited",
+  "Magma General Insurance Limited",
+  "National Insurance Company Limited",
+  "Navi General Insurance Limited",
+  "Raheja QBE General Insurance Co. Ltd.",
+  "Reliance General Insurance Company Limited",
+  "Royal Sundaram General Insurance Company Limited",
+  "SBI General Insurance Company Limited",
+  "Shriram General Insurance Company Limited",
+  "Tata AIG General Insurance Company Limited",
+  "The New India Assurance Company Limited",
+  "The Oriental Insurance Company Limited",
+  "United India Insurance Company Limited",
+  "Universal Sompo General Insurance Company Limited",
+  "Zuno General Insurance Ltd. ",
+  "Bharti Axa General Insurance Co. Ltd"
+];
+
 
   // NCB options
   const ncbOptions = [0, 20, 25, 35, 45, 50];
@@ -2524,78 +2630,36 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     }
   });
 
-  // Insurance companies with real image paths and colors
+  // Updated insurance companies list without logos and background colors
   const insuranceCompanies = [
-    { 
-      name: "ICICI Lombard", 
-      logo: icici,
-      fallbackLogo: "🏦",
-      color: "#FF6B35",
-      bgColor: "#FFF0EB"
-    },
-    { 
-      name: "HDFC Ergo", 
-      logo: hdfc,
-      fallbackLogo: "🏛️",
-      color: "#2E8B57",
-      bgColor: "#F0FFF0"
-    },
-    { 
-      name: "Bajaj Allianz", 
-      logo: bajaj,
-      fallbackLogo: "🛡️",
-      color: "#0056B3",
-      bgColor: "#F0F8FF"
-    },
-    { 
-      name: "New India Assurance", 
-      logo: indiau,
-      fallbackLogo: "🇮🇳",
-      color: "#FF8C00",
-      bgColor: "#FFF8F0"
-    },
-    { 
-      name: "United India", 
-      logo: uindia,
-      fallbackLogo: "🤝",
-      color: "#8B4513",
-      bgColor: "#FFF8F0"
-    },
-    { 
-      name: "National Insurance", 
-      logo: nis,
-      fallbackLogo: "🏢",
-      color: "#228B22",
-      bgColor: "#F0FFF0"
-    },
-    { 
-      name: "Oriental Insurance", 
-      logo: orient,
-      fallbackLogo: "🌅",
-      color: "#DC143C",
-      bgColor: "#FFF0F5"
-    },
-    { 
-      name: "Tata AIG", 
-      logo: tata,
-      fallbackLogo: "🚗",
-      color: "#0066CC",
-      bgColor: "#F0F8FF"
-    },
-    { 
-      name: "Reliance General", 
-      logo: reliance,
-      fallbackLogo: "⚡",
-      color: "#FF4500",
-      bgColor: "#FFF0EB"
-    },
-    { 
-      name: "Cholamandalam", 
-      logo: chola,
-      fallbackLogo: "💎",
-      color: "#800080",
-      bgColor: "#F8F0FF"
-    }
+    "Acko General Insurance Limited",
+    "Agriculture Insurance Company of India Limited",
+    "Bajaj General Insurance Limited",
+    "Cholamandalam MS General Insurance Company Limited",
+    "ECGC Limited",
+    "Generali Central Insurance Company Limited",
+    "Go Digit General Insurance Limited",
+    "HDFC ERGO General Insurance Company Limited",
+    "ICICI Lombard General Insurance Company Limited",
+    "IFFCO TOKIO General Insurance Company Limited",
+    "Zurich Kotak General Insurance Company (India) Limited",
+    "Kshema General Insurance Limited",
+    "Liberty General Insurance Limited",
+    "Magma General Insurance Limited",
+    "National Insurance Company Limited",
+    "Navi General Insurance Limited",
+    "Raheja QBE General Insurance Co. Ltd.",
+    "Reliance General Insurance Company Limited",
+    "Royal Sundaram General Insurance Company Limited",
+    "SBI General Insurance Company Limited",
+    "Shriram General Insurance Company Limited",
+    "Tata AIG General Insurance Company Limited",
+    "The New India Assurance Company Limited",
+    "The Oriental Insurance Company Limited",
+    "United India Insurance Company Limited",
+    "Universal Sompo General Insurance Company Limited",
+    "Zuno General Insurance Ltd.",
+    "Bharti Axa General Insurance Co. Ltd"
   ];
 
   // UPDATED: Update policy duration options when coverage type changes
@@ -3024,8 +3088,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
     setEditingQuote({ ...quote, originalIndex: index });
     
-    const company = insuranceCompanies.find(c => c.name === quote.insuranceCompany);
-    
     // Convert add-ons back to the manualQuote format
     const addOnsData = {};
     Object.keys(addOnDescriptions).forEach(key => {
@@ -3096,7 +3158,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       return;
     }
 
-    const company = insuranceCompanies.find(c => c.name === manualQuote.insuranceCompany);
     const addOnsPremium = calculateAddOnsTotal();
     
     const totalPremium = calculateTotalPremium();
@@ -3124,10 +3185,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     const updatedQuote = {
       id: editingQuote.id,
       insuranceCompany: manualQuote.insuranceCompany,
-      companyLogo: company?.logo || '',
-      companyFallbackLogo: company?.fallbackLogo || '🏢',
-      companyColor: company?.color || '#000',
-      companyBgColor: company?.bgColor || '#fff',
       coverageType: manualQuote.coverageType,
       // FIXED: Preserve individual IDV values from the form
       vehicleIdv: parseFloat(manualQuote.vehicleIdv || 0) || 0,
@@ -3239,7 +3296,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       return;
     }
 
-    const company = insuranceCompanies.find(c => c.name === manualQuote.insuranceCompany);
     const addOnsPremium = calculateAddOnsTotal();
     const totalPremium = calculateTotalPremium();
     const basePremium = calculateBasePremium();
@@ -3266,10 +3322,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     const newQuote = {
       id: Date.now().toString(),
       insuranceCompany: manualQuote.insuranceCompany,
-      companyLogo: company?.logo || '',
-      companyFallbackLogo: company?.fallbackLogo || '🏢',
-      companyColor: company?.color || '#000',
-      companyBgColor: company?.bgColor || '#fff',
       coverageType: manualQuote.coverageType,
       // FIXED: Store individual IDV values for new quotes
       vehicleIdv: parseFloat(manualQuote.vehicleIdv || 0) || 0,
@@ -3464,31 +3516,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
     }
   };
 
-  // Component for company logo with fallback
-  const CompanyLogo = ({ company, className = "w-8 h-8" }) => {
-    const [imgError, setImgError] = useState(false);
-
-    if (imgError || !company?.logo) {
-      return (
-        <div 
-          className={`${className} rounded-full flex items-center justify-center text-lg`}
-          style={{ backgroundColor: company?.bgColor }}
-        >
-          {company?.fallbackLogo}
-        </div>
-      );
-    }
-
-    return (
-      <img
-        src={company.logo}
-        alt={`${company.name} logo`}
-        className={`${className} rounded-full object-cover`}
-        onError={() => setImgError(true)}
-      />
-    );
-  };
-
   // Get display label for coverage type
   const getCoverageTypeLabel = (type) => {
     switch (type) {
@@ -3544,7 +3571,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
             {editingQuote && <span className="text-blue-600 ml-2">• Editing Quote</span>}
           </p>
         </div>
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           {quotes.length > 0 && (
             <button
               onClick={clearAllQuotes}
@@ -3563,7 +3590,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               {isGenerating ? 'Generating...' : 'Download All PDF'}
             </button>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* Validation Error Display */}
@@ -3587,7 +3614,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
       )}
 
       {/* Quote Acceptance Status */}
-      {acceptedQuote && (
+      {/* {acceptedQuote && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -3609,10 +3636,10 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* UPDATED: NCB Eligibility Status with Step-up Information */}
-      <div className={`mb-4 p-3 rounded-lg border ${
+      {/* <div className={`mb-4 p-3 rounded-lg border ${
         ncbStatus.type === 'error' ? 'bg-red-50 border-red-200' : 
         ncbStatus.type === 'info' ? 'bg-blue-50 border-blue-200' : 
         'bg-green-50 border-green-200'
@@ -3633,7 +3660,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
             }`}>
               {ncbStatus.description}
             </p>
-            {/* NEW: Show step-up details for used cars */}
             {form.vehicleType === "used" && form.previousClaimTaken !== "yes" && (
               <p className="text-xs text-purple-600 mt-1 font-medium">
                 Step-up Logic: 0→20% → 20→25% → 25→35% → 35→45% → 45→50%
@@ -3656,7 +3682,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
             </div>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Add/Edit Quote Form */}
       <div className="bg-gray-50 rounded-lg p-6 mb-6">
@@ -3692,12 +3718,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                 placeholder="Insurance Company"
               />
               
-              {/* Dropdown suggestions */}
+              {/* Dropdown suggestions - COMPLETELY REMOVED LOGOS */}
               {isSuggestionsOpen && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                   {insuranceCompanies
                     .filter(company => 
-                      company.name.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
+                      company.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
                     )
                     .map((company, index) => (
                       <div
@@ -3705,36 +3731,20 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                         onClick={() => {
                           setManualQuote(prev => ({
                             ...prev,
-                            insuranceCompany: company.name
+                            insuranceCompany: company
                           }));
                           setIsSuggestionsOpen(false);
                         }}
                         className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors border-b border-gray-100 last:border-b-0"
                       >
-                        <div className="flex items-center space-x-2">
-                          {company.logo ? (
-                            <img
-                              src={company.logo}
-                              alt={`${company.name} logo`}
-                              className="w-6 h-6 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div 
-                              className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
-                              style={{ backgroundColor: company.bgColor, color: company.color }}
-                            >
-                              {company.fallbackLogo}
-                            </div>
-                          )}
-                          <span>{company.name}</span>
-                        </div>
+                        <span>{company}</span>
                       </div>
                     ))
                   }
                   
                   {/* No results message */}
                   {insuranceCompanies.filter(company => 
-                    company.name.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
+                    company.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
                   ).length === 0 && (
                     <div className="px-3 py-2 text-gray-500 text-sm">
                       No insurance companies found
@@ -3858,12 +3868,12 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               placeholder="Auto-calculated Total IDV"
               readOnly
             />
-            <p className="text-xs text-purple-600 mt-1">
+            {/* <p className="text-xs text-purple-600 mt-1">
               Auto-calculated: Vehicle + CNG + Accessories
             </p>
             <p className="text-xs text-gray-500 mt-1">
               Current: ₹{currentTotalIdv.toLocaleString('en-IN')}
-            </p>
+            </p> */}
           </div>
 
           {/* UPDATED: Policy Duration - Now fully editable for all vehicle types and coverage types */}
@@ -3884,7 +3894,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               ))}
             </select>
             {/* UPDATED: Info text based on coverage type only */}
-            {manualQuote.coverageType === "standalone" && (
+            {/* {manualQuote.coverageType === "standalone" && (
               <p className="text-xs text-purple-600 mt-1">
                 Stand Alone OD: 1, 2, or 3 year options available
               </p>
@@ -3898,7 +3908,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               <p className="text-xs text-blue-600 mt-1">
                 Comprehensive: 1yr OD + 1yr TP, 1yr OD + 3yr TP, 2yr OD + 3yr TP, 3yr OD + 3yr TP options available for all vehicles
               </p>
-            )}
+            )} */}
           </div>
 
           {/* UPDATED: NCB Discount with step-up information */}
@@ -3928,7 +3938,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                 </option>
               ))}
             </select>
-            {form.previousClaimTaken === "yes" && (
+            {/* {form.previousClaimTaken === "yes" && (
               <p className="text-xs text-red-600 mt-1">
                 NCB disabled - claim was taken in previous policy
               </p>
@@ -3942,7 +3952,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
               <p className="text-xs text-green-600 mt-1">
                 Auto step-up applied from previous NCB. You can change if needed.
               </p>
-            )}
+            )} */}
           </div>
 
           {/* OD Amount */}
@@ -4012,60 +4022,57 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
           {/* Add-ons Input Fields */}
           <div className="col-span-full">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="text-md font-semibold text-gray-800">Additional Add-ons (Optional)</h4>
-              <div className="flex gap-2">
-                <button
-                  onClick={selectAllAddOns}
-                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                >
-                  Select All (₹0)
-                </button>
-                <button
-                  onClick={deselectAllAddOns}
-                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-                >
-                  Deselect All
-                </button>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Select add-ons with ₹0 amount to include them without charges, or enter custom amounts for premium calculation.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {Object.entries(addOnDescriptions).map(([key, description]) => (
-                <div key={key} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg bg-white hover:border-purple-300 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={manualQuote.addOns[key].selected}
-                    onChange={(e) => handleAddOnChange(key, 'selected', e.target.checked)}
-                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                  />
-                  <div className="flex-1">
-                    <label className="text-sm font-medium text-gray-700 block mb-2">
-                      {description}
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-xs text-gray-500 block mb-1">Amount (₹)</label>
-                        <INRCurrencyInput
-                          type="number"
-                          value={manualQuote.addOns[key].amount}
-                          onChange={(e) => handleAddOnNumericFieldChange(key, 'amount', e.target.value)}
-                          onFocus={() => handleAddOnNumericFieldFocus(key, 'amount')}
-                          onBlur={() => handleAddOnNumericFieldBlur(key, 'amount')}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
-                          placeholder="0"
-                          disabled={!manualQuote.addOns[key].selected}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+  <div className="flex justify-between items-center mb-3">
+    <h4 className="text-md font-semibold text-gray-800">Additional Add-ons (Optional)</h4>
+    <div className="flex gap-2">
+      <button
+        onClick={selectAllAddOns}
+        className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+      >
+        Select All (₹0)
+      </button>
+      <button
+        onClick={deselectAllAddOns}
+        className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+      >
+        Deselect All
+      </button>
+    </div>
+  </div>
+  <p className="text-xs text-gray-600 mb-3">
+    Select add-ons with ₹0 amount to include them without charges, or enter custom amounts for premium calculation.
+  </p>
+  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+    {Object.entries(addOnDescriptions).map(([key, description]) => (
+      <div key={key} className="flex items-start space-x-2 p-2 border border-gray-200 rounded-md bg-white hover:border-purple-300 transition-colors">
+        <input
+          type="checkbox"
+          checked={manualQuote.addOns[key].selected}
+          onChange={(e) => handleAddOnChange(key, 'selected', e.target.checked)}
+          className="w-3 h-3 text-purple-600 rounded focus:ring-purple-500 mt-1 flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <label className="text-xs font-medium text-gray-700 block mb-1 leading-tight">
+            {description}
+          </label>
+          <div className="flex items-center gap-1">
+            <label className="text-xs text-gray-500 whitespace-nowrap">Amount:</label>
+            <INRCurrencyInput
+              type="number"
+              value={manualQuote.addOns[key].amount}
+              onChange={(e) => handleAddOnNumericFieldChange(key, 'amount', e.target.value)}
+              onFocus={() => handleAddOnNumericFieldFocus(key, 'amount')}
+              onBlur={() => handleAddOnNumericFieldBlur(key, 'amount')}
+              className="w-full px-1 py-0.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+              placeholder="0"
+              disabled={!manualQuote.addOns[key].selected}
+            />
           </div>
-
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
           {/* Included Add-ons Display */}
           {getIncludedAddOns().length > 0 && (
             <div className="col-span-full bg-green-50 p-4 rounded-lg border border-green-200">
@@ -4233,7 +4240,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
 
           <div className="grid grid-cols-1 gap-6">
             {quotes.map((quote, index) => {
-              const company = insuranceCompanies.find(c => c.name === quote.insuranceCompany);
               const isExpanded = expandedQuotes.includes(index);
               const isAccepted = acceptedQuote && acceptedQuote.id === quote.id;
               const isBeingEdited = editingQuote && editingQuote.id === quote.id;
@@ -4248,10 +4254,9 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                 <div key={index} className={`border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white ${
                   isAccepted ? 'ring-2 ring-green-500 ring-opacity-50' : ''
                 } ${isBeingEdited ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}>
-                  {/* Quote Header */}
+                  {/* Quote Header - COMPLETELY REMOVED LOGOS */}
                   <div 
-                    className="p-4 text-white relative"
-                    style={{ backgroundColor: company?.color || '#0055AA' }}
+                    className="p-4 text-white relative bg-blue-600"
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex items-center space-x-3">
@@ -4261,7 +4266,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                           onChange={() => toggleQuoteSelection(index)}
                           className="w-5 h-5 text-white bg-white rounded border-white"
                         />
-                        <CompanyLogo company={company} className="w-10 h-10" />
                         <div>
                           <div className="flex items-center space-x-2">
                             <h4 className="font-bold text-lg">{quote.insuranceCompany}</h4>
@@ -4499,7 +4503,6 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
                                     <span 
                                       key={key} 
                                       className="px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium"
-                                      style={{ backgroundColor: company?.bgColor, color: company?.color }}
                                     >
                                       {addOn.description} (₹{addOn.amount.toLocaleString('en-IN')})
                                     </span>
@@ -4545,19 +4548,36 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
   // Insurance companies dropdown options (same as InsuranceQuotes)
   const [insuranceCompanySuggestions, setInsuranceCompanySuggestions] = useState([]);
   const [showInsuranceCompanySuggestions, setShowInsuranceCompanySuggestions] = useState(false);
-  const insuranceCompanies = [
-    "ICICI Lombard",
-    "HDFC Ergo", 
-    "Bajaj Allianz",
-    "New India Assurance",
-    "United India",
-    "National Insurance",
-    "Oriental Insurance",
-    "Tata AIG",
-    "Reliance General",
-    "Cholamandalam",
-    "Other"
-  ];
+   const insuranceCompanies = [
+  "Acko General Insurance Limited",
+  "Agriculture Insurance Company of India Limited",
+  "Bajaj General Insurance Limited",
+  "Cholamandalam MS General Insurance Company Limited",
+  "ECGC Limited",
+  "Generali Central Insurance Company Limited",
+  "Go Digit General Insurance Limited",
+  "HDFC ERGO General Insurance Company Limited",
+  "ICICI Lombard General Insurance Company Limited",
+  "IFFCO TOKIO General Insurance Company Limited",
+  "Zurich Kotak General Insurance Company (India) Limited",
+  "Kshema General Insurance Limited",
+  "Liberty General Insurance Limited",
+  "Magma General Insurance Limited",
+  "National Insurance Company Limited",
+  "Navi General Insurance Limited",
+  "Raheja QBE General Insurance Co. Ltd.",
+  "Reliance General Insurance Company Limited",
+  "Royal Sundaram General Insurance Company Limited",
+  "SBI General Insurance Company Limited",
+  "Shriram General Insurance Company Limited",
+  "Tata AIG General Insurance Company Limited",
+  "The New India Assurance Company Limited",
+  "The Oriental Insurance Company Limited",
+  "United India Insurance Company Limited",
+  "Universal Sompo General Insurance Company Limited",
+  "Zuno General Insurance Ltd. ",
+  "Bharti Axa General Insurance Co. Ltd"
+];
 
   // NCB options dropdown (same as InsuranceQuotes)
   const ncbOptions = [0, 20, 25, 35, 45, 50];
@@ -5061,7 +5081,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
       </div>
 
       {/* Duration Mapping Info */}
-      {acceptedQuote && form.insuranceDuration && (
+      {/* {acceptedQuote && form.insuranceDuration && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-start space-x-3">
             <FaInfoCircle className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -5086,10 +5106,10 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Quote Acceptance Status Banner */}
-      {acceptedQuote ? (
+      {/* {acceptedQuote ? (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -5124,7 +5144,7 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       <div className="border rounded-xl p-5 mb-6">
         <h4 className="text-md font-semibold text-gray-700 mb-4">
@@ -5311,18 +5331,18 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
                     (direct mapping)
                   </span>
                 )}
-                <span className="text-gray-500 ml-1">• Editable</span>
+                {/* <span className="text-gray-500 ml-1">• Editable</span> */}
               </p>
             )}
             
             {errors.insuranceDuration && <p className="text-red-500 text-xs mt-1">{errors.insuranceDuration}</p>}
             
             {/* Duration Options Info - UPDATED */}
-            {form.policyType === "comprehensive" && (
+            {/* {form.policyType === "comprehensive" && (
               <p className="text-xs text-blue-600 mt-1">
                 Available: 1yr OD + 1yr TP, 1yr OD + 3yr TP, 2yr OD + 3yr TP, 3yr OD + 3yr TP
               </p>
-            )}
+            )} */}
           </div>
 
           {/* OD Expiry Date - Show for Standalone and Comprehensive */}
@@ -6146,45 +6166,38 @@ const Documents = ({ form, handleChange, handleSave, isSaving, errors }) => {
 
       {/* Document Requirements */}
       <div className="border rounded-xl p-5 mb-6">
-        <h4 className="text-md font-semibold text-gray-700 mb-4">
-          Document Requirements
-        </h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h5 className="font-medium text-green-700 mb-2 flex items-center gap-2">
-              <FaCheckCircle className="text-green-600" />
-              Documents
-            </h5>
-            <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-              {documentRequirements.mandatory.map((doc, index) => (
-                <li key={index}>{doc}</li>
-              ))}
-            </ul>
-          </div>
-          
-          {documentRequirements.optional.length > 0 && (
-            <div>
-              <h5 className="font-medium text-purple-700 mb-2 flex items-center gap-2">
-                <FaInfoCircle className="text-purple-600" />
-                Optional Documents
-              </h5>
-              <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-                {documentRequirements.optional.map((doc, index) => (
-                  <li key={index}>{doc}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-        
-        {/* <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-          <p className="text-sm text-yellow-700 flex items-center gap-2">
-            <FaExclamationTriangle className="text-yellow-600" />
-            <strong>Note:</strong> Upload all documents first, then tag each document in the section below.
-          </p>
-        </div> */}
+  <h4 className="text-md font-semibold text-gray-700 mb-4">
+    Document Requirements
+  </h4>
+  
+  <div className="flex flex-row gap-6">
+    <div className="flex-1">
+      <h5 className="font-medium text-green-700 mb-2 flex items-center gap-2">
+        <FaCheckCircle className="text-green-600" />
+        Documents
+      </h5>
+      <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+        {documentRequirements.mandatory.map((doc, index) => (
+          <li key={index}>{doc}</li>
+        ))}
+      </ul>
+    </div>
+    
+    {documentRequirements.optional.length > 0 && (
+      <div className="flex-1">
+        <h5 className="font-medium text-purple-700 mb-2 flex items-center gap-2">
+          <FaInfoCircle className="text-purple-600" />
+          Optional Documents
+        </h5>
+        <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+          {documentRequirements.optional.map((doc, index) => (
+            <li key={index}>{doc}</li>
+          ))}
+        </ul>
       </div>
+    )}
+  </div>
+</div>
 
       {/* Documents Count */}
       <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
@@ -6495,82 +6508,165 @@ const Payment = ({
 
   // Comprehensive list of Indian banks for auto-suggest
   const indianBanks = [
-    "State Bank of India",
-    "HDFC Bank",
-    "ICICI Bank",
-    "Punjab National Bank",
-    "Bank of Baroda",
-    "Canara Bank",
-    "Axis Bank",
-    "Union Bank of India",
-    "Bank of India",
-    "Indian Bank",
-    "Central Bank of India",
-    "IndusInd Bank",
-    "Kotak Mahindra Bank",
-    "Yes Bank",
-    "IDBI Bank",
-    "IDFC First Bank",
-    "Bandhan Bank",
-    "Federal Bank",
-    "RBL Bank",
-    "South Indian Bank",
-    "Karnataka Bank",
-    "Karur Vysya Bank",
-    "City Union Bank",
-    "DCB Bank",
-    "Jammu & Kashmir Bank",
-    "Dhanlaxmi Bank",
-    "DBS Bank India",
-    "Citibank India",
-    "Standard Chartered Bank",
-    "HSBC Bank India",
-    "Deutsche Bank",
-    "Baroda Rajasthan Kshetriya Gramin Bank",
-    "Andhra Pradesh Grameena Vikas Bank",
-    "Andhra Pragathi Grameena Bank",
-    "Saptagiri Grameena Bank",
-    "Chaitanya Godavari Grameena Bank",
-    "Assam Gramin Vikash Bank",
-    "Madhya Bihar Gramin Bank",
-    "Bihar Gramin Bank",
-    "Chhattisgarh Rajya Gramin Bank",
-    "Saurashtra Gramin Bank",
-    "Baroda Gujarat Gramin Bank",
-    "Himachal Pradesh Gramin Bank",
-    "Ellaquai Dehati Bank",
-    "Jammu and Kashmir Grameen Bank",
-    "Jharkhand Rajya Gramin Bank",
-    "Karnataka Gramin Bank",
-    "Karnataka Vikas Grameena Bank",
-    "Kerala Gramin Bank",
-    "Madhya Pradesh Gramin Bank",
-    "Maharashtra Gramin Bank",
-    "Manipur Rural Bank",
-    "Meghalaya Rural Bank",
-    "Mizoram Rural Bank",
-    "Nagaland Rural Bank",
-    "Odisha Gramya Bank",
-    "Puduvai Bharathiar Grama Bank",
-    "Punjab Gramin Bank",
-    "Rajasthan Marudhara Gramin Bank",
-    "Tamil Nadu Grama Bank",
-    "Telangana Grameena Bank",
-    "Tripura Gramin Bank",
-    "Uttar Bihar Gramin Bank",
-    "Uttarakhand Gramin Bank",
-    "Uttar Pradesh Gramin Bank",
-    "West Bengal Gramin Bank"
-  ];
+  "Bank of Baroda",
+  "Bank of India",
+  "Bank of Maharashtra",
+  "Canara Bank",
+  "Central Bank of India",
+  "Indian Bank",
+  "Indian Overseas Bank",
+  "Punjab & Sind Bank",
+  "Punjab National Bank",
+  "State Bank of India",
+  "UCO Bank",
+  "Union Bank of India",
+  "Axis Bank Ltd.",
+  "Bandhan Bank Ltd.",
+  "CSB Bank Ltd.",
+  "City Union Bank Ltd.",
+  "DCB Bank Ltd.",
+  "Dhanlaxmi Bank Ltd.",
+  "Federal Bank Ltd.",
+  "HDFC Bank Ltd.",
+  "ICICI Bank Ltd.",
+  "IndusInd Bank Ltd.",
+  "IDFC FIRST Bank Ltd.",
+  "Jammu & Kashmir Bank Ltd.",
+  "Karnataka Bank Ltd.",
+  "Karur Vysya Bank Ltd.",
+  "Kotak Mahindra Bank Ltd.",
+  "Nainital Bank Ltd.",
+  "RBL Bank Ltd.",
+  "South Indian Bank Ltd.",
+  "Tamilnad Mercantile Bank Ltd.",
+  "YES Bank Ltd.",
+  "IDBI Bank Ltd.",
+  "Coastal Local Area Bank Ltd.",
+  "Krishna Bhima Samruddhi Local Area Bank Ltd.",
+  "AU Small Finance Bank Ltd.",
+  "Capital Small Finance Bank Ltd.",
+  "Equitas Small Finance Bank Ltd.",
+  "ESAF Small Finance Bank Ltd.",
+  "Suryoday Small Finance Bank Ltd.",
+  "Ujjivan Small Finance Bank Ltd.",
+  "Utkarsh Small Finance Bank Ltd.",
+  "slice Small Finance Bank Ltd.",
+  "Jana Small Finance Bank Ltd.",
+  "Shivalik Small Finance Bank Ltd.",
+  "Unity Small Finance Bank Ltd.",
+  "Airtel Payments Bank Ltd.",
+  "India Post Payments Bank Ltd.",
+  "Fino Payments Bank Ltd.",
+  "Paytm Payments Bank Ltd.",
+  "Jio Payments Bank Ltd.",
+  "NSDL Payments Bank Ltd.",
+  "Assam Gramin Vikash Bank",
+  "Andhra Pradesh Grameena Vikas Bank",
+  "Andhra Pragathi Grameena Bank",
+  "Arunachal Pradesh Rural Bank",
+  "Aryavart Bank",
+  "Bangiya Gramin Vikash Bank",
+  "Baroda Gujarat Gramin Bank",
+  "Baroda Rajasthan Kshetriya Gramin Bank",
+  "Baroda UP Bank",
+  "Chaitanya Godavari Grameena Bank",
+  "Chhattisgarh Rajya Gramin Bank",
+  "Dakshin Bihar Gramin Bank",
+  "Ellaquai Dehati Bank",
+  "Himachal Pradesh Gramin Bank",
+  "J&K Grameen Bank",
+  "Jharkhand Rajya Gramin Bank",
+  "Karnataka Gramin Bank",
+  "Karnataka Vikas Grameena Bank",
+  "Kerala Gramin Bank",
+  "Madhya Pradesh Gramin Bank",
+  "Madhyanchal Gramin Bank",
+  "Maharashtra Gramin Bank",
+  "Manipur Rural Bank",
+  "Meghalaya Rural Bank",
+  "Mizoram Rural Bank",
+  "Nagaland Rural Bank",
+  "Odisha Gramya Bank",
+  "Paschim Banga Gramin Bank",
+  "Prathama U.P. Gramin Bank",
+  "Puduvai Bharathiar Grama Bank",
+  "Punjab Gramin Bank",
+  "Rajasthan Marudhara Gramin Bank",
+  "Saptagiri Grameena Bank",
+  "Sarva Haryana Gramin Bank",
+  "Saurashtra Gramin Bank",
+  "Tamil Nadu Grama Bank",
+  "Telangana Grameena Bank",
+  "Tripura Gramin Bank",
+  "Uttar Bihar Gramin Bank",
+  "Utkal Grameen Bank",
+  "Uttarbanga Kshetriya Gramin Bank",
+  "Vidharbha Konkan Gramin Bank",
+  "Uttarakhand Gramin Bank",
+  "AB Bank Ltd.",
+  "American Express Banking Corporation",
+  "Australia and New Zealand Banking Group Ltd.",
+  "Barclays Bank PLC",
+  "Bank of America",
+  "Bank of Bahrain and Kuwait B.S.C.",
+  "Bank of Ceylon",
+  "Bank of China Ltd.",
+  "Bank of Nova Scotia",
+  "BNP Paribas",
+  "Citibank N.A.",
+  "Coöperatieve Rabobank U.A.",
+  "Credit Agricole CIB",
+  "CTBC Bank Co., Ltd.",
+  "DBS Bank India Ltd.",
+  "Deutsche Bank AG",
+  "Doha Bank Q.P.S.C",
+  "Emirates NBD Bank P.J.S.C",
+  "First Abu Dhabi Bank PJSC",
+  "FirstRand Bank Ltd.",
+  "HSBC",
+  "Industrial and Commercial Bank of China",
+  "Industrial Bank of Korea",
+  "J.P. Morgan Chase Bank N.A.",
+  "JSC VTB Bank",
+  "KEB Hana Bank",
+  "Kookmin Bank",
+  "Mashreqbank P.S.C.",
+  "Mizuho Bank Ltd.",
+  "MUFG Bank, Ltd.",
+  "NongHyup Bank",
+  "NatWest Markets Plc",
+  "PT Bank Maybank Indonesia Tbk",
+  "Qatar National Bank (Q.P.S.C.)",
+  "Sberbank",
+  "Bajaj Finance Ltd.",
+  "Shriram Finance Ltd.",
+  "Mahindra & Mahindra Financial Services Ltd.",
+  "LIC Housing Finance Ltd.",
+  "PNB Housing Finance Ltd.",
+  "Sundaram Finance Ltd.",
+  "L&T Finance Ltd."
+];
 
-  // State for bank suggestions
-  const [bankSuggestions, setBankSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeBankIndex, setActiveBankIndex] = useState(-1);
 
-  // State for editing payment
-  const [editingPayment, setEditingPayment] = useState(null);
-  const [editFormData, setEditFormData] = useState({});
+  // State for bank suggestions - now separate for each field
+  const [bankSuggestions, setBankSuggestions] = useState({
+    customer: [],
+    inHouse: [],
+    autoCredit: []
+  });
+  const [showSuggestions, setShowSuggestions] = useState({
+    customer: false,
+    inHouse: false,
+    autoCredit: false
+  });
+
+  // State for editing payment - FIXED: Combined state to prevent unnecessary re-renders
+  const [editingState, setEditingState] = useState({
+    isEditing: false,
+    paymentId: null,
+    formData: {},
+    amountInput: ''
+  });
 
   // State for subvention/discount
   const [showSubventionForm, setShowSubventionForm] = useState(false);
@@ -6587,22 +6683,40 @@ const Payment = ({
   // State for auto credit amount - equals final premium minus subvention refunds
   const [autoCreditAmount, setAutoCreditAmount] = useState(finalPremiumAmount || "");
 
-  // FIXED: Sync payment ledger with parent component
+  // FIXED: Use ref for debouncing to prevent re-renders
+  const debounceTimeouts = useRef({});
+
+  // FIXED: Sync payment ledger with parent component - optimized to prevent loops
   useEffect(() => {
     if (propPaymentLedger && JSON.stringify(propPaymentLedger) !== JSON.stringify(paymentLedger)) {
       setPaymentLedger(propPaymentLedger);
     }
   }, [propPaymentLedger]);
 
-  // FIXED: Recalculate totals when ledger changes
+  // FIXED: Recalculate totals when ledger changes - memoized to prevent unnecessary re-renders
+  const totalCustomerPayments = useMemo(() => {
+    return paymentLedger
+      .filter(payment => payment.paymentMadeBy === "Customer" && payment.type !== "subvention_refund")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  }, [paymentLedger]);
+
+  const totalSubventionRefund = useMemo(() => {
+    return paymentLedger
+      .filter(payment => payment.type === "subvention_refund")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  }, [paymentLedger]);
+
+  const netPremium = useMemo(() => Math.max(finalPremiumAmount - totalSubventionRefund, 0), [finalPremiumAmount, totalSubventionRefund]);
+  const customerRemainingAmount = useMemo(() => Math.max(netPremium - totalCustomerPayments, 0), [netPremium, totalCustomerPayments]);
+  const paymentProgress = useMemo(() => netPremium > 0 ? Math.min((totalCustomerPayments / netPremium) * 100, 100) : 100, [netPremium, totalCustomerPayments]);
+  const overallPaymentStatus = useMemo(() => totalCustomerPayments >= netPremium ? 'Fully Paid' : 'Payment Pending', [totalCustomerPayments, netPremium]);
+
+  // FIXED: Update payment status when totals change
   useEffect(() => {
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = calculateOverallPaymentStatus();
-    
     handleChange({
       target: {
         name: 'paymentStatus',
-        value: paymentStatus
+        value: overallPaymentStatus
       }
     });
 
@@ -6612,42 +6726,9 @@ const Payment = ({
         value: totalCustomerPayments
       }
     });
-  }, [paymentLedger]);
+  }, [overallPaymentStatus, totalCustomerPayments]);
 
-  // Calculate total customer payments (both direct and via in house)
-  const calculateTotalCustomerPayments = () => {
-    return paymentLedger
-      .filter(payment => payment.paymentMadeBy === "Customer" && payment.type !== "subvention_refund")
-      .reduce((sum, payment) => sum + payment.amount, 0);
-  };
-
-  // Calculate remaining amount that customer can pay
-  const calculateCustomerRemainingAmount = () => {
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const totalSubventionRefund = calculateTotalSubventionRefund();
-    const netAmount = finalPremiumAmount - totalSubventionRefund;
-    return Math.max(netAmount - totalCustomerPayments, 0);
-  };
-
-  // Calculate payment progress percentage (based only on customer payments)
-  const calculatePaymentProgress = () => {
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const totalSubventionRefund = calculateTotalSubventionRefund();
-    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
-    
-    return netPremium > 0 ? Math.min((totalCustomerPayments / netPremium) * 100, 100) : 100;
-  };
-
-  // Calculate overall payment status (based only on customer payments)
-  const calculateOverallPaymentStatus = () => {
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const totalSubventionRefund = calculateTotalSubventionRefund();
-    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
-    
-    return totalCustomerPayments >= netPremium ? 'Fully Paid' : 'Payment Pending';
-  };
-
-  // FIXED: Calculate individual payment status - Customer payments show Pending if remaining amount > 0
+  // Calculate individual payment status - Customer payments show Pending if remaining amount > 0
   const calculatePaymentStatus = (payment) => {
     if (payment.type === "auto_credit") {
       return 'Completed'; // Auto credit always completed
@@ -6658,10 +6739,6 @@ const Payment = ({
     }
     
     // For customer payments, check if total paid covers the payment
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const totalSubventionRefund = calculateTotalSubventionRefund();
-    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
-    
     if (payment.paymentMadeBy === "Customer") {
       return totalCustomerPayments >= netPremium ? 'Completed' : 'Pending';
     }
@@ -6691,13 +6768,6 @@ const Payment = ({
     { value: "In House", label: "In House" }
   ];
 
-  // Calculate total subvention refund amount - FIXED: Consistent calculation
-  const calculateTotalSubventionRefund = () => {
-    return paymentLedger
-      .filter(payment => payment.type === "subvention_refund")
-      .reduce((sum, payment) => sum + payment.amount, 0);
-  };
-
   // NEW: Handle adding individual subvention amounts one by one
   const handleAddSubventionEntry = () => {
     if (!subventionAmount || subventionAmount <= 0) {
@@ -6706,7 +6776,6 @@ const Payment = ({
     }
 
     const amount = parseFloat(subventionAmount);
-    const totalSubventionRefund = calculateTotalSubventionRefund();
     const remainingSubventionCapacity = finalPremiumAmount - totalSubventionRefund;
 
     if (amount > remainingSubventionCapacity) {
@@ -6733,7 +6802,6 @@ const Payment = ({
     }
 
     const totalSubventionAmount = subventionEntries.reduce((sum, entry) => sum + entry.amount, 0);
-    const totalExistingSubvention = calculateTotalSubventionRefund();
     
     if (totalSubventionAmount > finalPremiumAmount) {
       alert("Total subvention amount cannot exceed final premium amount");
@@ -6770,10 +6838,6 @@ const Payment = ({
         onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
       }
       
-      // Update payment status and totals
-      const totalCustomerPayments = calculateTotalCustomerPayments();
-      const paymentStatus = calculateOverallPaymentStatus();
-
       const paymentData = {
         payment_info: {
           paymentMadeBy: form.paymentMadeBy,
@@ -6784,9 +6848,9 @@ const Payment = ({
           receiptDate: form.receiptDate || '',
           bankName: form.bankName || '',
           subvention_payment: "Subvention Refund Applied",
-          paymentStatus: paymentStatus,
+          paymentStatus: overallPaymentStatus,
           totalPaidAmount: totalCustomerPayments,
-          totalSubventionRefund: totalSubventionAmount + totalExistingSubvention
+          totalSubventionRefund: totalSubventionAmount + totalSubventionRefund
         },
         payment_ledger: updatedLedgerWithAutoCreditStatus
       };
@@ -6831,7 +6895,7 @@ const Payment = ({
     return 'Completed';
   };
 
-  // Handle bank name input change with auto-suggest
+  // UPDATED: Handle bank name input change with auto-suggest - now field-specific with same pattern as VehicleDetails
   const handleBankNameChange = (e, bankType = 'customer') => {
     const value = e.target.value;
     
@@ -6859,22 +6923,64 @@ const Payment = ({
       });
     }
     
-    // Show suggestions if input is not empty
+    // Show suggestions for this specific field if input is not empty
     if (value.length > 0) {
       const filteredBanks = indianBanks.filter(bank =>
         bank.toLowerCase().includes(value.toLowerCase())
       );
-      setBankSuggestions(filteredBanks);
-      setShowSuggestions(true);
-      setActiveBankIndex(-1);
+      
+      setBankSuggestions(prev => ({
+        ...prev,
+        [bankType]: filteredBanks
+      }));
+      setShowSuggestions(prev => ({
+        ...prev,
+        [bankType]: true
+      }));
     } else {
-      setShowSuggestions(false);
-      setBankSuggestions([]);
+      setShowSuggestions(prev => ({
+        ...prev,
+        [bankType]: false
+      }));
+      setBankSuggestions(prev => ({
+        ...prev,
+        [bankType]: []
+      }));
     }
   };
 
-  // Handle bank suggestion selection
+  // UPDATED: Handle bank focus - show suggestions when field is focused (same as VehicleDetails)
+  const handleBankFocus = (bankType = 'customer') => {
+    const currentValue = 
+      bankType === 'customer' ? form.customerBankName || '' :
+      bankType === 'inHouse' ? form.inHouseBankName || '' :
+      form.autoCreditBankName || '';
+    
+    if (currentValue) {
+      const filteredBanks = indianBanks.filter(bank =>
+        bank.toLowerCase().includes(currentValue.toLowerCase())
+      );
+      setBankSuggestions(prev => ({
+        ...prev,
+        [bankType]: filteredBanks
+      }));
+    } else {
+      setBankSuggestions(prev => ({
+        ...prev,
+        [bankType]: indianBanks
+      }));
+    }
+    
+    setShowSuggestions(prev => ({
+      ...prev,
+      [bankType]: true
+    }));
+  };
+
+  // UPDATED: Handle bank suggestion selection (same as VehicleDetails)
   const handleBankSelect = (bankName, bankType = 'customer') => {
+    console.log("Selected bank:", bankName, "for type:", bankType);
+    
     if (bankType === 'customer') {
       handleChange({
         target: {
@@ -6897,56 +7003,43 @@ const Payment = ({
         }
       });
     }
-    setShowSuggestions(false);
-    setBankSuggestions([]);
-    setActiveBankIndex(-1);
+    
+    setShowSuggestions(prev => ({
+      ...prev,
+      [bankType]: false
+    }));
   };
 
-  // Handle keyboard navigation for bank suggestions
-  const handleBankKeyDown = (e, bankType = 'customer') => {
-    if (!showSuggestions) return;
-
-    let bankFieldValue;
-    if (bankType === 'customer') {
-      bankFieldValue = form.customerBankName;
-    } else if (bankType === 'inHouse') {
-      bankFieldValue = form.inHouseBankName;
-    } else if (bankType === 'autoCredit') {
-      bankFieldValue = form.autoCreditBankName;
-    }
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setActiveBankIndex(prev => 
-          prev < bankSuggestions.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setActiveBankIndex(prev => prev > 0 ? prev - 1 : -1);
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (activeBankIndex >= 0 && bankSuggestions[activeBankIndex]) {
-          handleBankSelect(bankSuggestions[activeBankIndex], bankType);
-        }
-        break;
-      case 'Escape':
-        setShowSuggestions(false);
-        setActiveBankIndex(-1);
-        break;
-      default:
-        break;
-    }
-  };
-
-  // Close suggestions when clicking outside
+  // UPDATED: Close suggestions when clicking outside - field specific with proper z-index handling
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.bank-suggestions-container')) {
-        setShowSuggestions(false);
-        setActiveBankIndex(-1);
+      // If any modal is open, don't close bank suggestions on outside click
+      if (editingState.isEditing || showSubventionForm) return;
+      
+      const bankInputs = document.querySelectorAll('.bank-suggestions-container input[type="text"]');
+      const suggestionLists = document.querySelectorAll('.bank-suggestions-list');
+      
+      let isBankInput = false;
+      let isSuggestionList = false;
+      
+      bankInputs.forEach(input => {
+        if (input.contains(event.target)) {
+          isBankInput = true;
+        }
+      });
+      
+      suggestionLists.forEach(list => {
+        if (list.contains(event.target)) {
+          isSuggestionList = true;
+        }
+      });
+      
+      if (!isBankInput && !isSuggestionList) {
+        setShowSuggestions({
+          customer: false,
+          inHouse: false,
+          autoCredit: false
+        });
       }
     };
 
@@ -6954,7 +7047,7 @@ const Payment = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [editingState.isEditing, showSubventionForm]);
 
   // Handle radio button change
   const handleRadioChange = (fieldName, value) => {
@@ -6978,104 +7071,141 @@ const Payment = ({
     });
   };
 
-  // FIXED: EDIT PAYMENT FUNCTIONS - Completely rewritten input handling
+  // FIXED: EDIT PAYMENT FUNCTIONS - Completely rewritten without debouncing
   const handleEditPayment = (payment) => {
     console.log("Editing payment:", payment);
-    setEditingPayment(payment.id);
-    setEditFormData({
-      date: payment.date,
-      description: payment.description,
-      amount: payment.amount.toString(), // Store as string for free editing
-      mode: payment.mode,
-      status: payment.status,
-      transactionId: payment.transactionId || '',
-      bankName: payment.bankName || '',
-      paymentMadeBy: payment.paymentMadeBy,
-      receiptDate: payment.receiptDate || payment.date,
-      payoutBy: payment.payoutBy
+    setEditingState({
+      isEditing: true,
+      paymentId: payment.id,
+      formData: {
+        date: payment.date,
+        description: payment.description,
+        amount: payment.amount,
+        mode: payment.mode,
+        status: payment.status,
+        transactionId: payment.transactionId || '',
+        bankName: payment.bankName || '',
+        paymentMadeBy: payment.paymentMadeBy,
+        receiptDate: payment.receiptDate || payment.date,
+        payoutBy: payment.payoutBy
+      },
+      amountInput: payment.amount.toString()
     });
   };
 
-  // FIXED: Simple input handling that allows multiple digits
-  // const handleEditFormChange = (e) => {
-  //   const { name, value } = e.target;
+  // FIXED: Edit payment function with proper state management
+  const handleSaveEdit = async () => {
+    const { paymentId, formData, amountInput } = editingState;
     
-  //   setEditFormData(prev => ({
-  //     ...prev,
-  //     [name]: value
-  //   }));
-  // };
-// FIXED: Edit payment function that works with the new EditPaymentForm component
-const handleSaveEdit = async (editedData) => {
-  console.log("Saving edited payment:", editedData);
-  
-  if (!editedData.amount || !editedData.date || !editedData.mode) {
-    alert("Please fill all required fields (Amount, Date, and Payment Mode)");
-    return;
-  }
-
-  try {
-    const updatedLedger = paymentLedger.map(payment => 
-      payment.id === editingPayment 
-        ? { 
-            ...payment, 
-            ...editedData
-          }
-        : payment
-    );
-
-    console.log("Updated ledger after edit:", updatedLedger);
-
-    // Update auto credit status if needed
-    const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
+    console.log("Saving edited payment:", formData);
     
-    // FIXED: Update local state immediately
-    setPaymentLedger(updatedLedgerWithAutoCreditStatus);
-    
-    // FIXED: Notify parent component about ledger update immediately
-    if (onPaymentLedgerUpdate) {
-      onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
+    if (!amountInput || !formData.date || !formData.mode) {
+      alert("Please fill all required fields (Amount, Date, and Payment Mode)");
+      return;
     }
-    
-    // Update payment status and totals
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = calculateOverallPaymentStatus();
 
-    const paymentData = {
-      payment_info: {
-        paymentMadeBy: form.paymentMadeBy || "Customer",
-        paymentMode: form.paymentMode || "",
-        paymentAmount: parseFloat(form.paymentAmount) || 0,
-        paymentDate: form.paymentDate || '',
-        transactionId: form.transactionId || '',
-        receiptDate: form.receiptDate || '',
-        bankName: form.bankName || '',
-        subvention_payment: form.paymentMode?.includes('Subvention') ? form.paymentMode : "No Subvention",
-        paymentStatus: paymentStatus,
-        totalPaidAmount: totalCustomerPayments
-      },
-      payment_ledger: updatedLedgerWithAutoCreditStatus
-    };
+    const amountToSave = parseFloat(amountInput);
+    if (isNaN(amountToSave) || amountToSave <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
 
-    console.log("Saving payment data after edit:", paymentData);
+    try {
+      const updatedLedger = paymentLedger.map(payment => 
+        payment.id === paymentId 
+          ? { 
+              ...payment, 
+              ...formData,
+              amount: amountToSave
+            }
+          : payment
+      );
 
-    // Save to backend
-    await handleSave(paymentData);
-    
-    // FIXED: Close edit form only after successful save
-    setEditingPayment(null);
-    
-    alert("Payment updated successfully!");
-    
-  } catch (error) {
-    console.error('Error saving edited payment:', error);
-    alert('Error saving edited payment. Please try again.');
-  }
-};
+      console.log("Updated ledger after edit:", updatedLedger);
+
+      // Update auto credit status if needed
+      const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
+      
+      // FIXED: Update local state immediately
+      setPaymentLedger(updatedLedgerWithAutoCreditStatus);
+      
+      // FIXED: Notify parent component about ledger update immediately
+      if (onPaymentLedgerUpdate) {
+        onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
+      }
+      
+      const paymentData = {
+        payment_info: {
+          paymentMadeBy: form.paymentMadeBy || "Customer",
+          paymentMode: form.paymentMode || "",
+          paymentAmount: parseFloat(form.paymentAmount) || 0,
+          paymentDate: form.paymentDate || '',
+          transactionId: form.transactionId || '',
+          receiptDate: form.receiptDate || '',
+          bankName: form.bankName || '',
+          subvention_payment: form.paymentMode?.includes('Subvention') ? form.paymentMode : "No Subvention",
+          paymentStatus: overallPaymentStatus,
+          totalPaidAmount: totalCustomerPayments
+        },
+        payment_ledger: updatedLedgerWithAutoCreditStatus
+      };
+
+      console.log("Saving payment data after edit:", paymentData);
+
+      // Save to backend
+      await handleSave(paymentData);
+      
+      // FIXED: Close edit form only after successful save
+      setEditingState({
+        isEditing: false,
+        paymentId: null,
+        formData: {},
+        amountInput: ''
+      });
+      
+      alert("Payment updated successfully!");
+      
+    } catch (error) {
+      console.error('Error saving edited payment:', error);
+      alert('Error saving edited payment. Please try again.');
+    }
+  };
 
   const handleCancelEdit = () => {
-    setEditingPayment(null);
-    setEditFormData({});
+    setEditingState({
+      isEditing: false,
+        paymentId: null,
+        formData: {},
+        amountInput: ''
+      });
+    };
+
+  // FIXED: Handle edit form input changes WITHOUT debouncing - immediate updates
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target;
+    
+    setEditingState(prev => {
+      // For amount field, update both the input and formData immediately
+      if (name === 'amount') {
+        return {
+          ...prev,
+          amountInput: value,
+          formData: {
+            ...prev.formData,
+            [name]: value
+          }
+        };
+      }
+      
+      // For other fields, update formData immediately
+      return {
+        ...prev,
+        formData: {
+          ...prev.formData,
+          [name]: value
+        }
+      };
+    });
   };
 
   // Add payment to ledger function for Customer
@@ -7086,7 +7216,6 @@ const handleSaveEdit = async (editedData) => {
     }
 
     const paymentAmount = parseFloat(form.customerPaymentAmount);
-    const customerRemainingAmount = calculateCustomerRemainingAmount();
 
     // Check if payment amount exceeds remaining amount
     if (paymentAmount > customerRemainingAmount) {
@@ -7095,9 +7224,6 @@ const handleSaveEdit = async (editedData) => {
     }
 
     // FIXED: Calculate status based on remaining amount
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const totalSubventionRefund = calculateTotalSubventionRefund();
-    const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
     const paymentStatus = (totalCustomerPayments + paymentAmount) >= netPremium ? 'Completed' : 'Pending';
 
     const newPayment = {
@@ -7128,10 +7254,6 @@ const handleSaveEdit = async (editedData) => {
       onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
     }
     
-    // Update payment status and totals
-    const newTotalCustomerPayments = calculateTotalCustomerPayments();
-    const overallPaymentStatus = calculateOverallPaymentStatus();
-
     const paymentData = {
       payment_info: {
         paymentMadeBy: "Customer",
@@ -7143,7 +7265,7 @@ const handleSaveEdit = async (editedData) => {
         bankName: form.customerBankName || '',
         subvention_payment: form.customerPaymentMode.includes('Subvention') ? form.customerPaymentMode : "No Subvention",
         paymentStatus: overallPaymentStatus,
-        totalPaidAmount: newTotalCustomerPayments
+        totalPaidAmount: totalCustomerPayments + paymentAmount
       },
       payment_ledger: updatedLedgerWithAutoCreditStatus
     };
@@ -7208,7 +7330,6 @@ const handleSaveEdit = async (editedData) => {
     // Add customer payment entry if customer payment section is filled
     if (isCustomerPaymentFilled) {
       const paymentAmount = parseFloat(form.inHousePaymentAmount);
-      const customerRemainingAmount = calculateCustomerRemainingAmount();
 
       // Check if payment amount exceeds remaining amount
       if (paymentAmount > customerRemainingAmount) {
@@ -7217,9 +7338,6 @@ const handleSaveEdit = async (editedData) => {
       }
 
       // FIXED: Calculate status based on remaining amount
-      const totalCustomerPayments = calculateTotalCustomerPayments();
-      const totalSubventionRefund = calculateTotalSubventionRefund();
-      const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
       const paymentStatus = (totalCustomerPayments + paymentAmount) >= netPremium ? 'Completed' : 'Pending';
 
       const customerPaymentEntry = {
@@ -7251,10 +7369,6 @@ const handleSaveEdit = async (editedData) => {
       onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
     }
     
-    // Update payment status and totals
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = calculateOverallPaymentStatus();
-
     const paymentData = {
       payment_info: {
         paymentMadeBy: "In House",
@@ -7270,8 +7384,8 @@ const handleSaveEdit = async (editedData) => {
         receiptDate: form.inHouseReceiptDate || form.inHousePaymentDate || '',
         bankName: form.inHouseBankName || '',
         subvention_payment: "No Subvention", // In House payments don't have subvention
-        paymentStatus: paymentStatus,
-        totalPaidAmount: totalCustomerPayments
+        paymentStatus: overallPaymentStatus,
+        totalPaidAmount: totalCustomerPayments + (form.inHousePaymentAmount ? parseFloat(form.inHousePaymentAmount) : 0)
       },
       payment_ledger: updatedLedgerWithAutoCreditStatus
     };
@@ -7327,7 +7441,6 @@ const handleSaveEdit = async (editedData) => {
       return;
     }
 
-    const paymentToDelete = paymentLedger.find(payment => payment.id === paymentId);
     let updatedLedger = paymentLedger.filter(payment => payment.id !== paymentId);
     
     // Update auto credit status after deletion
@@ -7341,10 +7454,6 @@ const handleSaveEdit = async (editedData) => {
       onPaymentLedgerUpdate(updatedLedger);
     }
     
-    // Update payment status and totals
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = calculateOverallPaymentStatus();
-
     const paymentData = {
       payment_info: {
         paymentMadeBy: form.paymentMadeBy,
@@ -7355,7 +7464,7 @@ const handleSaveEdit = async (editedData) => {
         receiptDate: form.receiptDate || '',
         bankName: form.bankName || '',
         subvention_payment: "No Subvention",
-        paymentStatus: paymentStatus,
+        paymentStatus: overallPaymentStatus,
         totalPaidAmount: totalCustomerPayments
       },
       payment_ledger: updatedLedger
@@ -7366,21 +7475,6 @@ const handleSaveEdit = async (editedData) => {
     try {
       // Save updated data to backend
       await handleSave(paymentData);
-      
-      // Update form state with new totals
-      handleChange({
-        target: {
-          name: 'paymentStatus',
-          value: paymentStatus
-        }
-      });
-
-      handleChange({
-        target: {
-          name: 'totalPaidAmount',
-          value: totalCustomerPayments
-        }
-      });
 
     } catch (error) {
       console.error('Error deleting payment:', error);
@@ -7390,9 +7484,6 @@ const handleSaveEdit = async (editedData) => {
 
   // Handle next step - UPDATED: Allow proceeding even if customer hasn't paid fully
   const handleNextStep = async () => {
-    const totalCustomerPayments = calculateTotalCustomerPayments();
-    const paymentStatus = calculateOverallPaymentStatus();
-    
     const finalPaymentData = {
       payment_info: {
         paymentMadeBy: form.paymentMadeBy,
@@ -7403,28 +7494,13 @@ const handleSaveEdit = async (editedData) => {
         receiptDate: form.receiptDate || '',
         bankName: form.bankName || '',
         subvention_payment: form.paymentMode.includes('Subvention') ? form.paymentMode : "No Subvention",
-        paymentStatus: paymentStatus,
+        paymentStatus: overallPaymentStatus,
         totalPaidAmount: totalCustomerPayments
       },
       payment_ledger: paymentLedger
     };
 
     console.log("💰 Final payment data before next step:", finalPaymentData);
-
-    // Update payment status in form
-    handleChange({
-      target: {
-        name: 'paymentStatus',
-        value: paymentStatus
-      }
-    });
-
-    handleChange({
-      target: {
-        name: 'totalPaidAmount',
-        value: totalCustomerPayments
-      }
-    });
 
     // Save current state before proceeding
     try {
@@ -7485,12 +7561,6 @@ const handleSaveEdit = async (editedData) => {
   // Check if auto credit entry exists
   const autoCreditExists = paymentLedger.some(payment => payment.type === "auto_credit");
   const autoCreditStatus = calculateAutoCreditStatus();
-  const totalCustomerPayments = calculateTotalCustomerPayments();
-  const totalSubventionRefund = calculateTotalSubventionRefund();
-  const customerRemainingAmount = calculateCustomerRemainingAmount();
-  const paymentProgress = calculatePaymentProgress();
-  const overallPaymentStatus = calculateOverallPaymentStatus();
-  const netPremium = Math.max(finalPremiumAmount - totalSubventionRefund, 0);
 
   // UPDATED: Check if at least one section is filled for In House payment
   const isInHousePaymentValid = () => {
@@ -7539,7 +7609,7 @@ const handleSaveEdit = async (editedData) => {
     
     // Always set to final premium amount
     setAutoCreditAmount(finalPremiumAmount);
-  }, [finalPremiumAmount, totalSubventionRefund]);
+  }, [finalPremiumAmount]);
 
   const paymentStatusColor = overallPaymentStatus === 'Fully Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
   
@@ -7548,266 +7618,349 @@ const handleSaveEdit = async (editedData) => {
   const inHouseReceived = calculateInHouseReceivedAmount();
   const autoCreditTotal = calculateAutoCreditAmountTotal();
 
-  // Bank Suggestions Component
+  // UPDATED: Bank Suggestions Component - FIXED: Now properly clickable and selectable
   const BankSuggestions = ({ bankType = 'customer' }) => {
-    if (!showSuggestions || bankSuggestions.length === 0) return null;
+    if (!showSuggestions[bankType] || bankSuggestions[bankType].length === 0) return null;
 
     return (
-      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-        {bankSuggestions.map((bank, index) => (
+      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto bank-suggestions-list">
+        {bankSuggestions[bankType].map((bank, index) => (
           <div
-            key={bank}
-            className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
-              index === activeBankIndex ? 'bg-blue-50 border border-blue-200' : ''
-            } ${index !== bankSuggestions.length - 1 ? 'border-b border-gray-100' : ''}`}
-            onClick={() => handleBankSelect(bank, bankType)}
-            onMouseEnter={() => setActiveBankIndex(index)}
+            key={index}
+            className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm transition-colors duration-150"
+            onClick={() => {
+              console.log("Bank clicked:", bank);
+              handleBankSelect(bank, bankType);
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault(); // This is the key fix - prevents blur event
+            }}
           >
-            <div className="text-sm text-gray-800">{bank}</div>
+            {bank}
           </div>
         ))}
       </div>
     );
   };
 
-  // FIXED: Edit Form Component with proper input handling for multiple digits
-  // FIXED: Edit Form Component with proper local state management
-const EditPaymentForm = ({ payment, onSave, onCancel }) => {
-  const [localEditForm, setLocalEditForm] = useState({
-    date: payment.date || '',
-    description: payment.description || '',
-    amount: payment.amount?.toString() || '',
-    mode: payment.mode || '',
-    status: payment.status || 'Completed',
-    transactionId: payment.transactionId || '',
-    bankName: payment.bankName || '',
-    paymentMadeBy: payment.paymentMadeBy || 'Customer',
-    receiptDate: payment.receiptDate || payment.date || '',
-    payoutBy: payment.payoutBy || 'Customer'
-  });
-
-  // FIXED: Proper input handling that maintains focus
-  const handleLocalChange = (e) => {
-    const { name, value } = e.target;
+  // FIXED: Edit Payment Form Component with proper input handling
+  const EditPaymentForm = () => {
+    const payment = paymentLedger.find(p => p.id === editingState.paymentId);
     
-    setLocalEditForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleLocalSave = () => {
-    if (!localEditForm.amount || !localEditForm.date || !localEditForm.mode) {
-      alert("Please fill all required fields (Amount, Date, and Payment Mode)");
-      return;
+    if (!payment) {
+      setEditingState({
+        isEditing: false,
+        paymentId: null,
+        formData: {},
+        amountInput: ''
+      });
+      return null;
     }
 
-    const amountToSave = parseFloat(localEditForm.amount);
-    if (isNaN(amountToSave) || amountToSave <= 0) {
-      alert("Please enter a valid amount");
-      return;
-    }
+    // FIXED: Use a single state for amount input
+    const [localFormData, setLocalFormData] = useState({
+      date: editingState.formData.date || '',
+      description: editingState.formData.description || '',
+      amount: editingState.amountInput || editingState.formData.amount?.toString() || '',
+      mode: editingState.formData.mode || '',
+      status: editingState.formData.status || 'Completed',
+      transactionId: editingState.formData.transactionId || '',
+      bankName: editingState.formData.bankName || '',
+      paymentMadeBy: editingState.formData.paymentMadeBy || 'Customer',
+      receiptDate: editingState.formData.receiptDate || '',
+      payoutBy: editingState.formData.payoutBy || 'Customer'
+    });
 
-    const formDataToSave = {
-      ...localEditForm,
-      amount: amountToSave
+    const getPaymentModeOptions = () => {
+      return localFormData.paymentMadeBy === "Customer" 
+        ? customerPaymentModeOptions 
+        : inHousePaymentModeOptions;
     };
-    
-    onSave(formDataToSave);
-  };
 
-  const getPaymentModeOptions = () => {
-    return localEditForm.paymentMadeBy === "Customer" 
-      ? customerPaymentModeOptions 
-      : inHousePaymentModeOptions;
-  };
+    // FIXED: Handle all input changes in one function
+    const handleLocalFormChange = (e) => {
+      const { name, value } = e.target;
+      setLocalFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    };
 
-  return (
-    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">Edit Payment</h3>
+    // FIXED: Save function using local state
+    const handleSaveEdit = async () => {
+      console.log("Saving edited payment:", localFormData);
+      
+      if (!localFormData.amount || !localFormData.date || !localFormData.mode) {
+        alert("Please fill all required fields (Amount, Date, and Payment Mode)");
+        return;
+      }
+
+      const amountToSave = parseFloat(localFormData.amount);
+      if (isNaN(amountToSave) || amountToSave <= 0) {
+        alert("Please enter a valid amount");
+        return;
+      }
+
+      try {
+        const updatedLedger = paymentLedger.map(payment => 
+          payment.id === editingState.paymentId 
+            ? { 
+                ...payment, 
+                date: localFormData.date,
+                description: localFormData.description,
+                amount: amountToSave,
+                mode: localFormData.mode,
+                status: localFormData.status,
+                transactionId: localFormData.transactionId,
+                bankName: localFormData.bankName,
+                paymentMadeBy: localFormData.paymentMadeBy,
+                receiptDate: localFormData.receiptDate,
+                payoutBy: localFormData.payoutBy
+              }
+            : payment
+        );
+
+        console.log("Updated ledger after edit:", updatedLedger);
+
+        // Update auto credit status if needed
+        const updatedLedgerWithAutoCreditStatus = updateAutoCreditStatus(updatedLedger);
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Date *</label>
-            <input
-              type="date"
-              name="date"
-              value={localEditForm.date}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Amount (₹) *</label>
-            <INRCurrencyInput
-              type="number"
-              name="amount"
-              value={localEditForm.amount}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-              placeholder="Enter amount"
-              step="0.01"
-              min="0"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Current: ₹{formatIndianNumber(payment.amount)}
-            </p>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Payment Mode *</label>
-            <select
-              name="mode"
-              value={localEditForm.mode}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            >
-              <option value="">Select payment mode</option>
-              {getPaymentModeOptions().map(option => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-            <select
-              name="status"
-              value={localEditForm.status}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option value="Completed">Completed</option>
-              <option value="Pending">Pending</option>
-              <option value="Failed">Failed</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Transaction ID</label>
-            <input
-              type="text"
-              name="transactionId"
-              value={localEditForm.transactionId}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter transaction ID"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
-            <input
-              type="text"
-              name="bankName"
-              value={localEditForm.bankName}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter bank name"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
-            <input
-              type="text"
-              name="description"
-              value={localEditForm.description}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter description"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Receipt Date</label>
-            <input
-              type="date"
-              name="receiptDate"
-              value={localEditForm.receiptDate}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Payment Made By</label>
-            <select
-              name="paymentMadeBy"
-              value={localEditForm.paymentMadeBy}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              disabled
-            >
-              <option value="Customer">Customer</option>
-              <option value="In House">In House</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Payout By</label>
-            <select
-              name="payoutBy"
-              value={localEditForm.payoutBy}
-              onChange={handleLocalChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option value="Customer">Customer</option>
-              <option value="In House">In House</option>
-              <option value="Auto Credit to Insurance Company">Auto Credit to Insurance Company</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="mb-4 p-3 bg-gray-50 rounded-md">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Original Values:</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div><span className="text-gray-600">Amount:</span> ₹{formatIndianNumber(payment.amount)}</div>
-            <div><span className="text-gray-600">Date:</span> {payment.date}</div>
-            <div><span className="text-gray-600">Mode:</span> {payment.mode}</div>
-            <div><span className="text-gray-600">Status:</span> {payment.status}</div>
-          </div>
-        </div>
+        // Update local state immediately
+        setPaymentLedger(updatedLedgerWithAutoCreditStatus);
         
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleLocalSave}
-            className="px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-          >
-            Save Changes
-          </button>
+        // Notify parent component about ledger update immediately
+        if (onPaymentLedgerUpdate) {
+          onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
+        }
+        
+        const paymentData = {
+          payment_info: {
+            paymentMadeBy: form.paymentMadeBy || "Customer",
+            paymentMode: form.paymentMode || "",
+            paymentAmount: parseFloat(form.paymentAmount) || 0,
+            paymentDate: form.paymentDate || '',
+            transactionId: form.transactionId || '',
+            receiptDate: form.receiptDate || '',
+            bankName: form.bankName || '',
+            subvention_payment: form.paymentMode?.includes('Subvention') ? form.paymentMode : "No Subvention",
+            paymentStatus: overallPaymentStatus,
+            totalPaidAmount: totalCustomerPayments
+          },
+          payment_ledger: updatedLedgerWithAutoCreditStatus
+        };
+
+        console.log("Saving payment data after edit:", paymentData);
+
+        // Save to backend
+        await handleSave(paymentData);
+        
+        // Close edit form only after successful save
+        setEditingState({
+          isEditing: false,
+          paymentId: null,
+          formData: {},
+          amountInput: ''
+        });
+        
+        alert("Payment updated successfully!");
+        
+      } catch (error) {
+        console.error('Error saving edited payment:', error);
+        alert('Error saving edited payment. Please try again.');
+      }
+    };
+
+    const handleCancelEdit = () => {
+      setEditingState({
+        isEditing: false,
+        paymentId: null,
+        formData: {},
+        amountInput: ''
+      });
+    };
+
+    return (
+      <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800">Edit Payment</h3>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Date *</label>
+                <input
+                  type="date"
+                  name="date"
+                  value={localFormData.date}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Amount (₹) *</label>
+                <INRCurrencyInput
+                  type="text"
+                  name="amount"
+                  value={localFormData.amount}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  required
+                  placeholder="Enter amount"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Original: ₹{formatIndianNumber(payment.amount)}
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Payment Mode *</label>
+                <select
+                  name="mode"
+                  value={localFormData.mode}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  required
+                >
+                  <option value="">Select payment mode</option>
+                  {getPaymentModeOptions().map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+                <select
+                  name="status"
+                  value={localFormData.status}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="Completed">Completed</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Failed">Failed</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Transaction ID</label>
+                <input
+                  type="text"
+                  name="transactionId"
+                  value={localFormData.transactionId}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Enter transaction ID"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
+                <input
+                  type="text"
+                  name="bankName"
+                  value={localFormData.bankName}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Enter bank name"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
+                <input
+                  type="text"
+                  name="description"
+                  value={localFormData.description}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Enter description"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Receipt Date</label>
+                <input
+                  type="date"
+                  name="receiptDate"
+                  value={localFormData.receiptDate}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Payment Made By</label>
+                <select
+                  name="paymentMadeBy"
+                  value={localFormData.paymentMadeBy}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  disabled
+                >
+                  <option value="Customer">Customer</option>
+                  <option value="In House">In House</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Payout By</label>
+                <select
+                  name="payoutBy"
+                  value={localFormData.payoutBy}
+                  onChange={handleLocalFormChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="Customer">Customer</option>
+                  <option value="In House">In House</option>
+                  <option value="Auto Credit to Insurance Company">Auto Credit to Insurance Company</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mb-4 p-3 bg-gray-50 rounded-md">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Original Values:</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-gray-600">Amount:</span> ₹{formatIndianNumber(payment.amount)}</div>
+                <div><span className="text-gray-600">Date:</span> {payment.date}</div>
+                <div><span className="text-gray-600">Mode:</span> {payment.mode}</div>
+                <div><span className="text-gray-600">Status:</span> {payment.status}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+            <button
+              onClick={handleCancelEdit}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              className="px-4 py-2 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+            >
+              Save Changes
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
-  // UPDATED: Subvention Form Component with one-by-one entry
-  const SubventionForm = ({ 
-    setShowSubventionForm, 
-    calculateTotalSubventionRefund,
-    finalPremiumAmount,
-    formatIndianNumber 
-  }) => {
+  // FIXED: Subvention Form Component
+  const SubventionForm = () => {
     const [localSubventionEntries, setLocalSubventionEntries] = useState([]);
     const [localSubventionAmount, setLocalSubventionAmount] = useState('');
     const [localSubventionReason, setLocalSubventionReason] = useState('');
 
     const totalSubventionAmount = localSubventionEntries.reduce((sum, entry) => sum + entry.amount, 0);
-    const totalExistingSubvention = calculateTotalSubventionRefund();
-    const remainingCapacity = finalPremiumAmount - totalExistingSubvention - totalSubventionAmount;
+    const remainingCapacity = finalPremiumAmount - totalSubventionRefund - totalSubventionAmount;
 
     const handleAmountChange = (e) => {
       const value = e.target.value;
@@ -7847,7 +8000,6 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
       }
 
       const totalSubventionAmount = localSubventionEntries.reduce((sum, entry) => sum + entry.amount, 0);
-      const totalExistingSubvention = calculateTotalSubventionRefund();
       
       if (totalSubventionAmount > finalPremiumAmount) {
         alert("Total subvention amount cannot exceed final premium amount");
@@ -7884,10 +8036,6 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
           onPaymentLedgerUpdate(updatedLedgerWithAutoCreditStatus);
         }
         
-        // Update payment status and totals
-        const totalCustomerPayments = calculateTotalCustomerPayments();
-        const paymentStatus = calculateOverallPaymentStatus();
-
         const paymentData = {
           payment_info: {
             paymentMadeBy: form.paymentMadeBy,
@@ -7898,9 +8046,9 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
             receiptDate: form.receiptDate || '',
             bankName: form.bankName || '',
             subvention_payment: "Subvention Refund Applied",
-            paymentStatus: paymentStatus,
+            paymentStatus: overallPaymentStatus,
             totalPaidAmount: totalCustomerPayments,
-            totalSubventionRefund: totalSubventionAmount + totalExistingSubvention
+            totalSubventionRefund: totalSubventionAmount + totalSubventionRefund
           },
           payment_ledger: updatedLedgerWithAutoCreditStatus
         };
@@ -7925,20 +8073,22 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
     };
 
     return (
-      <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <FaGift className="text-green-600" />
-            Add Subvention Refund (One by One)
-          </h3>
+      <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <FaGift className="text-green-600" />
+              Add Subvention Refund (One by One)
+            </h3>
+          </div>
           
-          <div className="space-y-4">
+          <div className="p-6 space-y-4">
             {/* Current Subvention Summary */}
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-gray-600">Existing Subvention:</p>
-                  <p className="font-semibold">₹{formatIndianNumber(totalExistingSubvention)}</p>
+                  <p className="font-semibold">₹{formatIndianNumber(totalSubventionRefund)}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">New Subvention:</p>
@@ -7959,15 +8109,12 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                   <label className="block text-sm font-medium text-gray-600 mb-1">
                     Subvention Amount (₹) *
                   </label>
-                  <input
-                    type="number"
+                  <INRCurrencyInput
+                    type="text"
                     value={localSubventionAmount}
                     onChange={handleAmountChange}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
                     placeholder="Enter amount"
-                    min="0"
-                    max={remainingCapacity}
-                    step="0.01"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Maximum: ₹{formatIndianNumber(remainingCapacity)}
@@ -8037,7 +8184,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
             </div>
           </div>
           
-          <div className="flex justify-between items-center mt-6">
+          <div className="flex justify-between items-center p-6 border-t border-gray-200">
             <div>
               {localSubventionEntries.length > 0 && (
                 <p className="text-sm text-gray-600">
@@ -8224,7 +8371,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                 Payment Amount (₹) *
               </label>
               <INRCurrencyInput
-                type="number"
+                type="text"
                 name="customerPaymentAmount"
                 value={form.customerPaymentAmount || ""}
                 onChange={handleChange}
@@ -8232,8 +8379,6 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                   errors.customerPaymentAmount ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="0"
-                max={customerRemainingAmount}
-                step="0.01"
               />
               {errors.customerPaymentAmount && <p className="text-red-500 text-xs mt-1">{errors.customerPaymentAmount}</p>}
               <p className="text-xs text-gray-500 mt-1">
@@ -8272,21 +8417,33 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
               <p className="text-xs text-gray-500 mt-1">Optional for cash payments</p>
             </div>
 
+            {/* UPDATED: Bank Name Input with Auto-suggest (FIXED: Now properly clickable) */}
             <div className="bank-suggestions-container relative">
               <label className="block text-sm font-medium text-gray-600 mb-1">
                 Bank Name
               </label>
-              <input
-                type="text"
-                name="customerBankName"
-                value={form.customerBankName || ""}
-                onChange={(e) => handleBankNameChange(e, 'customer')}
-                onKeyDown={(e) => handleBankKeyDown(e, 'customer')}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                placeholder="Start typing bank name..."
-                autoComplete="off"
-              />
-              <BankSuggestions bankType="customer" />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="customerBankName"
+                  value={form.customerBankName || ""}
+                  onChange={(e) => handleBankNameChange(e, 'customer')}
+                  onFocus={() => handleBankFocus('customer')}
+                  onBlur={() => {
+                    // Use setTimeout to allow click event to complete before hiding
+                    setTimeout(() => {
+                      setShowSuggestions(prev => ({
+                        ...prev,
+                        customer: false
+                      }));
+                    }, 150);
+                  }}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  placeholder="Type bank name"
+                  autoComplete="off"
+                />
+                <BankSuggestions bankType="customer" />
+              </div>
               <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
             </div>
           </div>
@@ -8321,7 +8478,7 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                   Amount (₹) *
                 </label>
                 <INRCurrencyInput
-                  type="number"
+                  type="text"
                   name="autoCreditAmount"
                   value={finalPremiumAmount} // Always use final premium amount
                   onChange={handleAutoCreditChange}
@@ -8401,21 +8558,33 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                 <p className="text-xs text-gray-500 mt-1">Optional for cash payments</p>
               </div>
 
+              {/* UPDATED: Bank Name Input with Auto-suggest for Auto Credit (FIXED: Now properly clickable) */}
               <div className="bank-suggestions-container relative">
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Bank Name
                 </label>
-                <input
-                  type="text"
-                  name="autoCreditBankName"
-                  value={form.autoCreditBankName || ""}
-                  onChange={(e) => handleBankNameChange(e, 'autoCredit')}
-                  onKeyDown={(e) => handleBankKeyDown(e, 'autoCredit')}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  placeholder="Start typing bank name..."
-                  autoComplete="off"
-                />
-                <BankSuggestions bankType="autoCredit" />
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="autoCreditBankName"
+                    value={form.autoCreditBankName || ""}
+                    onChange={(e) => handleBankNameChange(e, 'autoCredit')}
+                    onFocus={() => handleBankFocus('autoCredit')}
+                    onBlur={() => {
+                      // Use setTimeout to allow click event to complete before hiding
+                      setTimeout(() => {
+                        setShowSuggestions(prev => ({
+                          ...prev,
+                          autoCredit: false
+                        }));
+                      }, 150);
+                    }}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="Type bank name"
+                    autoComplete="off"
+                  />
+                  <BankSuggestions bankType="autoCredit" />
+                </div>
                 <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
               </div>
             </div>
@@ -8452,14 +8621,12 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                   Payment Amount (₹)
                 </label>
                 <INRCurrencyInput
-                  type="number"
+                  type="text"
                   name="inHousePaymentAmount"
                   value={form.inHousePaymentAmount || ""}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   placeholder="0"
-                  max={customerRemainingAmount}
-                  step="0.01"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Maximum: ₹{formatIndianNumber(customerRemainingAmount)} (Customer can pay up to ₹{formatIndianNumber(netPremium)} total)
@@ -8494,21 +8661,33 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
                 <p className="text-xs text-gray-500 mt-1">Optional for cash payments</p>
               </div>
 
+              {/* UPDATED: Bank Name Input with Auto-suggest for In House (FIXED: Now properly clickable) */}
               <div className="bank-suggestions-container relative">
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Bank Name
                 </label>
-                <input
-                  type="text"
-                  name="inHouseBankName"
-                  value={form.inHouseBankName || ""}
-                  onChange={(e) => handleBankNameChange(e, 'inHouse')}
-                  onKeyDown={(e) => handleBankKeyDown(e, 'inHouse')}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                  placeholder="Start typing bank name..."
-                  autoComplete="off"
-                />
-                <BankSuggestions bankType="inHouse" />
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="inHouseBankName"
+                    value={form.inHouseBankName || ""}
+                    onChange={(e) => handleBankNameChange(e, 'inHouse')}
+                    onFocus={() => handleBankFocus('inHouse')}
+                    onBlur={() => {
+                      // Use setTimeout to allow click event to complete before hiding
+                      setTimeout(() => {
+                        setShowSuggestions(prev => ({
+                          ...prev,
+                          inHouse: false
+                        }));
+                      }, 150);
+                    }}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    placeholder="Type bank name"
+                    autoComplete="off"
+                  />
+                  <BankSuggestions bankType="inHouse" />
+                </div>
                 <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
               </div>
             </div>
@@ -8655,26 +8834,17 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
 
       {/* Subvention Form Modal */}
       {showSubventionForm && (
-        <SubventionForm
-          setShowSubventionForm={setShowSubventionForm}
-          calculateTotalSubventionRefund={calculateTotalSubventionRefund}
-          finalPremiumAmount={finalPremiumAmount}
-          formatIndianNumber={formatIndianNumber}
-        />
+        <SubventionForm />
       )}
 
       {/* Edit Payment Modal */}
-      {editingPayment && (
-        <EditPaymentForm
-          payment={paymentLedger.find(p => p.id === editingPayment)}
-          onSave={handleSaveEdit}
-          onCancel={handleCancelEdit}
-        />
+      {editingState.isEditing && (
+        <EditPaymentForm />
       )}
 
       {/* Next Step Button - UPDATED: Always enabled if there are payments */}
-      {/* <div className="mt-6 flex justify-between items-center"> */}
-        {/* <div className="text-sm text-gray-600">
+      <div className="mt-6 flex justify-between items-center">
+        <div className="text-sm text-gray-600">
           {paymentLedger.length > 0 ? (
             customerRemainingAmount <= 0 ? (
               <span className="text-green-600">✅ All customer payments completed</span>
@@ -8684,17 +8854,17 @@ const EditPaymentForm = ({ payment, onSave, onCancel }) => {
           ) : (
             <span className="text-red-600">Please add at least one payment</span>
           )}
-        </div> */}
+        </div>
         
-        {/* <button
+        <button
           onClick={handleNextStep}
           disabled={paymentLedger.length === 0 || isSaving}
           className="inline-flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSaving ? "Saving..." : "Proceed to Payout"} 
           <FaArrowRight />
-        </button> */}
-      {/* </div> */}
+        </button>
+      </div>
     </div>
   );
 };
@@ -11862,7 +12032,7 @@ const fetchPolicyData = async (policyId) => {
         </div>
 
         {/* Renewal Info Banner */}
-        {form.isRenewal && (
+        {/* {form.isRenewal && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -11881,10 +12051,10 @@ const fetchPolicyData = async (policyId) => {
               </span>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Credit Type Info Banner */}
-        {form.creditType && (
+        {/* {form.creditType && (
           <div className={`border rounded-xl p-4 mb-6 ${
             form.creditType === "auto" 
               ? "bg-blue-50 border-blue-200" 
@@ -11931,7 +12101,7 @@ const fetchPolicyData = async (policyId) => {
               </span>
             </div>
           </div>
-        )}
+        )} */}
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-4">

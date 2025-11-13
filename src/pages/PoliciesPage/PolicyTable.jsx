@@ -43,7 +43,7 @@ import {
 
 // ================== PAYMENT BREAKDOWN CALCULATION ==================
 
-// Calculate payment components function - FIXED: NCB calculation removed from payment flow
+// Calculate payment components function - IMPROVED: Better payment calculation
 const calculatePaymentComponents = (policy, paymentLedger = []) => {
   const totalPremium = policy.policy_info?.totalPremium || policy.insurance_quote?.premium || 0;
   
@@ -52,7 +52,14 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
     .filter(payment => payment.type === "subvention_refund")
     .reduce((sum, payment) => sum + (payment.amount || 0), 0);
   
-  // Calculate customer paid amount (excluding subvention refunds)
+  // Calculate ALL customer payments (including subvention refunds for total paid calculation)
+  const totalCustomerPaidAmount = paymentLedger
+    .filter(payment => 
+      payment.paymentMadeBy === "Customer"
+    )
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  
+  // Calculate customer paid amount (excluding subvention refunds for due calculation)
   const customerPaidAmount = paymentLedger
     .filter(payment => 
       payment.paymentMadeBy === "Customer" && 
@@ -68,37 +75,44 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
   // Calculate remaining amount to be paid by customer
   const remainingCustomerAmount = Math.max(effectivePayable - customerPaidAmount, 0);
   
-  // Calculate payment progress
-  const paymentProgress = effectivePayable > 0 
-    ? Math.min((customerPaidAmount / effectivePayable) * 100, 100)
-    : 100;
-
-  // Check payment made by type
-  const hasCustomerPayments = customerPaidAmount > 0;
-  const hasInHousePayments = paymentLedger.some(payment => payment.paymentMadeBy === "In House");
-  const paymentMadeBy = hasInHousePayments ? 'In House' : 
-                       hasCustomerPayments ? 'Customer' : 'Not Paid';
-
   // Calculate auto credit amount (should be total premium)
   const autoCreditEntry = paymentLedger.find(payment => payment.type === "auto_credit");
   const autoCreditAmount = autoCreditEntry ? autoCreditEntry.amount : 0;
+
+  // FIX: Calculate payment progress considering auto credit
+  const effectivePaidAmount = autoCreditAmount > 0 ? autoCreditAmount : totalCustomerPaidAmount;
+  const paymentProgress = effectivePayable > 0 
+    ? Math.min((effectivePaidAmount / effectivePayable) * 100, 100)
+    : 100;
+
+  // Check payment made by type
+  const hasCustomerPayments = totalCustomerPaidAmount > 0;
+  const hasInHousePayments = paymentLedger.some(payment => payment.paymentMadeBy === "In House");
+  const hasAutoCredit = autoCreditAmount > 0;
+  
+  // FIX: Improved payment made by logic
+  const paymentMadeBy = hasAutoCredit ? 'Customer' : 
+                       hasInHousePayments ? 'In House' : 
+                       hasCustomerPayments ? 'Customer' : 'Not Paid';
 
   return {
     totalPremium,
     subventionRefundAmount,
     customerPaidAmount,
+    totalCustomerPaidAmount,
     remainingCustomerAmount,
     effectivePayable,
     paymentProgress,
     paymentMadeBy,
     hasInHousePayments,
-    totalCustomerPayments: customerPaidAmount,
     autoCreditAmount,
+    hasAutoCredit,
+    effectivePaidAmount,
     netPremiumAfterDiscounts: effectivePayable
   };
 };
 
-// Function to get payment status
+// Function to get payment status - IMPROVED: Consistent calculation
 const getPaymentStatus = (policy) => {
   if (policy.payment_info?.paymentStatus) {
     return policy.payment_info.paymentStatus.toLowerCase();
@@ -106,13 +120,155 @@ const getPaymentStatus = (policy) => {
   
   const components = calculatePaymentComponents(policy, policy.payment_ledger || []);
   
-  if (components.customerPaidAmount >= components.effectivePayable && components.effectivePayable > 0) {
+  // FIX: Improved status calculation with tolerance for rounding errors
+  const tolerance = 0.01; // 1 paisa tolerance
+  
+  if (components.effectivePaidAmount >= (components.effectivePayable - tolerance) && components.effectivePayable > 0) {
     return 'fully paid';
-  } else if (components.customerPaidAmount > 0) {
+  } else if (components.effectivePaidAmount > 0) {
     return 'partially paid';
   } else {
     return 'pending';
   }
+};
+
+// ================== CSV EXPORT UTILITY ==================
+
+// Helper function to get expiry date for CSV export
+const getExpiryDateForCSV = (policy) => {
+  const policyInfo = policy.policy_info || {};
+  const policyType = (policy.insurance_quote?.coverageType || policy.insurance_category || '').toLowerCase();
+  
+  // For Third Party policies, use tpExpiryDate
+  if (policyType.includes('third party') || policyType.includes('tp')) {
+    return policyInfo.tpExpiryDate || policyInfo.dueDate || 'N/A';
+  }
+  
+  // For Standalone OD, Comprehensive, and all other policies, use odExpiryDate
+  return policyInfo.odExpiryDate || policyInfo.dueDate || 'N/A';
+};
+
+// Format date for CSV export
+const formatDateForCSV = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  } catch {
+    return 'Invalid Date';
+  }
+};
+
+const exportToCSV = (policies, selectedRows = []) => {
+  const policiesToExport = selectedRows.length > 0 
+    ? policies.filter(policy => selectedRows.includes(policy._id || policy.id))
+    : policies;
+
+  if (policiesToExport.length === 0) {
+    alert('No policies to export');
+    return;
+  }
+
+  const headers = [
+    'Policy ID',
+    'Customer Name',
+    'Mobile',
+    'Email',
+    'City',
+    'Pincode',
+    'Address',
+    'Vehicle Type',
+    'Vehicle Make',
+    'Vehicle Model',
+    'Variant',
+    'Registration No',
+    'Manufacturing Year',
+    'Fuel Type',
+    'Insurance Company',
+    'Policy Number',
+    'Policy Type',
+    'Total Premium',
+    'IDV Amount',
+    'NCB Discount',
+    'Status',
+    'Payment Status',
+    'Created Date',
+    'Expiry Date',
+    'Buyer Type',
+    'Contact Person',
+    'Company Name'
+  ];
+
+  const csvData = policiesToExport.map(policy => {
+    const customer = policy.customer_details || {};
+    const vehicle = policy.vehicle_details || {};
+    const policyInfo = policy.policy_info || {};
+    const insuranceQuote = policy.insurance_quote || {};
+    
+    const getCustomerName = () => {
+      if (policy.buyer_type === 'corporate') {
+        return customer.companyName || customer.contactPersonName || 'N/A';
+      }
+      return customer.name || 'N/A';
+    };
+
+    const getPolicyType = () => {
+      if (insuranceQuote.coverageType) {
+        return insuranceQuote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party';
+      }
+      return policy.insurance_category || 'Insurance';
+    };
+
+    return [
+      policy._id || policy.id || 'N/A',
+      getCustomerName(),
+      customer.mobile || 'N/A',
+      customer.email || 'N/A',
+      customer.city || 'N/A',
+      customer.pincode || 'N/A',
+      customer.address || 'N/A',
+      policy.vehicleType === 'new' ? 'New Car' : 'Used Car',
+      vehicle.make || 'N/A',
+      vehicle.model || 'N/A',
+      vehicle.variant || 'N/A',
+      vehicle.regNo || 'N/A',
+      vehicle.manufacturingYear || 'N/A',
+      vehicle.fuelType || 'N/A',
+      policyInfo.insuranceCompany || insuranceQuote.insurer || 'N/A',
+      policyInfo.policyNumber || 'N/A',
+      getPolicyType(),
+      `₹${(policyInfo.totalPremium || insuranceQuote.premium || 0).toLocaleString('en-IN')}`,
+      `₹${(policyInfo.idvAmount || insuranceQuote.idv || 0).toLocaleString('en-IN')}`,
+      `${policyInfo.ncbDiscount || insuranceQuote.ncb || 0}%`,
+      policy.status || 'N/A',
+      getPaymentStatus(policy),
+      formatDateForCSV(policy.created_at || policy.ts),
+      formatDateForCSV(getExpiryDateForCSV(policy)),
+      policy.buyer_type || 'individual',
+      customer.contactPersonName || 'N/A',
+      customer.companyName || 'N/A'
+    ];
+  });
+
+  const csvContent = [
+    headers.join(','),
+    ...csvData.map(row => row.map(field => `"${field}"`).join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `insurance-policies-${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 // ================== COMPACT PAYMENT BREAKDOWN ==================
@@ -121,30 +277,41 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
   const components = calculatePaymentComponents(policy, paymentLedger);
   const paymentStatus = getPaymentStatus(policy);
 
+  // FIX: Use the consistent calculation from the main function
+  const displayPaidAmount = components.effectivePaidAmount;
+  const displayDueAmount = Math.max(components.effectivePayable - components.effectivePaidAmount, 0);
+  
+  // FIX: Use consistent progress calculation
+  const displayProgress = components.paymentProgress;
+
+  // FIX: Use the actual payment status from the main function
+  const displayPaymentStatus = paymentStatus;
+  const displayPaymentMadeBy = components.paymentMadeBy;
+
   return (
     <div className="space-y-1.5 p-1.5 bg-gray-50 rounded border border-gray-200 text-xs">
-      {/* Status Header */}
+      {/* Status Header - FIXED: Use actual payment status */}
       <div className="flex items-center justify-between">
         <span className={`font-medium px-1 py-0.5 rounded text-xs ${
-          paymentStatus === 'fully paid' ? 'bg-green-100 text-green-800' :
-          paymentStatus === 'partially paid' ? 'bg-yellow-100 text-yellow-800' :
+          displayPaymentStatus === 'fully paid' ? 'bg-green-100 text-green-800' :
+          displayPaymentStatus === 'partially paid' ? 'bg-yellow-100 text-yellow-800' :
           'bg-red-100 text-red-800'
         }`}>
-          {paymentStatus === 'fully paid' ? 'Paid' :
-           paymentStatus === 'partially paid' ? 'Partial' : 'Pending'}
+          {displayPaymentStatus === 'fully paid' ? 'Paid' :
+           displayPaymentStatus === 'partially paid' ? 'Partial' : 'Pending'}
         </span>
         
         <div className={`px-1 py-0.5 rounded text-xs ${
-          components.paymentMadeBy === 'In House' ? 'bg-purple-100 text-purple-800' :
-          components.paymentMadeBy === 'Customer' ? 'bg-blue-100 text-blue-800' :
+          displayPaymentMadeBy === 'In House' ? 'bg-purple-100 text-purple-800' :
+          displayPaymentMadeBy === 'Customer' ? 'bg-blue-100 text-blue-800' :
           'bg-gray-100 text-gray-800'
         }`}>
-          {components.paymentMadeBy === 'In House' ? 'In House' :
-           components.paymentMadeBy === 'Customer' ? 'Customer' : 'Not Paid'}
+          {displayPaymentMadeBy === 'In House' ? 'In House' :
+           displayPaymentMadeBy === 'Customer' ? 'Customer' : 'Not Paid'}
         </div>
       </div>
       
-      {/* Payment Breakdown */}
+      {/* Payment Breakdown - FIXED: Use consistent amounts */}
       <div className="space-y-0.5">
         <div className="flex justify-between">
           <span className="text-gray-600">Premium:</span>
@@ -163,39 +330,39 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
         <div className="flex justify-between">
           <span className="text-gray-600">Paid:</span>
           <span className="text-green-600 font-medium">
-            ₹{components.customerPaidAmount.toLocaleString('en-IN')}
+            ₹{displayPaidAmount.toLocaleString('en-IN')}
           </span>
         </div>
         
-        {components.remainingCustomerAmount > 0 && (
+        {displayDueAmount > 0 && (
           <div className="flex justify-between">
             <span className="text-gray-600">Due:</span>
             <span className="text-red-600 font-medium">
-              ₹{components.remainingCustomerAmount.toLocaleString('en-IN')}
+              ₹{displayDueAmount.toLocaleString('en-IN')}
             </span>
           </div>
         )}
       </div>
       
-      {/* Progress Bar - Updated to match the provided design */}
+      {/* Progress Bar - FIXED: Use consistent progress */}
       <div className="pt-2">
         <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>Payment Progress {components.subventionRefundAmount > 0 ? '(After Subvention)' : ''}</span>
-          <span>{components.paymentProgress.toFixed(1)}%</span>
+          <span>Payment Progress</span>
+          <span>{displayProgress.toFixed(1)}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className={`h-2 rounded-full transition-all duration-300 ${
-              components.paymentProgress === 100 ? 'bg-green-500' : 
-              components.paymentProgress > 0 ? 'bg-yellow-500' : 'bg-red-500'
+              displayProgress === 100 ? 'bg-green-500' : 
+              displayProgress > 0 ? 'bg-yellow-500' : 'bg-red-500'
             }`}
-            style={{ width: `${Math.min(components.paymentProgress, 100)}%` }}
+            style={{ width: `${Math.min(displayProgress, 100)}%` }}
           ></div>
         </div>
       </div>
 
-      {/* Auto Credit Info */}
-      {components.autoCreditAmount > 0 && (
+      {/* Auto Credit Info - Show only if auto credit exists */}
+      {components.hasAutoCredit && (
         <div className="pt-1 border-t border-gray-200">
           <div className="flex justify-between text-xs">
             <span className="text-gray-600">Auto Credit:</span>
@@ -208,6 +375,8 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
     </div>
   );
 };
+
+// ... (rest of the code remains exactly the same - AdvancedSearch component and PolicyTable component)
 
 // ================== ADVANCED SEARCH COMPONENT ==================
 
@@ -455,110 +624,6 @@ const AdvancedSearch = ({
   );
 };
 
-// ================== CSV EXPORT UTILITY ==================
-
-const exportToCSV = (policies, selectedRows = []) => {
-  const policiesToExport = selectedRows.length > 0 
-    ? policies.filter(policy => selectedRows.includes(policy._id || policy.id))
-    : policies;
-
-  if (policiesToExport.length === 0) {
-    alert('No policies to export');
-    return;
-  }
-
-  const headers = [
-    'Policy ID',
-    'Customer Name',
-    'Mobile',
-    'Email',
-    'City',
-    'Pincode',
-    'Address',
-    'Vehicle Type',
-    'Vehicle Make',
-    'Vehicle Model',
-    'Variant',
-    'Registration No',
-    'Manufacturing Year',
-    'Fuel Type',
-    'Insurance Company',
-    'Policy Number',
-    'Policy Type',
-    'Total Premium',
-    'IDV Amount',
-    'NCB Discount',
-    'Status',
-    'Payment Status',
-    'Created Date',
-    'Expiry Date',
-    'Buyer Type',
-    'Contact Person',
-    'Company Name'
-  ];
-
-  const csvData = policiesToExport.map(policy => {
-    const customer = policy.customer_details || {};
-    const vehicle = policy.vehicle_details || {};
-    const policyInfo = policy.policy_info || {};
-    const insuranceQuote = policy.insurance_quote || {};
-    
-    const getCustomerName = () => {
-      if (policy.buyer_type === 'corporate') {
-        return customer.companyName || customer.contactPersonName || 'N/A';
-      }
-      return customer.name || 'N/A';
-    };
-
-    return [
-      policy._id || policy.id || 'N/A',
-      getCustomerName(),
-      customer.mobile || 'N/A',
-      customer.email || 'N/A',
-      customer.city || 'N/A',
-      customer.pincode || 'N/A',
-      customer.address || 'N/A',
-      policy.vehicleType === 'new' ? 'New Car' : 'Used Car',
-      vehicle.make || 'N/A',
-      vehicle.model || 'N/A',
-      vehicle.variant || 'N/A',
-      vehicle.regNo || 'N/A',
-      vehicle.manufacturingYear || 'N/A',
-      vehicle.fuelType || 'N/A',
-      policyInfo.insuranceCompany || insuranceQuote.insurer || 'N/A',
-      policyInfo.policyNumber || 'N/A',
-      insuranceQuote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party',
-      `₹${(policyInfo.totalPremium || insuranceQuote.premium || 0).toLocaleString('en-IN')}`,
-      `₹${(policyInfo.idvAmount || insuranceQuote.idv || 0).toLocaleString('en-IN')}`,
-      `${policyInfo.ncbDiscount || insuranceQuote.ncb || 0}%`,
-      policy.status || 'N/A',
-      getPaymentStatus(policy),
-      new Date(policy.created_at || policy.ts).toLocaleDateString('en-IN'),
-      getExpiryDate(policy),
-      policy.buyer_type || 'individual',
-      customer.contactPersonName || 'N/A',
-      customer.companyName || 'N/A'
-    ];
-  });
-
-  const csvContent = [
-    headers.join(','),
-    ...csvData.map(row => row.map(field => `"${field}"`).join(','))
-  ].join('\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  
-  link.setAttribute('href', url);
-  link.setAttribute('download', `insurance-policies-${new Date().toISOString().split('T')[0]}.csv`);
-  link.style.visibility = 'hidden';
-  
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
 // ================== MAIN POLICY TABLE COMPONENT ==================
 
 const PolicyTable = ({ policies, loading, onView, onDelete }) => {
@@ -566,9 +631,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [paymentFilter, setPaymentFilter] = useState('all');
-  const [vehicleTypeFilter, setVehicleTypeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
@@ -608,27 +670,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
   // Enhanced search function with advanced filters
   const filteredPolicies = useMemo(() => {
     let filtered = sortedPolicies;
-
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(policy => policy.status === statusFilter);
-    }
-
-    // Apply payment filter
-    if (paymentFilter !== 'all') {
-      filtered = filtered.filter(policy => {
-        const paymentStatus = getPaymentStatus(policy);
-        return paymentStatus === paymentFilter;
-      });
-    }
-
-    // Apply vehicle type filter
-    if (vehicleTypeFilter !== 'all') {
-      filtered = filtered.filter(policy => {
-        const vehicleType = policy.vehicleType || 'used';
-        return vehicleType === vehicleTypeFilter;
-      });
-    }
 
     // Apply advanced search filters
     const hasAdvancedFilters = Object.values(searchFilters).some(value => value !== '');
@@ -737,7 +778,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     }
 
     return filtered;
-  }, [sortedPolicies, statusFilter, paymentFilter, vehicleTypeFilter, searchQuery, searchFilters]);
+  }, [sortedPolicies, searchQuery, searchFilters]);
 
   // Paginate policies
   const paginatedPolicies = useMemo(() => {
@@ -849,39 +890,46 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       active: { 
         text: 'Active', 
         class: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-        icon: FaCheckCircle
+        icon: FaCheckCircle,
+        description: 'Policy is currently protecting the customer'
       },
       completed: { 
         text: 'Completed', 
         class: 'bg-blue-100 text-blue-800 border border-blue-200',
-        icon: FaCheckCircle
+        icon: FaCheckCircle,
+        description: 'Policy purchased but coverage starts later'
       },
       draft: { 
         text: 'Draft', 
         class: 'bg-amber-100 text-amber-800 border border-amber-200',
-        icon: FaClock
+        icon: FaClock,
+        description: 'Policy is saved but not finalized'
       },
       pending: { 
         text: 'Pending', 
         class: 'bg-purple-100 text-purple-800 border border-purple-200',
-        icon: FaClock
+        icon: FaClock,
+        description: 'Awaiting processing or approval'
       },
       expired: { 
         text: 'Expired', 
         class: 'bg-rose-100 text-rose-800 border border-rose-200',
-        icon: FaExclamationTriangle
+        icon: FaExclamationTriangle,
+        description: 'Policy coverage has ended'
       },
       'payment completed': {
         text: 'Paid',
         class: 'bg-green-100 text-green-800 border border-green-200',
-        icon: FaCheckCircle
+        icon: FaCheckCircle,
+        description: 'Payment completed for policy'
       }
     };
 
     return statusConfig[status] || { 
       text: status, 
       class: 'bg-gray-100 text-gray-800 border border-gray-200',
-      icon: FaTag
+      icon: FaTag,
+      description: 'Policy status'
     };
   };
 
@@ -1066,7 +1114,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     setCurrentPage(1);
     setSelectedRows(new Set());
     setSelectAll(false);
-  }, [statusFilter, paymentFilter, vehicleTypeFilter, searchQuery, searchFilters]);
+  }, [searchQuery, searchFilters]);
 
   if (loading) {
     return (
@@ -1128,53 +1176,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                 <FaFilter className="text-xs" />
                 Advanced
               </button>
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex flex-col">
-              <label className="text-xs font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[100px]"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
-                <option value="expired">Expired</option>
-                <option value="payment completed">Paid</option>
-              </select>
-            </div>
-
-            {/* Payment Filter */}
-            <div className="flex flex-col">
-              <label className="text-xs font-medium text-gray-700 mb-1">Payment</label>
-              <select
-                value={paymentFilter}
-                onChange={(e) => setPaymentFilter(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[100px]"
-              >
-                <option value="all">All Payments</option>
-                <option value="fully paid">Paid</option>
-                <option value="partially paid">Partial</option>
-                <option value="pending">Pending</option>
-              </select>
-            </div>
-
-            {/* Vehicle Type Filter */}
-            <div className="flex flex-col">
-              <label className="text-xs font-medium text-gray-700 mb-1">Vehicle</label>
-              <select
-                value={vehicleTypeFilter}
-                onChange={(e) => setVehicleTypeFilter(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[100px]"
-              >
-                <option value="all">All Vehicles</option>
-                <option value="new">New Cars</option>
-                <option value="used">Used Cars</option>
-              </select>
             </div>
           </div>
 
@@ -1726,15 +1727,12 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
           <p className="text-gray-700 font-medium text-sm mb-1">No policies match your filters</p>
           <button
             onClick={() => {
-              setStatusFilter('all');
-              setPaymentFilter('all');
-              setVehicleTypeFilter('all');
               setSearchQuery('');
               handleResetAdvancedFilters();
             }}
             className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-xs font-medium"
           >
-            Show All Policies
+            Clear Filters
           </button>
         </div>
       )}
