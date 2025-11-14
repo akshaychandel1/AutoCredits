@@ -1,8 +1,107 @@
-// src/pages/RenewalsPage/RenewalTable.jsx
+// src/pages/Renewal/RenewalTable.jsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import PolicyModal from '../PoliciesPage/PolicyModal.jsx';
+
+// Try different import paths for PolicyModal
+let PolicyModal;
+try {
+  // Try importing from the original path
+  PolicyModal = require('../PoliciesPage/PolicyModal.jsx').default;
+} catch (error) {
+  try {
+    // Try importing from relative path
+    PolicyModal = require('./PolicyModal.jsx').default;
+  } catch (error2) {
+    // Fallback: Create a simple modal component
+    PolicyModal = ({ policy, isOpen, onClose }) => {
+      if (!isOpen) return null;
+      
+      return (
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Policy Details</h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FaTimes className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              {policy ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Customer Information</h4>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>Name:</strong> {policy.customer_details?.name || 'N/A'}</p>
+                        <p><strong>Mobile:</strong> {policy.customer_details?.mobile || 'N/A'}</p>
+                        <p><strong>Email:</strong> {policy.customer_details?.email || 'N/A'}</p>
+                        <p><strong>City:</strong> {policy.customer_details?.city || 'N/A'}</p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Vehicle Information</h4>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>Make:</strong> {policy.vehicle_details?.make || 'N/A'}</p>
+                        <p><strong>Model:</strong> {policy.vehicle_details?.model || 'N/A'}</p>
+                        <p><strong>Registration:</strong> {policy.vehicle_details?.regNo || 'N/A'}</p>
+                        <p><strong>Year:</strong> {policy.vehicle_details?.manufacturingYear || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Policy Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p><strong>Policy Number:</strong> {policy.policy_info?.policyNumber || 'N/A'}</p>
+                        <p><strong>Insurance Company:</strong> {policy.policy_info?.insuranceCompany || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p><strong>Premium:</strong> ₹{parseInt(policy.policy_info?.totalPremium || policy.insurance_quote?.premium || 0).toLocaleString('en-IN')}</p>
+                        <p><strong>IDV:</strong> ₹{parseInt(policy.policy_info?.idvAmount || policy.insurance_quote?.idv || 0).toLocaleString('en-IN')}</p>
+                      </div>
+                      <div>
+                        <p><strong>NCB:</strong> {policy.policy_info?.ncbDiscount || policy.insurance_quote?.ncb || 0}%</p>
+                        <p><strong>Status:</strong> {policy.status || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {policy.policy_info && (
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Additional Details</h4>
+                      <pre className="text-xs bg-gray-50 p-3 rounded overflow-x-auto">
+                        {JSON.stringify(policy.policy_info, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p>No policy data available</p>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-end p-4 border-t border-gray-200">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+  }
+}
+
 import {
   FaCar,
   FaUser,
@@ -322,61 +421,20 @@ const getBatchInfo = (batch) => {
       badgeClass: 'bg-purple-500 text-white',
       color: 'purple'
     },
-    // NEW: Next year renewal batches
-    'next_year_7_days': {
-      text: 'Next Year - 7 Days',
-      class: 'bg-pink-100 text-pink-800 border border-pink-200',
-      icon: FaCalendarPlus,
-      priority: 1,
-      badgeClass: 'bg-pink-500 text-white',
-      color: 'pink'
-    },
-    'next_year_14_days': {
-      text: 'Next Year - 14 Days',
-      class: 'bg-indigo-100 text-indigo-800 border border-indigo-200',
-      icon: FaCalendarPlus,
-      priority: 2,
-      badgeClass: 'bg-indigo-500 text-white',
-      color: 'indigo'
-    },
-    'next_year_30_days': {
-      text: 'Next Year - 30 Days',
+    // NEW: Already Renewed status
+    'already_renewed': {
+      text: 'Already Renewed',
       class: 'bg-teal-100 text-teal-800 border border-teal-200',
-      icon: FaCalendarPlus,
-      priority: 3,
+      icon: FaCheckCircle,
+      priority: 7,
       badgeClass: 'bg-teal-500 text-white',
       color: 'teal'
     },
-    'next_year_future': {
-      text: 'Next Year - Future',
-      class: 'bg-cyan-100 text-cyan-800 border border-cyan-200',
-      icon: FaCalendarPlus,
-      priority: 4,
-      badgeClass: 'bg-cyan-500 text-white',
-      color: 'cyan'
-    },
-    'due_now': {
-      text: 'Renewal Due',
-      class: 'bg-amber-100 text-amber-800 border border-amber-200',
-      icon: FaExclamationCircle,
-      priority: 0,
-      badgeClass: 'bg-amber-500 text-white',
-      color: 'amber'
-    },
-    'no_reminder': {
-      text: 'No Reminder',
-      class: 'bg-gray-100 text-gray-800 border border-gray-200',
-      icon: FaBan,
-      priority: 5,
-      badgeClass: 'bg-gray-500 text-white',
-      color: 'gray'
-    },
-    // NEW: Closed and External statuses
     'closed': {
       text: 'Closed',
       class: 'bg-gray-100 text-gray-800 border border-gray-200',
       icon: FaBan,
-      priority: 7,
+      priority: 8,
       badgeClass: 'bg-gray-500 text-white',
       color: 'gray'
     },
@@ -384,7 +442,7 @@ const getBatchInfo = (batch) => {
       text: 'External',
       class: 'bg-gray-100 text-gray-800 border border-gray-200',
       icon: FaExternalLinkAlt,
-      priority: 8,
+      priority: 9,
       badgeClass: 'bg-gray-500 text-white',
       color: 'gray'
     }
@@ -569,6 +627,11 @@ const getStatusDisplay = (status) => {
       text: 'Renewal Scheduled',
       class: 'bg-teal-100 text-teal-800 border border-teal-200',
       icon: FaCalendarPlus
+    },
+    'already_renewed': {
+      text: 'Already Renewed',
+      class: 'bg-teal-100 text-teal-800 border border-teal-200',
+      icon: FaCheckCircle
     }
   };
 
@@ -1091,7 +1154,8 @@ const CompactPolicySummary = ({ policy, onView, onEdit }) => {
 const ActionButton = ({ 
   policy, 
   onStatusUpdate,
-  onMoveToExternal 
+  onMoveToExternal,
+  onMarkAsRenewed 
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -1133,6 +1197,10 @@ const ActionButton = ({
         });
         alert('Policy scheduled for renewal next year with 30-day reminder.');
       }
+      else if (status === 'already_renewed') {
+        await onMarkAsRenewed(policy);
+        return;
+      }
 
       setShowOptions(false);
       onStatusUpdate();
@@ -1168,6 +1236,17 @@ const ActionButton = ({
       {showOptions && !loading && (
         <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
           <div className="p-2 space-y-1">
+            <button
+              onClick={() => handleStatusUpdate('already_renewed')}
+              className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded transition-colors"
+            >
+              <FaCheckCircle className="text-teal-500" />
+              <div>
+                <div className="font-medium">Already Renewed</div>
+                <div className="text-gray-500 text-xs">Move to renewed tab</div>
+              </div>
+            </button>
+
             <button
               onClick={() => handleStatusUpdate('car_sold')}
               className="flex items-center gap-2 w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-red-50 hover:text-red-700 rounded transition-colors"
@@ -1236,13 +1315,9 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
     { key: 'beyond_60_days', label: 'Future', subLabel: 'Beyond 60', color: 'green' },
     { key: 'expired', label: 'Expired', subLabel: 'Overdue', color: 'gray' },
     { key: 'no_expiry', label: 'No Expiry', subLabel: 'Check Required', color: 'purple' },
-    // NEW: Closed and External tabs
+    { key: 'already_renewed', label: 'Already Renewed', subLabel: 'Completed', color: 'teal' },
     { key: 'closed', label: 'Closed', subLabel: 'Inactive', color: 'gray' },
     { key: 'external', label: 'External', subLabel: 'Other Source', color: 'gray' },
-    // NEW: Next year renewal stats
-    { key: 'next_year_30_days', label: 'Next Year', subLabel: '30 Days', color: 'teal' },
-    { key: 'next_year_14_days', label: 'Next Year', subLabel: '14 Days', color: 'indigo' },
-    { key: 'next_year_7_days', label: 'Next Year', subLabel: '7 Days', color: 'pink' },
     { key: 'total', label: 'Total', subLabel: 'Policies', color: 'indigo' }
   ];
 
@@ -1264,18 +1339,16 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
       batchKey === 'beyond_60_days' ? 'ring-green-500' :
       batchKey === 'expired' ? 'ring-gray-500' :
       batchKey === 'no_expiry' ? 'ring-purple-500' :
+      batchKey === 'already_renewed' ? 'ring-teal-500' :
       batchKey === 'closed' ? 'ring-gray-500' :
       batchKey === 'external' ? 'ring-gray-500' :
-      batchKey === 'next_year_30_days' ? 'ring-teal-500' :
-      batchKey === 'next_year_14_days' ? 'ring-indigo-500' :
-      batchKey === 'next_year_7_days' ? 'ring-pink-500' :
       'ring-indigo-500'
     );
   };
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-13 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-3">
         {batchConfig.map((batch) => (
           <button
             key={batch.key}
@@ -1289,8 +1362,6 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
               batch.color === 'gray' ? 'bg-gray-50 border-gray-200 hover:bg-gray-100 focus:ring-gray-500' :
               batch.color === 'purple' ? 'bg-purple-50 border-purple-200 hover:bg-purple-100 focus:ring-purple-500' :
               batch.color === 'teal' ? 'bg-teal-50 border-teal-200 hover:bg-teal-100 focus:ring-teal-500' :
-              batch.color === 'indigo' ? 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100 focus:ring-indigo-500' :
-              batch.color === 'pink' ? 'bg-pink-50 border-pink-200 hover:bg-pink-100 focus:ring-pink-500' :
               'bg-indigo-50 border-indigo-200 hover:bg-indigo-100 focus:ring-indigo-500'
             } border rounded-lg cursor-pointer`}
           >
@@ -1303,8 +1374,6 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
               batch.color === 'gray' ? 'text-gray-600' :
               batch.color === 'purple' ? 'text-purple-600' :
               batch.color === 'teal' ? 'text-teal-600' :
-              batch.color === 'indigo' ? 'text-indigo-600' :
-              batch.color === 'pink' ? 'text-pink-600' :
               'text-indigo-600'
             }`}>
               {stats[batch.key] || 0}
@@ -1318,8 +1387,6 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
               batch.color === 'gray' ? 'text-gray-700' :
               batch.color === 'purple' ? 'text-purple-700' :
               batch.color === 'teal' ? 'text-teal-700' :
-              batch.color === 'indigo' ? 'text-indigo-700' :
-              batch.color === 'pink' ? 'text-pink-700' :
               'text-indigo-700'
             }`}>
               {batch.label}
@@ -1333,8 +1400,6 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
               batch.color === 'gray' ? 'text-gray-500' :
               batch.color === 'purple' ? 'text-purple-500' :
               batch.color === 'teal' ? 'text-teal-500' :
-              batch.color === 'indigo' ? 'text-indigo-500' :
-              batch.color === 'pink' ? 'text-pink-500' :
               'text-indigo-500'
             }`}>
               {batch.subLabel}
@@ -1606,6 +1671,7 @@ const AdvancedSearch = ({
                 <option value="beyond_60_days">Beyond 60 Days (Future)</option>
                 <option value="expired">Expired (Overdue)</option>
                 <option value="no_expiry">No Expiry Date</option>
+                <option value="already_renewed">Already Renewed</option>
                 <option value="closed">Closed</option>
                 <option value="external">External</option>
               </select>
@@ -1908,6 +1974,28 @@ const RenewalTable = () => {
     }
   };
 
+  // NEW: Function to mark policy as already renewed
+  const markPolicyAsRenewed = async (policy) => {
+    try {
+      const response = await api.put(`/policies/${policy._id}`, {
+        status: 'already_renewed',
+        updated_at: new Date().toISOString(),
+        renewal_status: 'completed'
+      });
+      
+      if (response.data && response.data.success) {
+        setPolicies(prev => prev.filter(p => p._id !== policy._id));
+        alert('Policy marked as Already Renewed and moved to the renewed tab');
+        return true;
+      } else {
+        throw new Error('Failed to mark policy as renewed');
+      }
+    } catch (error) {
+      console.error('Error marking policy as renewed:', error);
+      throw error;
+    }
+  };
+
   const handleStatusUpdate = () => {
     fetchAllPolicies();
   };
@@ -1957,18 +2045,13 @@ const RenewalTable = () => {
         }));
         break;
         
-      case 'next_year_7_days':
-      case 'next_year_14_days':
-      case 'next_year_30_days':
-        // Handle next year renewal batches
-        setBatchFilter('all');
-        setNextYearFilter(batchKey);
+      case 'already_renewed':
+        // Handle already renewed policies
+        setBatchFilter('already_renewed');
         setSearchFilters(prev => ({
           ...prev,
-          batch: 'all',
-          nextYearRenewal: batchKey === 'next_year_7_days' ? 'next_year_7_days' :
-                          batchKey === 'next_year_14_days' ? 'next_year_14_days' :
-                          'next_year_30_days'
+          batch: 'already_renewed',
+          nextYearRenewal: 'all'
         }));
         break;
         
@@ -2038,6 +2121,8 @@ const RenewalTable = () => {
         filtered = filtered.filter(policy => policy.status === 'closed');
       } else if (batchFilter === 'external') {
         filtered = filtered.filter(policy => policy.status === 'external' || policy.policy_source === 'external');
+      } else if (batchFilter === 'already_renewed') {
+        filtered = filtered.filter(policy => policy.status === 'already_renewed');
       } else {
         filtered = filtered.filter(policy => policy.batch === batchFilter);
       }
@@ -2114,6 +2199,7 @@ const RenewalTable = () => {
         const matchesBatch = !searchFilters.batch || searchFilters.batch === 'all' || 
           (searchFilters.batch === 'closed' ? policy.status === 'closed' :
            searchFilters.batch === 'external' ? (policy.status === 'external' || policy.policy_source === 'external') :
+           searchFilters.batch === 'already_renewed' ? policy.status === 'already_renewed' :
            policy.batch === searchFilters.batch);
 
         const matchesNextYearRenewal = !searchFilters.nextYearRenewal || searchFilters.nextYearRenewal === 'all' ||
@@ -2177,13 +2263,11 @@ const RenewalTable = () => {
       'beyond_60_days': 0,
       'expired': 0,
       'no_expiry': 0,
+      // NEW: Already Renewed count
+      'already_renewed': 0,
       // NEW: Closed and External counts
       'closed': 0,
       'external': 0,
-      // NEW: Next year renewal stats
-      'next_year_7_days': 0,
-      'next_year_14_days': 0,
-      'next_year_30_days': 0,
       total: renewalPolicies.length // Always show total from all policies
     };
 
@@ -2192,23 +2276,17 @@ const RenewalTable = () => {
         stats[policy.batch]++;
       }
       
+      // Count already renewed policies
+      if (policy.status === 'already_renewed') {
+        stats['already_renewed']++;
+      }
+      
       // Count closed and external policies
       if (policy.status === 'closed') {
         stats['closed']++;
       }
       if (policy.status === 'external' || policy.policy_source === 'external') {
         stats['external']++;
-      }
-      
-      // Count next year renewal policies
-      if (policy.renewal_scheduled && policy.daysUntilNextYearRenewal !== null) {
-        if (policy.daysUntilNextYearRenewal <= 7) {
-          stats['next_year_7_days']++;
-        } else if (policy.daysUntilNextYearRenewal <= 14) {
-          stats['next_year_14_days']++;
-        } else if (policy.daysUntilNextYearRenewal <= 30) {
-          stats['next_year_30_days']++;
-        }
       }
     });
 
@@ -2262,6 +2340,24 @@ const RenewalTable = () => {
       } else if (action === 'renew') {
         // Implement bulk renew logic
         alert(`Bulk renew action for ${selectedRows.size} policies`);
+      } else if (action === 'mark_renewed') {
+        // Bulk mark as renewed
+        const selectedPolicies = renewalPolicies.filter(policy => 
+          selectedRows.has(policy._id || policy.id)
+        );
+        
+        let successCount = 0;
+        for (const policy of selectedPolicies) {
+          try {
+            await markPolicyAsRenewed(policy);
+            successCount++;
+          } catch (error) {
+            console.error(`Failed to mark policy ${policy._id} as renewed:`, error);
+          }
+        }
+        
+        alert(`Successfully marked ${successCount} out of ${selectedRows.size} policies as renewed`);
+        setSelectedRows(new Set());
       }
       
       setShowBulkActions(false);
@@ -2517,6 +2613,7 @@ const RenewalTable = () => {
                       policy.batch === '7_days' ? 'bg-red-50 hover:bg-red-100' :
                       policy.batch === '14_days' ? 'bg-orange-50 hover:bg-orange-100' :
                       policy.batch === '30_days' ? 'bg-yellow-50 hover:bg-yellow-100' :
+                      policy.status === 'already_renewed' ? 'bg-teal-50 hover:bg-teal-100' :
                       policy.renewal_scheduled && policy.daysUntilNextYearRenewal !== null && policy.daysUntilNextYearRenewal <= 30 ? 'bg-teal-50 hover:bg-teal-100' : ''
                     }`}
                   >
@@ -2746,18 +2843,22 @@ const RenewalTable = () => {
                           <FaEye className="text-xs" />
                           View
                         </button>
-                        <button 
-                          onClick={() => handleEditClick(policy)}
-                          className="flex items-center gap-1 text-green-600 hover:text-green-800 text-xs font-medium hover:bg-green-50 px-1.5 py-1 rounded transition-colors border border-green-200 justify-center"
-                        >
-                          <FaEdit className="text-xs" />
-                          Renew
-                        </button>
+                        
+                        {policy.status !== 'already_renewed' && (
+                          <button 
+                            onClick={() => handleEditClick(policy)}
+                            className="flex items-center gap-1 text-green-600 hover:text-green-800 text-xs font-medium hover:bg-green-50 px-1.5 py-1 rounded transition-colors border border-green-200 justify-center"
+                          >
+                            <FaEdit className="text-xs" />
+                            Renew
+                          </button>
+                        )}
                         
                         <ActionButton 
                           policy={policy}
                           onStatusUpdate={handleStatusUpdate}
                           onMoveToExternal={moveToExternalPolicies}
+                          onMarkAsRenewed={markPolicyAsRenewed}
                         />
                         
                         <button 
@@ -2777,6 +2878,7 @@ const RenewalTable = () => {
                       policy.batch === '7_days' ? 'bg-red-50' :
                       policy.batch === '14_days' ? 'bg-orange-50' :
                       policy.batch === '30_days' ? 'bg-yellow-50' :
+                      policy.status === 'already_renewed' ? 'bg-teal-50' :
                       policy.renewal_scheduled && policy.daysUntilNextYearRenewal !== null && policy.daysUntilNextYearRenewal <= 30 ? 'bg-teal-50' : 'bg-gray-50'
                     }`}>
                       <td colSpan="7" className="px-3 py-3">
@@ -3145,6 +3247,13 @@ const RenewalTable = () => {
                   Export Selected
                 </button>
                 <button
+                  onClick={() => handleBulkAction('mark_renewed')}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 text-white text-sm rounded hover:bg-teal-700 transition-colors"
+                >
+                  <FaCheckCircle className="text-xs" />
+                  Mark as Renewed
+                </button>
+                <button
                   onClick={() => handleBulkAction('renew')}
                   className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
                 >
@@ -3201,6 +3310,7 @@ const RenewalTable = () => {
                 <option value="beyond_60_days">Beyond 60 Days</option>
                 <option value="expired">Expired</option>
                 <option value="no_expiry">No Expiry Date</option>
+                <option value="already_renewed">Already Renewed</option>
                 <option value="closed">Closed</option>
                 <option value="external">External</option>
               </select>

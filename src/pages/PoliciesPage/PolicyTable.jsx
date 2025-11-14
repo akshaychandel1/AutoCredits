@@ -38,7 +38,9 @@ import {
   FaCog,
   FaTimes,
   FaChevronDown,
-  FaChevronUp
+  FaChevronUp,
+  FaHandshake,
+  FaStoreAlt
 } from 'react-icons/fa';
 
 // ================== PAYMENT BREAKDOWN CALCULATION ==================
@@ -294,7 +296,11 @@ const exportToCSV = (policies, selectedRows = []) => {
     'Expiry Date',
     'Buyer Type',
     'Contact Person',
-    'Company Name'
+    'Company Name',
+    'Policy Issued By',
+    'Broker Name',
+    'Source Origin',
+    'Hypothecation'
   ];
 
   const csvData = policiesToExport.map(policy => {
@@ -318,6 +324,25 @@ const exportToCSV = (policies, selectedRows = []) => {
     };
 
     const normalizedStatus = normalizePolicyStatus(policy.status);
+
+    // Get policy issued by information
+    const getPolicyIssuedBy = () => {
+      const creditType = policy.creditType || 'auto';
+      const brokerName = policy.brokerName || customer.brokerName || '';
+      
+      switch (creditType) {
+        case 'auto':
+          return 'Autocredits India LLP';
+        case 'broker':
+          return brokerName ? `Broker (${brokerName})` : 'Broker';
+        case 'showroom':
+          return 'Showroom';
+        case 'customer':
+          return 'Customer';
+        default:
+          return 'Autocredits India LLP';
+      }
+    };
 
     return [
       policy._id || policy.id || 'N/A',
@@ -346,7 +371,11 @@ const exportToCSV = (policies, selectedRows = []) => {
       formatDateForCSV(getExpiryDateForCSV(policy)),
       policy.buyer_type || 'individual',
       customer.contactPersonName || 'N/A',
-      customer.companyName || 'N/A'
+      customer.companyName || 'N/A',
+      getPolicyIssuedBy(),
+      policy.brokerName || customer.brokerName || 'N/A',
+      policy.sourceOrigin || customer.sourceOrigin || 'N/A',
+      policyInfo.hypothecation || policy.policy_info?.hypothecation || 'N/A'
     ];
   });
 
@@ -518,7 +547,11 @@ const AdvancedSearch = ({
       minPremium: '',
       maxPremium: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      policyIssuedBy: '',
+      brokerName: '',
+      sourceOrigin: '',
+      hypothecation: ''
     };
     setLocalFilters(resetFilters);
     onResetFilters();
@@ -699,6 +732,55 @@ const AdvancedSearch = ({
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
+
+            {/* New Fields */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Policy Issued By</label>
+              <select
+                value={localFilters.policyIssuedBy}
+                onChange={(e) => handleFilterChange('policyIssuedBy', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">All</option>
+                <option value="autocredits">Autocredits India LLP</option>
+                <option value="broker">Broker</option>
+                <option value="showroom">Showroom</option>
+                <option value="customer">Customer</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Broker Name</label>
+              <input
+                type="text"
+                value={localFilters.brokerName}
+                onChange={(e) => handleFilterChange('brokerName', e.target.value)}
+                placeholder="Search by broker name"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Source Origin</label>
+              <input
+                type="text"
+                value={localFilters.sourceOrigin}
+                onChange={(e) => handleFilterChange('sourceOrigin', e.target.value)}
+                placeholder="Search by source origin"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Hypothecation</label>
+              <input
+                type="text"
+                value={localFilters.hypothecation}
+                onChange={(e) => handleFilterChange('hypothecation', e.target.value)}
+                placeholder="Search by hypothecation"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
           </div>
         </div>
 
@@ -750,7 +832,11 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     minPremium: '',
     maxPremium: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    policyIssuedBy: '',
+    brokerName: '',
+    sourceOrigin: '',
+    hypothecation: ''
   });
 
   const navigate = useNavigate();
@@ -820,10 +906,42 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
         const matchesStartDate = !searchFilters.startDate || createdDate >= new Date(searchFilters.startDate);
         const matchesEndDate = !searchFilters.endDate || createdDate <= new Date(searchFilters.endDate + 'T23:59:59');
 
+        // New filter matches
+        const getPolicyIssuedBy = () => {
+          const creditType = policy.creditType || 'auto';
+          const brokerName = policy.brokerName || customer.brokerName || '';
+          
+          switch (creditType) {
+            case 'auto':
+              return 'autocredits';
+            case 'broker':
+              return 'broker';
+            case 'showroom':
+              return 'showroom';
+            case 'customer':
+              return 'customer';
+            default:
+              return 'autocredits';
+          }
+        };
+
+        const matchesPolicyIssuedBy = !searchFilters.policyIssuedBy || 
+          getPolicyIssuedBy() === searchFilters.policyIssuedBy;
+
+        const matchesBrokerName = !searchFilters.brokerName || 
+          (policy.brokerName || customer.brokerName || '').toLowerCase().includes(searchFilters.brokerName.toLowerCase());
+
+        const matchesSourceOrigin = !searchFilters.sourceOrigin || 
+          (policy.sourceOrigin || customer.sourceOrigin || '').toLowerCase().includes(searchFilters.sourceOrigin.toLowerCase());
+
+        const matchesHypothecation = !searchFilters.hypothecation || 
+          (policyInfo.hypothecation || '').toLowerCase().includes(searchFilters.hypothecation.toLowerCase());
+
         return matchesCustomerName && matchesMobile && matchesEmail && matchesRegNo && 
                matchesVehicleMake && matchesVehicleModel && matchesPolicyNumber && 
                matchesInsuranceCompany && matchesCity && matchesPincode &&
-               matchesMinPremium && matchesMaxPremium && matchesStartDate && matchesEndDate;
+               matchesMinPremium && matchesMaxPremium && matchesStartDate && matchesEndDate &&
+               matchesPolicyIssuedBy && matchesBrokerName && matchesSourceOrigin && matchesHypothecation;
       });
     }
 
@@ -855,6 +973,11 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
         ).toLowerCase();
         const policyNumber = (policy.policy_info?.policyNumber || '').toLowerCase();
         
+        // New fields
+        const sourceOrigin = (policy.sourceOrigin || customer.sourceOrigin || '').toLowerCase();
+        const brokerName = (policy.brokerName || customer.brokerName || '').toLowerCase();
+        const hypothecation = (policy.policy_info?.hypothecation || '').toLowerCase();
+        
         // Search across all fields
         return (
           customerName.includes(query) ||
@@ -867,6 +990,10 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
           (regNo && regNo.slice(-4).includes(query)) ||
           insuranceCompany.includes(query) ||
           policyNumber.includes(query) ||
+          // New fields search
+          sourceOrigin.includes(query) ||
+          brokerName.includes(query) ||
+          hypothecation.includes(query) ||
           // Fuzzy search for insurance companies
           insuranceCompany.includes(query.replace(/\s+/g, '')) ||
           insuranceCompany.includes(query.split(' ')[0])
@@ -929,6 +1056,57 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
 
   // Helper functions
   const getVehicleType = (policy) => policy.vehicleType || 'used';
+
+  // Get policy issued by information
+  const getPolicyIssuedBy = (policy) => {
+    const customer = policy.customer_details || {};
+    const creditType = policy.creditType || 'auto';
+    const brokerName = policy.brokerName || customer.brokerName || '';
+    
+    switch (creditType) {
+      case 'auto':
+        return { 
+          text: 'Autocredits India LLP',
+          class: 'bg-blue-100 text-blue-800',
+          icon: FaHandshake
+        };
+      case 'broker':
+        return { 
+          text: brokerName ? `Broker (${brokerName})` : 'Broker',
+          class: 'bg-purple-100 text-purple-800',
+          icon: FaUserTie
+        };
+      case 'showroom':
+        return { 
+          text: 'Showroom',
+          class: 'bg-orange-100 text-orange-800',
+          icon: FaStoreAlt
+        };
+      case 'customer':
+        return { 
+          text: 'Customer',
+          class: 'bg-green-100 text-green-800',
+          icon: FaUser
+        };
+      default:
+        return { 
+          text: 'Autocredits India LLP',
+          class: 'bg-blue-100 text-blue-800',
+          icon: FaHandshake
+        };
+    }
+  };
+
+  // Get source origin
+  const getSourceOrigin = (policy) => {
+    const customer = policy.customer_details || {};
+    return policy.sourceOrigin || customer.sourceOrigin || 'N/A';
+  };
+
+  // Get hypothecation
+  const getHypothecation = (policy) => {
+    return policy.policy_info?.hypothecation || 'N/A';
+  };
 
   const handleViewClick = (policy) => {
     setSelectedPolicy(policy);
@@ -1084,7 +1262,9 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       buyerType: policy.buyer_type || 'individual',
       isCorporate: isCorporate,
       contactPersonName: customer.contactPersonName || 'N/A',
-      companyName: customer.companyName || 'N/A'
+      companyName: customer.companyName || 'N/A',
+      brokerName: policy.brokerName || customer.brokerName || 'N/A',
+      sourceOrigin: policy.sourceOrigin || customer.sourceOrigin || 'N/A'
     };
   };
 
@@ -1152,7 +1332,11 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       minPremium: '',
       maxPremium: '',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      policyIssuedBy: '',
+      brokerName: '',
+      sourceOrigin: '',
+      hypothecation: ''
     });
   };
 
@@ -1333,6 +1517,10 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                 const vehicleType = getVehicleType(policy);
                 const isSelected = selectedRows.has(policyId);
                 const isExpanded = expandedRows.has(policyId);
+                const policyIssuedBy = getPolicyIssuedBy(policy);
+                const PolicyIssuedByIcon = policyIssuedBy.icon;
+                const sourceOrigin = getSourceOrigin(policy);
+                const hypothecation = getHypothecation(policy);
 
                 return (
                   <React.Fragment key={policyId}>
@@ -1423,6 +1611,22 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                               </div>
                             </div>
                           </div>
+
+                          {/* Policy Issued By and Source Origin */}
+                          <div className="pt-1 border-t border-gray-100 space-y-1">
+                            <div className="flex items-center gap-1">
+                              <PolicyIssuedByIcon className="text-gray-400 text-xs flex-shrink-0" />
+                              <span className={`text-xs px-1 py-0.5 rounded ${policyIssuedBy.class}`}>
+                                {policyIssuedBy.text}
+                              </span>
+                            </div>
+                            {sourceOrigin && sourceOrigin !== 'N/A' && (
+                              <div className="text-xs text-gray-500 flex items-center gap-1">
+                                <FaMapMarkerAlt className="text-gray-400 text-xs flex-shrink-0" />
+                                <span className="truncate">Source: {sourceOrigin}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
 
@@ -1457,6 +1661,16 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                               <span>NCB:</span>
                               <span className="font-semibold text-yellow-600 text-xs">{ncbDiscount}</span>
                             </div>
+                            
+                            {/* Hypothecation */}
+                            {hypothecation && hypothecation !== 'N/A' && (
+                              <div className="text-gray-600 flex justify-between pt-1 border-t border-gray-100">
+                                <span>Hypothecation:</span>
+                                <span className="font-semibold text-purple-600 text-xs truncate max-w-[120px]">
+                                  {hypothecation}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -1581,6 +1795,22 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                     <span className="font-medium text-right max-w-[200px]">{customer.address}</span>
                                   </div>
                                 )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Policy Issued By:</span>
+                                  <span className="font-medium">{policyIssuedBy.text}</span>
+                                </div>
+                                {customer.brokerName && customer.brokerName !== 'N/A' && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Broker Name:</span>
+                                    <span className="font-medium">{customer.brokerName}</span>
+                                  </div>
+                                )}
+                                {sourceOrigin && sourceOrigin !== 'N/A' && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Source Origin:</span>
+                                    <span className="font-medium">{sourceOrigin}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -1657,6 +1887,12 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                   <span className="text-gray-600">NCB Discount:</span>
                                   <span className="font-medium text-yellow-600">{ncbDiscount}</span>
                                 </div>
+                                {hypothecation && hypothecation !== 'N/A' && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Hypothecation:</span>
+                                    <span className="font-medium text-purple-600">{hypothecation}</span>
+                                  </div>
+                                )}
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Created Date:</span>
                                   <span className="font-medium">{formatDate(policy.created_at || policy.ts)}</span>
