@@ -45,7 +45,7 @@ import {
 
 // ================== PAYMENT BREAKDOWN CALCULATION ==================
 
-// Calculate payment components function - SIMPLIFIED: Clear payment tracking
+// Calculate payment components function - FIXED: Strict payment status calculation
 const calculatePaymentComponents = (policy, paymentLedger = []) => {
   const totalPremium = policy.policy_info?.totalPremium || policy.insurance_quote?.premium || 0;
   
@@ -91,13 +91,15 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
     payment.paymentMadeBy === "In House" && payment.type !== "auto_credit"
   );
 
-  // SIMPLIFIED: Payment status calculation
+  // FIXED: Strict payment status calculation with tolerance for rounding errors
+  const tolerance = 0.01; // 1 paisa tolerance for rounding errors
+  
   let paymentStatus = 'pending';
   let paymentMadeBy = 'Not Paid';
 
   if (hasAutoCredit) {
-    // In House payment scenario - track customer payment status
-    if (remainingCustomerAmount <= 0) {
+    // Auto credit scenario - check if customer has paid their portion
+    if (remainingCustomerAmount <= tolerance) {
       paymentStatus = 'fully paid';
       paymentMadeBy = 'In House';
     } else if (totalCollectedFromCustomer > 0) {
@@ -109,7 +111,7 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
     }
   } else if (hasInHousePayments) {
     // Only In House payments (no auto credit)
-    if (remainingCustomerAmount <= 0) {
+    if (remainingCustomerAmount <= tolerance) {
       paymentStatus = 'fully paid';
       paymentMadeBy = 'In House';
     } else {
@@ -118,7 +120,7 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
     }
   } else if (hasCustomerPayments) {
     // Customer payment scenario
-    if (remainingCustomerAmount <= 0) {
+    if (remainingCustomerAmount <= tolerance) {
       paymentStatus = 'fully paid';
       paymentMadeBy = 'Customer';
     } else {
@@ -127,7 +129,7 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
     }
   }
 
-  // Calculate payment progress
+  // Calculate payment progress - FIXED: Use effective payable for calculation
   const paymentProgress = effectivePayable > 0 
     ? Math.min((totalCollectedFromCustomer / effectivePayable) * 100, 100)
     : 100;
@@ -150,7 +152,7 @@ const calculatePaymentComponents = (policy, paymentLedger = []) => {
   };
 };
 
-// Function to get payment status - SIMPLIFIED: Use consistent calculation
+// Function to get payment status - FIXED: Use consistent calculation with tolerance
 const getPaymentStatus = (policy) => {
   if (policy.payment_info?.paymentStatus) {
     return policy.payment_info.paymentStatus.toLowerCase();
@@ -462,7 +464,7 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
           </span>
         </div>
         
-        {displayDueAmount > 0 && (
+        {displayDueAmount > 0.01 && ( // FIXED: Only show due amount if more than 1 paisa
           <div className="flex justify-between">
             <span className="text-gray-600">Due:</span>
             <span className="text-red-600 font-medium">
@@ -481,8 +483,8 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className={`h-2 rounded-full transition-all duration-300 ${
-              displayProgress === 100 ? 'bg-green-500' : 
-              displayProgress > 0 ? 'bg-yellow-500' : 'bg-red-500'
+              displayPaymentStatus === 'fully paid' ? 'bg-green-500' : 
+              displayPaymentStatus === 'partially paid' ? 'bg-yellow-500' : 'bg-red-500'
             }`}
             style={{ width: `${Math.min(displayProgress, 100)}%` }}
           ></div>

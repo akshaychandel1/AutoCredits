@@ -18,7 +18,12 @@ import {
   Briefcase,
   UserCheck,
   TrendingUp,
-  FileText
+  FileText,
+  CreditCard,
+  Shield,
+  Calendar,
+  Users,
+  Target
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -34,6 +39,7 @@ const InsuranceCustomers = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [buyerTypeFilter, setBuyerTypeFilter] = useState("");
+  const [creditTypeFilter, setCreditTypeFilter] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
@@ -44,7 +50,9 @@ const InsuranceCustomers = () => {
     phone: '',
     city: '',
     companyName: '',
-    contactPerson: ''
+    contactPerson: '',
+    creditType: '',
+    sourceOrigin: ''
   });
 
   // Fetch customers and policies from API
@@ -63,7 +71,18 @@ const InsuranceCustomers = () => {
         customersData = customerResponse.data.data;
       }
       
-      setCustomers(customersData);
+      // Process customers to ensure all required fields
+      const processedCustomers = customersData.map(customer => ({
+        ...customer,
+        buyer_type: customer.buyer_type || 'individual',
+        creditType: customer.creditType || 'auto',
+        sourceOrigin: customer.sourceOrigin || 'direct',
+        brokerName: customer.brokerName || '',
+        company_code: customer.company_code || generateCompanyCode(customer),
+        contact_code: customer.contact_code || generateContactCode(customer)
+      }));
+      
+      setCustomers(processedCustomers);
 
       // Fetch policies to get company/contact person data
       try {
@@ -88,6 +107,36 @@ const InsuranceCustomers = () => {
     fetchData();
   }, []);
 
+  // Generate company code for corporate customers
+  const generateCompanyCode = (customer) => {
+    if (customer.buyer_type !== 'corporate' || !customer.company_name) return '';
+    
+    const companyName = customer.company_name.toUpperCase();
+    const words = companyName.split(' ').filter(word => word.length > 0);
+    
+    if (words.length === 1) {
+      return words[0].substring(0, 6);
+    }
+    
+    return words.map(word => word[0]).join('').substring(0, 4) + 
+           Math.floor(1000 + Math.random() * 9000).toString().substring(0, 3);
+  };
+
+  // Generate contact code for corporate customers
+  const generateContactCode = (customer) => {
+    if (customer.buyer_type !== 'corporate' || !customer.contact_person_name) return '';
+    
+    const contactName = customer.contact_person_name.toUpperCase();
+    const names = contactName.split(' ').filter(name => name.length > 0);
+    
+    if (names.length === 1) {
+      return names[0].substring(0, 4);
+    }
+    
+    return (names[0][0] + (names[names.length - 1] || names[0]).substring(0, 3)).toUpperCase() +
+           Math.floor(100 + Math.random() * 900).toString().substring(0, 2);
+  };
+
   // Enhanced search function
   const filteredCustomers = customers.filter((customer) => {
     const firstName = customer.first_name || '';
@@ -99,6 +148,10 @@ const InsuranceCustomers = () => {
     const companyName = customer.company_name || '';
     const contactPerson = customer.contact_person_name || '';
     const city = customer.city || '';
+    const creditType = customer.creditType || '';
+    const sourceOrigin = customer.sourceOrigin || '';
+    const companyCode = customer.company_code || '';
+    const contactCode = customer.contact_code || '';
 
     // Basic search across all fields including ID
     const matchesSearch = search ? 
@@ -109,7 +162,11 @@ const InsuranceCustomers = () => {
       customerId.toLowerCase().includes(search.toLowerCase()) ||
       companyName.toLowerCase().includes(search.toLowerCase()) ||
       contactPerson.toLowerCase().includes(search.toLowerCase()) ||
-      city.toLowerCase().includes(search.toLowerCase())
+      city.toLowerCase().includes(search.toLowerCase()) ||
+      creditType.toLowerCase().includes(search.toLowerCase()) ||
+      sourceOrigin.toLowerCase().includes(search.toLowerCase()) ||
+      companyCode.toLowerCase().includes(search.toLowerCase()) ||
+      contactCode.toLowerCase().includes(search.toLowerCase())
       : true;
 
     // Status filter
@@ -120,6 +177,9 @@ const InsuranceCustomers = () => {
     
     // Buyer type filter
     const matchesBuyerType = buyerTypeFilter ? customer.buyer_type === buyerTypeFilter : true;
+    
+    // Credit type filter
+    const matchesCreditType = creditTypeFilter ? customer.creditType === creditTypeFilter : true;
 
     // Advanced filters
     const matchesAdvanced = 
@@ -127,9 +187,11 @@ const InsuranceCustomers = () => {
       (!advancedFilters.phone || phone.includes(advancedFilters.phone)) &&
       (!advancedFilters.city || city.toLowerCase().includes(advancedFilters.city.toLowerCase())) &&
       (!advancedFilters.companyName || companyName.toLowerCase().includes(advancedFilters.companyName.toLowerCase())) &&
-      (!advancedFilters.contactPerson || contactPerson.toLowerCase().includes(advancedFilters.contactPerson.toLowerCase()));
+      (!advancedFilters.contactPerson || contactPerson.toLowerCase().includes(advancedFilters.contactPerson.toLowerCase())) &&
+      (!advancedFilters.creditType || creditType.toLowerCase().includes(advancedFilters.creditType.toLowerCase())) &&
+      (!advancedFilters.sourceOrigin || sourceOrigin.toLowerCase().includes(advancedFilters.sourceOrigin.toLowerCase()));
 
-    return matchesSearch && matchesStatus && matchesType && matchesBuyerType && matchesAdvanced;
+    return matchesSearch && matchesStatus && matchesType && matchesBuyerType && matchesCreditType && matchesAdvanced;
   });
 
   // Handle View Customer
@@ -171,6 +233,7 @@ const InsuranceCustomers = () => {
   const uniqueStatuses = [...new Set(customers.map(c => c.lead_status).filter(Boolean))];
   const uniqueTypes = [...new Set(customers.map(c => c.policy_type).filter(Boolean))];
   const uniqueBuyerTypes = [...new Set(customers.map(c => c.buyer_type).filter(Boolean))];
+  const uniqueCreditTypes = [...new Set(customers.map(c => c.creditType).filter(Boolean))];
 
   // Get stats for dashboard
   const getStats = () => {
@@ -180,8 +243,23 @@ const InsuranceCustomers = () => {
     const converted = customers.filter(c => c.lead_status && c.lead_status.includes('Converted')).length;
     const corporate = customers.filter(c => c.buyer_type === 'corporate').length;
     const individual = customers.filter(c => c.buyer_type === 'individual' || !c.buyer_type).length;
+    const autoCredit = customers.filter(c => c.creditType === 'auto').length;
+    const broker = customers.filter(c => c.creditType === 'broker').length;
+    const showroom = customers.filter(c => c.creditType === 'showroom').length;
+    const customerDirect = customers.filter(c => c.creditType === 'customer').length;
     
-    return { total, active, newLeads, converted, corporate, individual };
+    return { 
+      total, 
+      active, 
+      newLeads, 
+      converted, 
+      corporate, 
+      individual,
+      autoCredit,
+      broker,
+      showroom,
+      customerDirect
+    };
   };
 
   const stats = getStats();
@@ -192,6 +270,8 @@ const InsuranceCustomers = () => {
       setStatusFilter(filterValue);
     } else if (filterType === 'buyerType') {
       setBuyerTypeFilter(filterValue);
+    } else if (filterType === 'creditType') {
+      setCreditTypeFilter(filterValue);
     }
     setSearch("");
   };
@@ -202,17 +282,20 @@ const InsuranceCustomers = () => {
     setSearch("");
     setTypeFilter("");
     setBuyerTypeFilter("");
+    setCreditTypeFilter("");
     setAdvancedFilters({
       email: '',
       phone: '',
       city: '',
       companyName: '',
-      contactPerson: ''
+      contactPerson: '',
+      creditType: '',
+      sourceOrigin: ''
     });
   };
 
   // Check if any filter is active
-  const isFilterActive = statusFilter || search || typeFilter || buyerTypeFilter || 
+  const isFilterActive = statusFilter || search || typeFilter || buyerTypeFilter || creditTypeFilter || 
     Object.values(advancedFilters).some(value => value !== '');
 
   // Format date
@@ -229,6 +312,18 @@ const InsuranceCustomers = () => {
     }
   };
 
+  // Get credit type display info
+  const getCreditTypeInfo = (creditType, brokerName = '') => {
+    const types = {
+      auto: { label: 'Autocredits India LLP', color: 'blue', icon: <Shield className="w-3 h-3" /> },
+      broker: { label: `Broker${brokerName ? ` - ${brokerName}` : ''}`, color: 'purple', icon: <UserCheck className="w-3 h-3" /> },
+      showroom: { label: 'Showroom', color: 'orange', icon: <Building className="w-3 h-3" /> },
+      customer: { label: 'Customer', color: 'green', icon: <User className="w-3 h-3" /> }
+    };
+    
+    return types[creditType] || { label: creditType, color: 'gray', icon: <CreditCard className="w-3 h-3" /> };
+  };
+
   // Export to CSV
   const exportToCSV = () => {
     const headers = [
@@ -238,6 +333,8 @@ const InsuranceCustomers = () => {
       'Last Name',
       'Company Name',
       'Contact Person',
+      'Company Code',
+      'Contact Code',
       'Email',
       'Phone',
       'Gender',
@@ -246,6 +343,9 @@ const InsuranceCustomers = () => {
       'Lead Source',
       'Policy Type',
       'Lead Status',
+      'Credit Type',
+      'Source Origin',
+      'Broker Name',
       'Created Date'
     ];
 
@@ -256,6 +356,8 @@ const InsuranceCustomers = () => {
       customer.last_name || 'N/A',
       customer.company_name || 'N/A',
       customer.contact_person_name || 'N/A',
+      customer.company_code || 'N/A',
+      customer.contact_code || 'N/A',
       customer.email || 'N/A',
       customer.phone || 'N/A',
       customer.gender || 'N/A',
@@ -264,6 +366,9 @@ const InsuranceCustomers = () => {
       customer.lead_source || 'N/A',
       customer.policy_type || 'N/A',
       customer.lead_status || 'N/A',
+      customer.creditType || 'auto',
+      customer.sourceOrigin || 'direct',
+      customer.brokerName || 'N/A',
       formatDate(customer.created_at || customer.ts)
     ].map(field => `"${field}"`).join(','));
 
@@ -289,6 +394,16 @@ const InsuranceCustomers = () => {
   const handleCustomerSave = async (customerData) => {
     try {
       let updatedCustomer;
+      
+      // Generate codes for corporate customers
+      if (customerData.buyer_type === 'corporate') {
+        customerData.company_code = generateCompanyCode(customerData);
+        customerData.contact_code = generateContactCode(customerData);
+      } else {
+        customerData.company_code = '';
+        customerData.contact_code = '';
+      }
+      
       if (editingCustomer) {
         // Update existing customer
         const response = await axios.put(`${API_BASE_URL}/${editingCustomer._id}`, customerData);
@@ -346,11 +461,20 @@ const InsuranceCustomers = () => {
               buyer_type: policy.buyer_type || 'individual',
               company_name: customerDetails.companyName || '',
               contact_person_name: customerDetails.contactPersonName || '',
-              policy_type: '4 Wheeler', // Default
+              creditType: customerDetails.creditType || 'auto',
+              sourceOrigin: customerDetails.sourceOrigin || 'policy_import',
+              brokerName: customerDetails.brokerName || '',
+              policy_type: '4 Wheeler',
               lead_source: 'Policy Import',
               lead_status: 'Converted',
               ts: Date.now()
             };
+
+            // Generate codes for corporate customers
+            if (newCustomer.buyer_type === 'corporate') {
+              newCustomer.company_code = generateCompanyCode(newCustomer);
+              newCustomer.contact_code = generateContactCode(newCustomer);
+            }
 
             const response = await axios.post(API_BASE_URL, newCustomer);
             importedCustomers.push(response.data.data || response.data);
@@ -393,17 +517,19 @@ const InsuranceCustomers = () => {
         phone: '',
         city: '',
         companyName: '',
-        contactPerson: ''
+        contactPerson: '',
+        creditType: '',
+        sourceOrigin: ''
       });
     };
 
     return (
-      <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 backdrop-blur-sm   bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Advanced Search</h3>
             <button
-              onClick={() => setShowAdvancedSearch(false)}
+              onClick={() => setShowAdvancedSearch(true)}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -456,13 +582,39 @@ const InsuranceCustomers = () => {
                 />
               </div>
 
-              <div className="md:col-span-2">
+              <div>
                 <label className="text-sm font-medium text-gray-700 mb-1">Contact Person</label>
                 <input
                   type="text"
                   value={advancedFilters.contactPerson}
                   onChange={(e) => handleFilterChange('contactPerson', e.target.value)}
                   placeholder="Filter by contact person"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1">Credit Type</label>
+                <select
+                  value={advancedFilters.creditType}
+                  onChange={(e) => handleFilterChange('creditType', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">All Credit Types</option>
+                  <option value="auto">Autocredits India LLP</option>
+                  <option value="broker">Broker</option>
+                  <option value="showroom">Showroom</option>
+                  <option value="customer">Customer</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1">Source Origin</label>
+                <input
+                  type="text"
+                  value={advancedFilters.sourceOrigin}
+                  onChange={(e) => handleFilterChange('sourceOrigin', e.target.value)}
+                  placeholder="Filter by source origin"
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
@@ -538,7 +690,7 @@ const InsuranceCustomers = () => {
               <button
                 onClick={() => handleStatClick('status', '')}
                 className={`bg-gradient-to-br from-blue-50 to-blue-100 border-2 rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-lg text-left ${
-                  !statusFilter && !buyerTypeFilter
+                  !statusFilter && !buyerTypeFilter && !creditTypeFilter
                     ? 'border-blue-300 ring-2 ring-blue-100' 
                     : 'border-blue-200 hover:border-blue-300'
                 }`}
@@ -594,62 +746,62 @@ const InsuranceCustomers = () => {
                 </p>
               </button>
 
-              {/* Active Customers */}
+              {/* Autocredits Customers */}
               <button
-                onClick={() => handleStatClick('status', 'Active')}
-                className={`bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-lg text-left ${
-                  statusFilter === 'Active'
-                    ? 'border-emerald-300 ring-2 ring-emerald-100' 
-                    : 'border-emerald-200 hover:border-emerald-300'
+                onClick={() => handleStatClick('creditType', 'auto')}
+                className={`bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-lg text-left ${
+                  creditTypeFilter === 'auto'
+                    ? 'border-indigo-300 ring-2 ring-indigo-100' 
+                    : 'border-indigo-200 hover:border-indigo-300'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">{stats.active}</span>
+                  <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
+                    <Shield className="text-white w-4 h-4" />
                   </div>
                 </div>
-                <h3 className="text-sm font-bold text-gray-800 mb-1">Active</h3>
-                <p className="text-xs text-emerald-600">
-                  Active customers
+                <h3 className="text-sm font-bold text-gray-800 mb-1">Autocredits</h3>
+                <p className="text-xs text-indigo-600">
+                  {stats.autoCredit} customers
                 </p>
               </button>
 
-              {/* New Leads */}
+              {/* Broker Customers */}
               <button
-                onClick={() => handleStatClick('status', 'New')}
-                className={`bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-lg text-left ${
-                  statusFilter === 'New'
-                    ? 'border-yellow-300 ring-2 ring-yellow-100' 
-                    : 'border-yellow-200 hover:border-yellow-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">{stats.newLeads}</span>
-                  </div>
-                </div>
-                <h3 className="text-sm font-bold text-gray-800 mb-1">New Leads</h3>
-                <p className="text-xs text-yellow-600">
-                  New leads
-                </p>
-              </button>
-
-              {/* Converted */}
-              <button
-                onClick={() => handleStatClick('status', 'Converted')}
+                onClick={() => handleStatClick('creditType', 'broker')}
                 className={`bg-gradient-to-br from-purple-50 to-purple-100 border-2 rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-lg text-left ${
-                  statusFilter === 'Converted'
+                  creditTypeFilter === 'broker'
                     ? 'border-purple-300 ring-2 ring-purple-100' 
                     : 'border-purple-200 hover:border-purple-300'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <UserCheck className="text-white w-4 h-4" />
+                  </div>
+                </div>
+                <h3 className="text-sm font-bold text-gray-800 mb-1">Broker</h3>
+                <p className="text-xs text-purple-600">
+                  {stats.broker} customers
+                </p>
+              </button>
+
+              {/* Converted */}
+              <button
+                onClick={() => handleStatClick('status', 'Converted')}
+                className={`bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 rounded-xl p-4 shadow-sm transition-all duration-200 hover:shadow-lg text-left ${
+                  statusFilter === 'Converted'
+                    ? 'border-emerald-300 ring-2 ring-emerald-100' 
+                    : 'border-emerald-200 hover:border-emerald-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
                     <span className="text-white font-bold text-sm">{stats.converted}</span>
                   </div>
                 </div>
                 <h3 className="text-sm font-bold text-gray-800 mb-1">Converted</h3>
-                <p className="text-xs text-purple-600">
+                <p className="text-xs text-emerald-600">
                   Converted leads
                 </p>
               </button>
@@ -684,7 +836,7 @@ const InsuranceCustomers = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search by name, email, phone, ID, company..."
+              placeholder="Search by name, email, phone, ID, company, contact, codes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none shadow-sm"
@@ -738,6 +890,23 @@ const InsuranceCustomers = () => {
             {uniqueBuyerTypes.map(type => (
               <option key={type} value={type}>
                 {type === 'corporate' ? 'Corporate' : 'Individual'}
+              </option>
+            ))}
+          </select>
+
+          {/* Credit Type Filter */}
+          <select
+            value={creditTypeFilter}
+            onChange={(e) => setCreditTypeFilter(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent focus:outline-none shadow-sm min-w-[140px]"
+          >
+            <option value="">All Credit Types</option>
+            {uniqueCreditTypes.map(type => (
+              <option key={type} value={type}>
+                {type === 'auto' ? 'Autocredits' : 
+                 type === 'broker' ? 'Broker' : 
+                 type === 'showroom' ? 'Showroom' : 
+                 type === 'customer' ? 'Customer' : type}
               </option>
             ))}
           </select>
@@ -801,6 +970,19 @@ const InsuranceCustomers = () => {
                 </button>
               </span>
             )}
+            {creditTypeFilter && (
+              <span className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs">
+                Credit: {creditTypeFilter === 'auto' ? 'Autocredits' : 
+                        creditTypeFilter === 'broker' ? 'Broker' : 
+                        creditTypeFilter === 'showroom' ? 'Showroom' : 'Customer'}
+                <button 
+                  onClick={() => setCreditTypeFilter("")}
+                  className="ml-1 hover:bg-indigo-200 rounded-full w-3 h-3 flex items-center justify-center text-xs"
+                >
+                  ×
+                </button>
+              </span>
+            )}
             {Object.entries(advancedFilters).map(([key, value]) => 
               value && (
                 <span key={key} className="inline-flex items-center gap-1 bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">
@@ -843,7 +1025,7 @@ const InsuranceCustomers = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[1000px]">
+            <table className="w-full text-left min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
@@ -866,10 +1048,11 @@ const InsuranceCustomers = () => {
               <tbody className="divide-y divide-gray-100">
                 {filteredCustomers.map((customer) => {
                   const isCorporate = customer.buyer_type === 'corporate';
+                  const creditTypeInfo = getCreditTypeInfo(customer.creditType, customer.brokerName);
                   
                   return (
                     <tr key={customer._id} className="hover:bg-gray-50 transition-colors">
-                      {/* Customer Details Column */}
+                      {/* Customer Details Column - ENHANCED with Company Name and Contact Person */}
                       <td className="px-4 py-3 border-r border-gray-100">
                         <div className="space-y-2">
                           <div className="flex items-center gap-3">
@@ -882,14 +1065,50 @@ const InsuranceCustomers = () => {
                                 <User className={`text-purple-600 w-4 h-4`} />
                               )}
                             </div>
-                            <div>
-                              <div className="font-semibold text-gray-900 text-sm">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-gray-900 text-sm truncate">
                                 {isCorporate ? customer.company_name : `${customer.first_name} ${customer.last_name}`}
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {isCorporate ? customer.contact_person_name : customer.gender || 'N/A'}
-                              </div>
-                              <div className="text-xs text-gray-400">ID: {customer._id?.slice(-6)}</div>
+                              
+                              {/* Company Name and Contact Person - ALWAYS VISIBLE for Corporate */}
+                              {isCorporate && customer.contact_person_name && (
+                                <div className="text-xs text-gray-600 mt-1 space-y-1">
+                                  <div className="flex items-center gap-1">
+                                    <Users className="w-3 h-3 text-gray-500" />
+                                    <span className="truncate">{customer.company_name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <User className="w-3 h-3 text-gray-500" />
+                                    <span className="truncate">{customer.contact_person_name}</span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Individual customer details */}
+                              {!isCorporate && (
+                                <div className="text-xs text-gray-500">
+                                  {customer.gender || 'N/A'} • {customer.age || 'N/A'} yrs
+                                </div>
+                              )}
+                              
+                              {/* Corporate codes */}
+                              {isCorporate && (
+                                <div className="flex gap-1 mt-1">
+                                  {customer.company_code && (
+                                    <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">
+                                      <Briefcase className="w-2.5 h-2.5" />
+                                      {customer.company_code}
+                                    </span>
+                                  )}
+                                  {customer.contact_code && (
+                                    <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs">
+                                      <User className="w-2.5 h-2.5" />
+                                      {customer.contact_code}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              <div className="text-xs text-gray-400 mt-1">ID: {customer._id?.slice(-6)}</div>
                             </div>
                           </div>
                         </div>
@@ -915,8 +1134,8 @@ const InsuranceCustomers = () => {
 
                       {/* Business Info Column */}
                       <td className="px-4 py-3 border-r border-gray-100">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-1">
                             <span className={`text-xs px-2 py-1 rounded ${
                               isCorporate 
                                 ? 'bg-orange-100 text-orange-800 border border-orange-200' 
@@ -924,10 +1143,28 @@ const InsuranceCustomers = () => {
                             }`}>
                               {isCorporate ? 'Corporate' : 'Individual'}
                             </span>
+                            <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded ${
+                              creditTypeInfo.color === 'blue' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                              creditTypeInfo.color === 'purple' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                              creditTypeInfo.color === 'orange' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
+                              'bg-green-100 text-green-800 border border-green-200'
+                            }`}>
+                              {creditTypeInfo.icon}
+                              {creditTypeInfo.label}
+                            </span>
                           </div>
                           <div className="text-xs text-gray-600 space-y-0.5">
-                            <div>Source: {customer.lead_source || 'N/A'}</div>
-                            <div>Created: {formatDate(customer.created_at || customer.ts)}</div>
+                            <div className="flex items-center gap-1">
+                              <Target className="w-2.5 h-2.5" />
+                              Source: {customer.lead_source || 'N/A'}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-2.5 h-2.5" />
+                              Created: {formatDate(customer.created_at || customer.ts)}
+                            </div>
+                            {customer.sourceOrigin && (
+                              <div>Origin: {customer.sourceOrigin}</div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -1001,6 +1238,7 @@ const InsuranceCustomers = () => {
             setIsModalOpen(false);
             handleEdit(selectedCustomer);
           }}
+          getCreditTypeInfo={getCreditTypeInfo}
         />
       )}
 
@@ -1010,6 +1248,8 @@ const InsuranceCustomers = () => {
           customer={editingCustomer}
           onSave={handleCustomerSave}
           onClose={handleCloseCustomerModal}
+          generateCompanyCode={generateCompanyCode}
+          generateContactCode={generateContactCode}
         />
       )}
 
@@ -1020,10 +1260,11 @@ const InsuranceCustomers = () => {
 };
 
 // Customer Details Modal Component
-const CustomerDetailsModal = ({ customer, onClose, onEdit }) => {
+const CustomerDetailsModal = ({ customer, onClose, onEdit, getCreditTypeInfo }) => {
   const isCorporate = customer.buyer_type === 'corporate';
+  const creditTypeInfo = getCreditTypeInfo(customer.creditType, customer.brokerName);
 
-  // Add formatDate function inside the modal component
+  // Format date function
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -1037,128 +1278,304 @@ const CustomerDetailsModal = ({ customer, onClose, onEdit }) => {
     }
   };
 
+  // Format phone number for better readability
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return 'N/A';
+    // Remove any non-digit characters
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Check if the number is Indian (starts with +91 or 91 or just 10 digits)
+    if (cleaned.length === 10) {
+      return `+91 ${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+    } else if (cleaned.length === 12 && cleaned.startsWith('91')) {
+      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 7)} ${cleaned.slice(7)}`;
+    } else if (cleaned.length === 13 && cleaned.startsWith('91')) {
+      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 7)} ${cleaned.slice(7)}`;
+    }
+    
+    return phone;
+  };
+
+  // Get status badge color
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      'Active': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      'New': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'Converted': 'bg-purple-100 text-purple-800 border-purple-200',
+      'Hot': 'bg-red-100 text-red-800 border-red-200',
+      'Warm': 'bg-orange-100 text-orange-800 border-orange-200',
+      'Cold': 'bg-blue-100 text-blue-800 border-blue-200',
+      'In Progress': 'bg-indigo-100 text-indigo-800 border-indigo-200'
+    };
+    
+    return statusConfig[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  // Get policy type badge color
+  const getPolicyBadge = (policyType) => {
+    const policyConfig = {
+      '4 Wheeler': 'bg-blue-100 text-blue-800 border-blue-200',
+      '2 Wheeler': 'bg-green-100 text-green-800 border-green-200',
+      'Home Insurance': 'bg-purple-100 text-purple-800 border-purple-200',
+      'Health Insurance': 'bg-pink-100 text-pink-800 border-pink-200',
+      'Life Insurance': 'bg-red-100 text-red-800 border-red-200'
+    };
+    
+    return policyConfig[policyType] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
   return (
-    <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">Customer Details</h2>
+    <div className="fixed inset-0 backdrop-blur-md   bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              isCorporate ? 'bg-orange-100' : 'bg-purple-100'
+            }`}>
+              {isCorporate ? (
+                <Building className="text-orange-600 w-6 h-6" />
+              ) : (
+                <User className="text-purple-600 w-6 h-6" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">
+                {isCorporate ? customer.company_name : `${customer.first_name} ${customer.last_name}`}
+              </h2>
+              <p className="text-gray-600 text-sm">
+                {isCorporate ? 'Corporate Customer' : 'Individual Customer'} • ID: {customer._id?.slice(-8)}
+              </p>
+            </div>
+          </div>
           <button 
-            className="text-gray-400 hover:text-gray-600 text-2xl"
+            className="text-gray-400 hover:text-gray-600 text-2xl bg-white rounded-full p-1 hover:bg-gray-100 transition-colors"
             onClick={onClose}
           >
             ×
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-8">
           {/* Personal/Business Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <div className="bg-gray-50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <IdCard className="w-5 h-5 text-gray-600" />
               {isCorporate ? 'Business Information' : 'Personal Information'}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {isCorporate ? (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                    <p className="text-gray-900">{customer.company_name || 'N/A'}</p>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Company Name</label>
+                    <p className="text-gray-900 font-medium text-lg">{customer.company_name || 'N/A'}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
-                    <p className="text-gray-900">{customer.contact_person_name || 'N/A'}</p>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Contact Person</label>
+                    <p className="text-gray-900 font-medium">{customer.contact_person_name || 'N/A'}</p>
                   </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Designation</label>
+                    <p className="text-gray-900">{customer.designation || 'N/A'}</p>
+                  </div>
+                  {customer.company_code && (
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Company Code</label>
+                      <p className="text-gray-900 font-mono bg-white px-3 py-2 rounded border">{customer.company_code}</p>
+                    </div>
+                  )}
+                  {customer.contact_code && (
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Contact Code</label>
+                      <p className="text-gray-900 font-mono bg-white px-3 py-2 rounded border">{customer.contact_code}</p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                    <p className="text-gray-900">{customer.first_name || 'N/A'}</p>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">First Name</label>
+                    <p className="text-gray-900 font-medium text-lg">{customer.first_name || 'N/A'}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                    <p className="text-gray-900">{customer.last_name || 'N/A'}</p>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                    <p className="text-gray-900 font-medium">{customer.last_name || 'N/A'}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Gender</label>
                     <p className="text-gray-900">{customer.gender || 'N/A'}</p>
                   </div>
                 </>
               )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
-                <p className="text-gray-900 capitalize">{customer.buyer_type || 'individual'}</p>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Customer Type</label>
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                  isCorporate 
+                    ? 'bg-orange-100 text-orange-800 border-orange-200' 
+                    : 'bg-purple-100 text-purple-800 border-purple-200'
+                }`}>
+                  {isCorporate ? 'Corporate' : 'Individual'}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Credit Type</label>
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                  creditTypeInfo.color === 'blue' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                  creditTypeInfo.color === 'purple' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                  creditTypeInfo.color === 'orange' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                  'bg-green-100 text-green-800 border-green-200'
+                }`}>
+                  {creditTypeInfo.icon}
+                  {creditTypeInfo.label}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Contact Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <p className="text-gray-900">{customer.email || 'N/A'}</p>
+          <div className="bg-gray-50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Phone className="w-5 h-5 text-gray-600" />
+              Contact Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Email Address</label>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-gray-500" />
+                  <a 
+                    href={`mailto:${customer.email}`} 
+                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                  >
+                    {customer.email || 'N/A'}
+                  </a>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <p className="text-gray-900">{customer.phone || 'N/A'}</p>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-gray-500" />
+                  <a 
+                    href={`tel:${customer.phone}`} 
+                    className="text-gray-900 font-medium hover:text-blue-600"
+                  >
+                    {formatPhoneNumber(customer.phone)}
+                  </a>
+                </div>
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <p className="text-gray-900">{customer.address || 'N/A'}</p>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Alternate Phone</label>
+                <p className="text-gray-900">{formatPhoneNumber(customer.alternate_phone) || 'N/A'}</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <div className="md:col-span-2 lg:col-span-3 space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Address</label>
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-gray-900">{customer.address || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">City</label>
                 <p className="text-gray-900">{customer.city || 'N/A'}</p>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">State</label>
+                <p className="text-gray-900">{customer.state || 'N/A'}</p>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Pincode</label>
+                <p className="text-gray-900">{customer.pincode || 'N/A'}</p>
               </div>
             </div>
           </div>
 
-          {/* Policy Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Policy Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Policy Type</label>
-                <p className="text-gray-900">{customer.policy_type || 'N/A'}</p>
+          {/* Policy & Business Information */}
+          <div className="bg-gray-50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-gray-600" />
+              Policy & Business Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Policy Type</label>
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getPolicyBadge(customer.policy_type)}`}>
+                  {customer.policy_type || 'N/A'}
+                </span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lead Source</label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Lead Source</label>
                 <p className="text-gray-900">{customer.lead_source || 'N/A'}</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lead Status</label>
-                <p className="text-gray-900">{customer.lead_status || 'N/A'}</p>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Lead Status</label>
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadge(customer.lead_status)}`}>
+                  {customer.lead_status || 'N/A'}
+                </span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Source Origin</label>
+                <p className="text-gray-900">{customer.sourceOrigin || 'N/A'}</p>
+              </div>
+              {customer.brokerName && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Broker Name</label>
+                  <p className="text-gray-900 font-medium">{customer.brokerName}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* System Information */}
+          <div className="bg-gray-50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-gray-600" />
+              System Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Customer ID</label>
+                <p className="text-gray-900 font-mono text-sm bg-white px-3 py-2 rounded border">{customer._id || 'N/A'}</p>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Created Date</label>
                 <p className="text-gray-900">{formatDate(customer.created_at || customer.ts)}</p>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Last Updated</label>
+                <p className="text-gray-900">{formatDate(customer.updated_at) || 'N/A'}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
-          <button 
-            className="px-6 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-            onClick={onClose}
-          >
-            Close
-          </button>
-          <button 
-            className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-            onClick={onEdit}
-          >
-            Edit Customer
-          </button>
+        {/* Footer Actions */}
+        <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
+          <div className="text-sm text-gray-600">
+            Last viewed: {formatDate(new Date().toISOString())}
+          </div>
+          <div className="flex gap-3">
+            <button 
+              className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              onClick={onClose}
+            >
+              Close
+            </button>
+            <button 
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2"
+              onClick={onEdit}
+            >
+              <Edit className="w-4 h-4" />
+              Edit Customer
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// Customer Modal Component (Integrated from NewCustomerPage)
-const CustomerModal = ({ customer, onSave, onClose }) => {
+// Customer Modal Component
+const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generateContactCode }) => {
   const isEditMode = Boolean(customer);
   
   const [loading, setLoading] = useState(false);
@@ -1169,9 +1586,18 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
     phone: '',
     gender: '',
     address: '',
+    city: '',
+    buyer_type: 'individual',
+    company_name: '',
+    contact_person_name: '',
+    company_code: '',
+    contact_code: '',
+    creditType: 'auto',
+    sourceOrigin: '',
+    brokerName: '',
     lead_source: '',
     policy_type: '4 Wheeler',
-    lead_status: ''
+    lead_status: 'New'
   });
 
   // Initialize form data when customer prop changes
@@ -1184,9 +1610,18 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
         phone: customer.phone || '',
         gender: customer.gender || '',
         address: customer.address || '',
+        city: customer.city || '',
+        buyer_type: customer.buyer_type || 'individual',
+        company_name: customer.company_name || '',
+        contact_person_name: customer.contact_person_name || '',
+        company_code: customer.company_code || '',
+        contact_code: customer.contact_code || '',
+        creditType: customer.creditType || 'auto',
+        sourceOrigin: customer.sourceOrigin || '',
+        brokerName: customer.brokerName || '',
         lead_source: customer.lead_source || '',
         policy_type: customer.policy_type || '4 Wheeler',
-        lead_status: customer.lead_status || ''
+        lead_status: customer.lead_status || 'New'
       });
     } else {
       // Reset form for new customer
@@ -1197,19 +1632,70 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
         phone: '',
         gender: '',
         address: '',
+        city: '',
+        buyer_type: 'individual',
+        company_name: '',
+        contact_person_name: '',
+        company_code: '',
+        contact_code: '',
+        creditType: 'auto',
+        sourceOrigin: '',
+        brokerName: '',
         lead_source: '',
         policy_type: '4 Wheeler',
-        lead_status: ''
+        lead_status: 'New'
       });
     }
   }, [customer, isEditMode]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const { name, value, type, checked } = e.target;
+    
+    if (type === "checkbox") {
+      setFormData(prev => ({ ...prev, [name]: checked }));
+      return;
+    }
+    
+    // Handle buyer type change - reset corporate fields if switching to individual
+    if (name === "buyer_type" && value === "individual") {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        company_name: '',
+        contact_person_name: '',
+        company_code: '',
+        contact_code: ''
+      }));
+      return;
+    }
+    
+    // Handle company name change - auto-generate code
+    if (name === "company_name" && formData.buyer_type === "corporate") {
+      const newFormData = { ...formData, [name]: value };
+      newFormData.company_code = generateCompanyCode(newFormData);
+      setFormData(newFormData);
+      return;
+    }
+    
+    // Handle contact person change - auto-generate code
+    if (name === "contact_person_name" && formData.buyer_type === "corporate") {
+      const newFormData = { ...formData, [name]: value };
+      newFormData.contact_code = generateContactCode(newFormData);
+      setFormData(newFormData);
+      return;
+    }
+    
+    // Handle credit type change - reset broker name if not broker
+    if (name === "creditType" && value !== "broker") {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        brokerName: ''
+      }));
+      return;
+    }
+    
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -1220,20 +1706,17 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
       const customerData = {
         ...formData,
         ts: Date.now(),
-        created_by: "user-id" // Replace with actual user ID
+        created_by: "user-id"
       };
 
-      // Let the server generate the _id for new customers
-      const response = await onSave(customerData);
+      await onSave(customerData);
       setLoading(false);
-      onClose();
     } catch (error) {
       setLoading(false);
       // Error handling is done in parent component
     }
   };
 
-  // Updated options based on your screenshots
   const leadSourceOptions = [
     'Website',
     'Social Media',
@@ -1244,10 +1727,13 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
   ];
 
   const leadStatusOptions = [
-    'Hot',
-    'Cold',
-    'Warm',
-    'In Progress'
+    'New',
+    'Contacted',
+    'Qualified',
+    'Proposal Sent',
+    'Negotiation',
+    'Converted',
+    'Lost'
   ];
 
   const policyTypeOptions = [
@@ -1256,6 +1742,24 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
     'Home Insurance',
     'Health Insurance',
     'Life Insurance'
+  ];
+
+  const creditTypeOptions = [
+    { value: 'auto', label: 'Autocredits India LLP' },
+    { value: 'broker', label: 'Broker' },
+    { value: 'showroom', label: 'Showroom' },
+    { value: 'customer', label: 'Customer' }
+  ];
+
+  const sourceOriginOptions = [
+    'Website',
+    'Referral',
+    'Walk-in',
+    'Call Center',
+    'Partner',
+    'Social Media',
+    'Existing Customer',
+    'Other'
   ];
 
   return (
@@ -1276,23 +1780,149 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
         <div className="p-6">
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column */}
+              {/* Left Column - Basic Information */}
               <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Basic Information</h3>
+                
                 <div>
-                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name *
+                  <label htmlFor="buyer_type" className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Type *
                   </label>
-                  <input
-                    type="text"
-                    id="first_name"
-                    name="first_name"
-                    value={formData.first_name}
+                  <select
+                    id="buyer_type"
+                    name="buyer_type"
+                    value={formData.buyer_type}
                     onChange={handleInputChange}
-                    placeholder="Enter first name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
-                  />
+                  >
+                    <option value="individual">Individual</option>
+                    <option value="corporate">Corporate</option>
+                  </select>
                 </div>
+
+                {formData.buyer_type === 'individual' ? (
+                  <>
+                    <div>
+                      <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                        First Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="first_name"
+                        name="first_name"
+                        value={formData.first_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter first name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Last Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="last_name"
+                        name="last_name"
+                        value={formData.last_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter last name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                        Gender *
+                      </label>
+                      <select
+                        id="gender"
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label htmlFor="company_name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Company Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="company_name"
+                        name="company_name"
+                        value={formData.company_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter company name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="contact_person_name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Contact Person Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="contact_person_name"
+                        name="contact_person_name"
+                        value={formData.contact_person_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter contact person name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="company_code" className="block text-sm font-medium text-gray-700 mb-1">
+                          Company Code
+                        </label>
+                        <input
+                          type="text"
+                          id="company_code"
+                          name="company_code"
+                          value={formData.company_code}
+                          onChange={handleInputChange}
+                          placeholder="Auto-generated"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                          readOnly
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="contact_code" className="block text-sm font-medium text-gray-700 mb-1">
+                          Contact Code
+                        </label>
+                        <input
+                          type="text"
+                          id="contact_code"
+                          name="contact_code"
+                          value={formData.contact_code}
+                          onChange={handleInputChange}
+                          placeholder="Auto-generated"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1311,6 +1941,85 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 </div>
 
                 <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone *
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="Enter phone number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Right Column - Additional Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Additional Information</h3>
+
+                <div>
+                  <label htmlFor="creditType" className="block text-sm font-medium text-gray-700 mb-1">
+                    Credit Type *
+                  </label>
+                  <select
+                    id="creditType"
+                    name="creditType"
+                    value={formData.creditType}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    {creditTypeOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {formData.creditType === 'broker' && (
+                  <div>
+                    <label htmlFor="brokerName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Broker Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="brokerName"
+                      name="brokerName"
+                      value={formData.brokerName}
+                      onChange={handleInputChange}
+                      placeholder="Enter broker name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="sourceOrigin" className="block text-sm font-medium text-gray-700 mb-1">
+                    Source Origin
+                  </label>
+                  <select
+                    id="sourceOrigin"
+                    name="sourceOrigin"
+                    value={formData.sourceOrigin}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select source origin</option>
+                    {sourceOriginOptions.map(source => (
+                      <option key={source} value={source}>
+                        {source}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                     Address
                   </label>
@@ -1326,8 +2035,23 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                 </div>
 
                 <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    placeholder="Enter city"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
                   <label htmlFor="lead_source" className="block text-sm font-medium text-gray-700 mb-1">
-                    Lead Source *
+                    Lead Source
                   </label>
                   <select
                     id="lead_source"
@@ -1335,7 +2059,6 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                     value={formData.lead_source}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
                   >
                     <option value="">Select lead source</option>
                     {leadSourceOptions.map(source => (
@@ -1348,7 +2071,7 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
 
                 <div>
                   <label htmlFor="policy_type" className="block text-sm font-medium text-gray-700 mb-1">
-                    Policy Type *
+                    Policy Type
                   </label>
                   <select
                     id="policy_type"
@@ -1356,7 +2079,6 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                     value={formData.policy_type}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
                   >
                     <option value="">Select policy type</option>
                     {policyTypeOptions.map(type => (
@@ -1364,59 +2086,6 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                         {type}
                       </option>
                     ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleInputChange}
-                    placeholder="Enter last name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="Enter phone number"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender *
-                  </label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
                   </select>
                 </div>
 
@@ -1431,7 +2100,6 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">Select Status</option>
                     {leadStatusOptions.map(status => (
                       <option key={status} value={status}>
                         {status}

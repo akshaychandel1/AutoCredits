@@ -61,16 +61,6 @@ const isPaymentDue = (policy) => {
   return paymentStatus === 'pending' || paymentStatus === 'partially paid';
 };
 
-// NEW: Function to get vehicle type
-const getVehicleType = (policy) => {
-  return policy.vehicleType === 'new' ? 'new' : 'used';
-};
-
-// NEW: Function to get buyer type
-const getBuyerType = (policy) => {
-  return policy.buyer_type === 'corporate' ? 'corporate' : 'individual';
-};
-
 const PoliciesPage = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [policies, setPolicies] = useState([]);
@@ -119,18 +109,6 @@ const PoliciesPage = () => {
       case "fully-paid":
         // FIX: Only show truly fully paid policies (no pending tag, no due amount)
         return policies.filter(policy => getPaymentStatus(policy) === 'fully paid');
-      case "new-vehicle":
-        // NEW: Filter for new vehicles
-        return policies.filter(policy => getVehicleType(policy) === 'new');
-      case "used-vehicle":
-        // NEW: Filter for used vehicles
-        return policies.filter(policy => getVehicleType(policy) === 'used');
-      case "corporate":
-        // NEW: Filter for corporate buyers
-        return policies.filter(policy => getBuyerType(policy) === 'corporate');
-      case "individual":
-        // NEW: Filter for individual buyers
-        return policies.filter(policy => getBuyerType(policy) === 'individual');
       default:
         return policies;
     }
@@ -182,30 +160,18 @@ const PoliciesPage = () => {
     const paymentDue = policies.filter(p => isPaymentDue(p)).length;
     const fullyPaid = policies.filter(p => getPaymentStatus(p) === 'fully paid').length;
     
-    // NEW: Vehicle type stats
-    const newVehicle = policies.filter(p => getVehicleType(p) === 'new').length;
-    const usedVehicle = policies.filter(p => getVehicleType(p) === 'used').length;
-    
-    // NEW: Buyer type stats
-    const corporate = policies.filter(p => getBuyerType(p) === 'corporate').length;
-    const individual = policies.filter(p => getBuyerType(p) === 'individual').length;
-    
     return { 
       total, 
       completed, 
       draft,
       paymentDue,
-      fullyPaid,
-      newVehicle,
-      usedVehicle,
-      corporate,
-      individual
+      fullyPaid
     };
   };
 
   const stats = getStats();
 
-  // Tab configuration - 9 tabs in a responsive grid (added corporate and individual)
+  // Tab configuration - 5 tabs in a responsive grid (removed corporate, individual, new vehicle, and used vehicle)
   const tabs = [
     { 
       id: "all", 
@@ -246,38 +212,6 @@ const PoliciesPage = () => {
       color: "emerald",
       activeClass: "bg-emerald-500 text-white border-emerald-600",
       inactiveClass: "bg-white text-gray-700 hover:bg-emerald-50 border-emerald-200"
-    },
-    { 
-      id: "new-vehicle", 
-      name: "New Vehicle", 
-      count: stats.newVehicle,
-      color: "indigo",
-      activeClass: "bg-indigo-500 text-white border-indigo-600",
-      inactiveClass: "bg-white text-gray-700 hover:bg-indigo-50 border-indigo-200"
-    },
-    { 
-      id: "used-vehicle", 
-      name: "Used Vehicle", 
-      count: stats.usedVehicle,
-      color: "gray",
-      activeClass: "bg-gray-500 text-white border-gray-600",
-      inactiveClass: "bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
-    },
-    { 
-      id: "corporate", 
-      name: "Corporate", 
-      count: stats.corporate,
-      color: "purple",
-      activeClass: "bg-purple-500 text-white border-purple-600",
-      inactiveClass: "bg-white text-gray-700 hover:bg-purple-50 border-purple-200"
-    },
-    { 
-      id: "individual", 
-      name: "Individual", 
-      count: stats.individual,
-      color: "pink",
-      activeClass: "bg-pink-500 text-white border-pink-600",
-      inactiveClass: "bg-white text-gray-700 hover:bg-pink-50 border-pink-200"
     }
   ];
 
@@ -310,12 +244,12 @@ const PoliciesPage = () => {
         </div>
       </div>
 
-      {/* Status Tabs - 9 in a responsive grid (added corporate and individual) */}
+      {/* Status Tabs - 5 in a responsive grid (removed corporate, individual, new vehicle, and used vehicle) */}
       {!loading && policies.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6 overflow-hidden">
           <div className="p-4">
-            {/* 9 Tabs in a responsive grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-2">
+            {/* 5 Tabs in a responsive grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}

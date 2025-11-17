@@ -2,50 +2,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FaCar,
-  FaUser,
-  FaPhone,
-  FaEnvelope,
-  FaMapMarkerAlt,
-  FaFileInvoiceDollar,
-  FaCalendarAlt,
-  FaEdit,
-  FaTimes,
-  FaCheckCircle,
-  FaExclamationTriangle,
-  FaClock,
-  FaMoneyBillWave,
-  FaCreditCard,
-  FaIdCard,
-  FaBuilding,
-  FaTag,
-  FaFileAlt,
-  FaShieldAlt,
-  FaPercentage,
-  FaHistory,
-  FaArrowRight,
-  FaDownload,
-  FaEye,
-  FaFilePdf,
-  FaFileImage,
-  FaFile,
-  FaCloudUploadAlt,
-  FaFileUpload,
-  FaSpinner,
-  FaListAlt,
-  FaTrash,
-  FaTags,
-  FaInfoCircle,
-  FaCheck,
-  FaExclamationTriangle as FaExclamation,
-  FaReceipt,
-  FaPlus,
-  FaGift
+  FaCar, FaUser, FaPhone, FaEnvelope, FaMapMarkerAlt, FaFileInvoiceDollar,
+  FaCalendarAlt, FaEdit, FaTimes, FaCheckCircle, FaExclamationTriangle,
+  FaClock, FaMoneyBillWave, FaCreditCard, FaIdCard, FaBuilding, FaTag,
+  FaFileAlt, FaShieldAlt, FaPercentage, FaHistory, FaDownload, FaEye,
+  FaFilePdf, FaFileImage, FaFile, FaSpinner, FaUserTie, FaStore, FaHome
 } from 'react-icons/fa';
 import logo from "../../assets/logo.png";
 import axios from 'axios';
 
-// Main PolicyModal Component
 const PolicyModal = ({ policy, isOpen, onClose }) => {
   const navigate = useNavigate();
   const [downloadingDocs, setDownloadingDocs] = useState({});
@@ -56,7 +21,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
   const handleEditClick = () => {
     const policyId = policy._id || policy.id;
     navigate(`/new-policy/${policyId}`);
-    onClose(); // Close modal after navigation
+    onClose();
   };
 
   // Function to format status display
@@ -65,55 +30,47 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       active: { 
         text: 'Active', 
         class: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-        icon: FaCheckCircle,
-        color: 'emerald'
+        icon: FaCheckCircle
       },
       completed: { 
         text: 'Completed', 
         class: 'bg-blue-50 text-blue-700 border border-blue-200',
-        icon: FaCheckCircle,
-        color: 'blue'
+        icon: FaCheckCircle
       },
       draft: { 
         text: 'Draft', 
         class: 'bg-amber-50 text-amber-700 border border-amber-200',
-        icon: FaClock,
-        color: 'amber'
+        icon: FaClock
       },
       pending: { 
         text: 'Pending', 
         class: 'bg-purple-50 text-purple-700 border border-purple-200',
-        icon: FaClock,
-        color: 'purple'
+        icon: FaClock
       },
       expired: { 
         text: 'Expired', 
         class: 'bg-rose-50 text-rose-700 border border-rose-200',
-        icon: FaExclamationTriangle,
-        color: 'rose'
+        icon: FaExclamationTriangle
       },
       'payment completed': {
         text: 'Payment Completed',
         class: 'bg-green-50 text-green-700 border border-green-200',
-        icon: FaCheckCircle,
-        color: 'green'
+        icon: FaCheckCircle
       }
     };
 
     return statusConfig[status] || { 
       text: status, 
       class: 'bg-gray-50 text-gray-700 border border-gray-200',
-      icon: FaTag,
-      color: 'gray'
+      icon: FaTag
     };
   };
 
-  // Function to format payment status display - UPDATED
+  // Function to format payment status display
   const getPaymentStatusDisplay = (policy) => {
     const totalPaid = policy.payment_info?.totalPaidAmount || 0;
     const totalPremium = getPremiumInfo(policy);
     
-    // Calculate subvention
     const calculateTotalSubventionRefund = () => {
       const paymentLedger = policy.payment_ledger || [];
       return paymentLedger
@@ -177,12 +134,11 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     return 0;
   };
 
-  // Function to get paid amount - UPDATED with subvention calculation
+  // Function to get paid amount
   const getPaidAmount = (policy) => {
     const totalPaid = policy.payment_info?.totalPaidAmount || 0;
     const totalPremium = getPremiumInfo(policy);
     
-    // Calculate total subvention refund from payment ledger
     const calculateTotalSubventionRefund = () => {
       const paymentLedger = policy.payment_ledger || [];
       return paymentLedger
@@ -221,7 +177,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       }
     }
 
-    // Check nested fields
     if (policy.policy_info?.quotes && Array.isArray(policy.policy_info.quotes)) {
       return policy.policy_info.quotes;
     }
@@ -268,10 +223,15 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     return quotes.find(quote => quote.accepted === true) || quotes[0];
   };
 
-  // Get customer details - ENHANCED for company information
+  // Get customer details - ENHANCED with credit type, broker name, and source origin
   const getCustomerDetails = () => {
     const customer = policy.customer_details || {};
     const isCorporate = policy.buyer_type === 'corporate';
+    
+    // Get credit type information
+    const creditType = policy.creditType || customer.creditType || 'auto';
+    const brokerName = policy.brokerName || customer.brokerName || '';
+    const sourceOrigin = policy.sourceOrigin || customer.sourceOrigin || '';
     
     return {
       name: isCorporate ? customer.companyName : customer.name,
@@ -288,14 +248,18 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       aadhaarNumber: customer.aadhaarNumber || 'N/A',
       gstNumber: customer.gstNumber || 'N/A',
       employeeName: customer.employeeName || 'N/A',
-      isCorporate: isCorporate
+      isCorporate: isCorporate,
+      creditType: creditType,
+      brokerName: brokerName,
+      sourceOrigin: sourceOrigin
     };
   };
 
-  // Get vehicle details - UPDATED to show New/Used
+  // Get vehicle details - UPDATED with vehicle type category
   const getVehicleDetails = () => {
     const vehicle = policy.vehicle_details || {};
     const vehicleType = policy.vehicleType || 'used';
+    const vehicleTypeCategory = vehicle.vehicleTypeCategory || '4 wheeler';
     
     return {
       make: vehicle.make || 'N/A',
@@ -306,11 +270,13 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       chassisNo: vehicle.chassisNo || 'N/A',
       makeYear: vehicle.makeYear || 'N/A',
       makeMonth: vehicle.makeMonth || 'N/A',
-      vehicleType: vehicleType === 'new' ? 'New' : 'Used'
+      vehicleType: vehicleType === 'new' ? 'New' : 'Used',
+      vehicleTypeCategory: vehicleTypeCategory,
+      cubicCapacity: vehicle.cubicCapacity || 'N/A'
     };
   };
 
-  // Get previous policy details
+  // Get previous policy details - UPDATED with hypothecation
   const getPreviousPolicy = () => {
     const prev = policy.previous_policy || {};
     return {
@@ -320,27 +286,26 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       issueDate: prev.issueDate || 'N/A',
       dueDate: prev.dueDate || 'N/A',
       claimTakenLastYear: prev.claimTakenLastYear || 'no',
-      ncbDiscount: prev.ncbDiscount || 0
+      ncbDiscount: prev.ncbDiscount || 0,
+      hypothecation: prev.hypothecation || 'N/A',
+      remarks: prev.remarks || 'N/A'
     };
   };
 
-  // Get payout details - UPDATED to show correct OD + Addons total
+  // Get payout details
   const getPayoutDetails = () => {
     const payout = policy.payout || {};
     
-    // Get OD + Addons total from accepted quote
     const acceptedQuote = getAcceptedQuote();
     const odAmountFromQuote = acceptedQuote?.odAmount || 0;
     const addonsFromQuote = acceptedQuote?.addOnsPremium || 0;
     const odAddonTotalFromQuote = odAmountFromQuote + addonsFromQuote;
     
-    // Use payout OD amount if available, otherwise fallback to quote OD+Addons total
-    // But prefer the calculated OD+Addons total from quote
     const odAddonAmount = odAddonTotalFromQuote > 0 ? odAddonTotalFromQuote : (payout.odAddonAmount || payout.odAmount || 0);
     
     return {
       netPremium: payout.netPremium || 0,
-      odAddonAmount: odAddonAmount, // This is now OD + Addons total
+      odAddonAmount: odAddonAmount,
       ncbAmount: payout.ncbAmount || 0,
       subVention: payout.subVention || 0,
       netAmount: payout.netAmount || 0,
@@ -348,12 +313,11 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     };
   };
 
-  // Get payment details with subvention information - UPDATED to remove N/A values
+  // Get payment details
   const getPaymentDetails = () => {
     const paymentInfo = policy.payment_info || {};
     const paymentLedger = policy.payment_ledger || [];
     
-    // Calculate subvention from payment ledger
     const subventionPayments = paymentLedger.filter(payment => 
       payment.type === 'subvention_refund' || 
       payment.mode?.toLowerCase().includes('subvention')
@@ -361,7 +325,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     
     const totalSubvention = subventionPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
     
-    // Filter out N/A values
     const paymentMode = paymentInfo.paymentMode && paymentInfo.paymentMode !== 'N/A' ? paymentInfo.paymentMode : null;
     const transactionId = paymentInfo.transactionId && paymentInfo.transactionId !== 'N/A' ? paymentInfo.transactionId : null;
     const bankName = paymentInfo.bankName && paymentInfo.bankName !== 'N/A' ? paymentInfo.bankName : null;
@@ -399,19 +362,16 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     }
   };
 
-  // Function to get file name from URL with better detection
+  // Function to get file name from URL
   const getFileName = (document) => {
-    // Priority 1: Use document name if available
     if (document.name && document.name.trim() !== '') {
       return document.name;
     }
     
-    // Priority 2: Use originalName if available
     if (document.originalName && document.originalName.trim() !== '') {
       return document.originalName;
     }
     
-    // Priority 3: Extract from URL
     const url = document.url || '';
     if (url) {
       try {
@@ -423,7 +383,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
           return fileNameFromUrl;
         }
       } catch (e) {
-        // If URL parsing fails, try simple extraction
         const simpleFileName = url.split('/').pop();
         if (simpleFileName && simpleFileName.includes('.')) {
           return simpleFileName;
@@ -431,21 +390,18 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       }
     }
     
-    // Fallback: Generate a meaningful name
     const docType = document.tag || 'document';
     const timestamp = Date.now();
     return `${docType}_${timestamp}`;
   };
 
   const getFileExtension = (document) => {
-    if (!document) return 'pdf'; // Default to pdf
+    if (!document) return 'pdf';
     
-    // Priority 1: Check document extension
     if (document.extension && document.extension.trim() !== '') {
       return document.extension.toLowerCase();
     }
     
-    // Priority 2: Check document type
     if (document.type) {
       const type = document.fileType.toLowerCase();
       if (type.includes('pdf')) return 'pdf';
@@ -454,46 +410,41 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       if (type.includes('png')) return 'png';
     }
     
-    // Priority 3: Extract from name
     const fileName = getFileName(document);
     if (fileName && fileName.includes('.')) {
       const parts = fileName.split('.');
       if (parts.length > 1) {
         let ext = parts.pop().toLowerCase();
-        // Remove query parameters and fragments
         ext = ext.split('?')[0].split('#')[0];
-        if (ext && ext.length <= 5) { // Reasonable extension length
-          return ext;
-        }
-      }
-    }
-    
-    // Priority 4: Extract from URL
-    const url = document.url || '';
-    if (url) {
-      const urlParts = url.split('.');
-      if (urlParts.length > 1) {
-        let ext = urlParts.pop().toLowerCase();
-        ext = ext.split('?')[0].split('#')[0];
-        ext = ext.split('/')[0]; // In case extension has slashes
         if (ext && ext.length <= 5) {
           return ext;
         }
       }
     }
     
-    return 'pdf'; // Default fallback
+    const url = document.url || '';
+    if (url) {
+      const urlParts = url.split('.');
+      if (urlParts.length > 1) {
+        let ext = urlParts.pop().toLowerCase();
+        ext = ext.split('?')[0].split('#')[0];
+        ext = ext.split('/')[0];
+        if (ext && ext.length <= 5) {
+          return ext;
+        }
+      }
+    }
+    
+    return 'pdf';
   };
 
-  // Get documents with tagging information - UPDATED to handle both formats
+  // Get documents with tagging information
   const getDocuments = () => {
-    // Handle both array and object format documents
     let documents = [];
     
     if (Array.isArray(policy.documents)) {
       documents = policy.documents;
     } else if (typeof policy.documents === 'object' && policy.documents !== null) {
-      // Convert object format to array
       documents = Object.entries(policy.documents).map(([docId, doc]) => ({
         id: docId,
         ...doc,
@@ -504,19 +455,17 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     return documents;
   };
 
-  // Function to get display name for document - NEW: Shows tag or file type
+  // Function to get display name for document
   const getDocumentDisplayName = (document) => {
-    // Priority 1: Use tag if available
     if (document.tag && document.tag.trim() !== '') {
       return document.tag;
     }
     
-    // Priority 2: Use file type as fallback
     const extension = getFileExtension(document);
     return extension.toUpperCase() + ' File';
   };
 
-  // Robust download function that works in all environments
+  // Robust download function
   const handleDownload = async (document) => {
     const url = document.url;
     if (!url) {
@@ -528,12 +477,9 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
     setDownloadingDocs(prev => ({ ...prev, [docId]: true }));
 
     try {
-      // Wait a bit to ensure React has updated the state
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Check if we're in a browser environment
       if (typeof window === 'undefined' || !window.document) {
-        console.warn('Browser environment not available, opening in new tab');
         window.open(url, '_blank');
         return;
       }
@@ -547,30 +493,24 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
         downloadFileName = `${downloadFileName}.${fileExtension}`;
       }
 
-      // Method 1: Simple and reliable anchor tag approach
       const link = window.document.createElement('a');
       link.href = url;
       link.download = downloadFileName;
-      link.target = '_blank'; // Open in new tab as fallback
+      link.target = '_blank';
       link.style.display = 'none';
 
       window.document.body.appendChild(link);
       link.click();
       window.document.body.removeChild(link);
 
-      console.log(`✅ Download initiated: ${downloadFileName}`);
-
     } catch (error) {
       console.error('❌ Error in download process:', error);
       
-      // Fallback: Just open in new tab
       try {
         if (typeof window !== 'undefined') {
           const newWindow = window.open(url, '_blank');
           if (!newWindow) {
             alert('Popup blocked. Please right-click on the document link and choose "Save link as" to download.');
-          } else {
-            console.log('✅ Document opened in new tab as fallback');
           }
         }
       } catch (fallbackError) {
@@ -578,7 +518,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
         alert(`Unable to download automatically. Please manually visit this URL: ${url}`);
       }
     } finally {
-      // Ensure loading state is cleared
       setTimeout(() => {
         setDownloadingDocs(prev => ({ ...prev, [docId]: false }));
       }, 500);
@@ -603,7 +542,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       return;
     }
 
-    // Show confirmation for multiple downloads
     if (documents.length > 5) {
       const confirmDownload = window.confirm(
         `You are about to download ${documents.length} documents. This may take a while. Continue?`
@@ -611,12 +549,58 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       if (!confirmDownload) return;
     }
 
-    // Download each document individually
     for (const document of documents) {
       await handleDownload(document);
-      // Add a small delay between downloads to avoid overwhelming the browser
       await new Promise(resolve => setTimeout(resolve, 500));
     }
+  };
+
+  // NEW: Function to get credit type display
+  const getCreditTypeDisplay = (creditType, brokerName) => {
+    const config = {
+      auto: {
+        text: 'Autocredits India LLP',
+        class: 'bg-blue-100 text-blue-800',
+        icon: FaCreditCard
+      },
+      broker: {
+        text: `Broker${brokerName ? ` - ${brokerName}` : ''}`,
+        class: 'bg-purple-100 text-purple-800',
+        icon: FaUserTie
+      },
+      showroom: {
+        text: 'Showroom',
+        class: 'bg-orange-100 text-orange-800',
+        icon: FaStore
+      },
+      customer: {
+        text: 'Customer',
+        class: 'bg-green-100 text-green-800',
+        icon: FaHome
+      }
+    };
+
+    return config[creditType] || config.auto;
+  };
+
+  // NEW: Function to get vehicle type category display
+  const getVehicleTypeCategoryDisplay = (category) => {
+    const config = {
+      '2 wheeler': {
+        text: '2 Wheeler',
+        class: 'bg-indigo-100 text-indigo-800'
+      },
+      '4 wheeler': {
+        text: '4 Wheeler',
+        class: 'bg-teal-100 text-teal-800'
+      },
+      'commercial': {
+        text: 'Commercial Vehicle',
+        class: 'bg-amber-100 text-amber-800'
+      }
+    };
+
+    return config[category] || config['4 wheeler'];
   };
 
   // Data extraction
@@ -634,6 +618,10 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
   const statusDisplay = getStatusDisplay(policy.status);
   const paymentDisplay = getPaymentStatusDisplay(policy);
   const PaymentIcon = paymentDisplay.icon;
+  
+  // NEW: Credit type and vehicle type category displays
+  const creditTypeDisplay = getCreditTypeDisplay(customer.creditType, customer.brokerName);
+  const vehicleTypeCategoryDisplay = getVehicleTypeCategoryDisplay(vehicle.vehicleTypeCategory);
 
   return (
     <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -675,6 +663,21 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       : 'bg-blue-100 text-blue-800'
                   }`}>
                     {vehicle.vehicleType}
+                  </span>
+                </div>
+                {/* NEW: Credit Type Badge */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-300">Credit Type:</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${creditTypeDisplay.class}`}>
+                    <creditTypeDisplay.icon className="w-3 h-3" />
+                    {creditTypeDisplay.text}
+                  </span>
+                </div>
+                {/* NEW: Vehicle Type Category Badge */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-300">Vehicle Type:</span>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${vehicleTypeCategoryDisplay.class}`}>
+                    {vehicleTypeCategoryDisplay.text}
                   </span>
                 </div>
               </div>
@@ -764,6 +767,22 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                     </div>
                   </div>
 
+                  {/* NEW: Credit Type Information */}
+                  <div className="pt-3 border-t border-gray-100">
+                    <label className="text-xs text-gray-500 uppercase font-semibold">Credit Information</label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${creditTypeDisplay.class}`}>
+                        <creditTypeDisplay.icon className="w-3 h-3" />
+                        {creditTypeDisplay.text}
+                      </span>
+                      {customer.sourceOrigin && (
+                        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">
+                          Source: {customer.sourceOrigin}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Employee Name */}
                   {customer.employeeName !== 'N/A' && (
                     <div>
@@ -815,7 +834,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Vehicle Information - UPDATED with New/Used */}
+              {/* Vehicle Information - UPDATED with all new fields */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-green-50 to-green-100 px-5 py-4 border-b border-green-200">
                   <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
@@ -855,6 +874,24 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       <label className="text-xs text-gray-500 uppercase font-semibold">Type</label>
                       <div className="font-medium text-gray-900 mt-1">{vehicle.vehicleType}</div>
                     </div>
+                  </div>
+
+                  {/* NEW: Vehicle Type Category and Cubic Capacity */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Vehicle Category</label>
+                      <div className="font-medium text-gray-900 mt-1">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${vehicleTypeCategoryDisplay.class}`}>
+                          {vehicleTypeCategoryDisplay.text}
+                        </span>
+                      </div>
+                    </div>
+                    {vehicle.cubicCapacity !== 'N/A' && (
+                      <div>
+                        <label className="text-xs text-gray-500 uppercase font-semibold">Cubic Capacity</label>
+                        <div className="font-medium text-gray-900 mt-1">{vehicle.cubicCapacity} CC</div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -928,6 +965,14 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                     </div>
                   )}
 
+                  {/* NEW: Hypothecation Information */}
+                  {policy.policy_info?.hypothecation && policy.policy_info.hypothecation !== 'N/A' && (
+                    <div className="pt-3 border-t border-gray-100">
+                      <label className="text-xs text-gray-500 uppercase font-semibold">Hypothecation</label>
+                      <div className="font-medium text-gray-900 mt-1">{policy.policy_info.hypothecation}</div>
+                    </div>
+                  )}
+
                   {/* Policy Dates */}
                   <div className="pt-3 border-t border-gray-100 space-y-2">
                     {policy.policy_info?.issueDate && (
@@ -954,7 +999,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Payment Information - UPDATED: Removed balance and N/A values */}
+              {/* Payment Information */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-amber-50 to-amber-100 px-5 py-4 border-b border-amber-200">
                   <h2 className="font-bold text-gray-900 text-lg flex items-center gap-3">
@@ -992,7 +1037,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  {/* Payment Details - UPDATED: Only show non-N/A values */}
+                  {/* Payment Details */}
                   <div className="pt-3 border-t border-gray-100 space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500">Payment Made By</span>
@@ -1027,7 +1072,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                     )}
                   </div>
 
-                  {/* Payment Progress - UPDATED: Simplified without progress text */}
+                  {/* Payment Progress */}
                   <div className="pt-2">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
                       <span>Payment Progress {paidInfo.subventionRefund > 0 ? '(After Subvention)' : ''}</span>
@@ -1046,7 +1091,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Previous Policy */}
+              {/* Previous Policy - UPDATED with hypothecation */}
               {previousPolicy.insuranceCompany !== 'N/A' && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                   <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-5 py-4 border-b border-gray-200">
@@ -1070,6 +1115,13 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                       <span className="text-sm text-gray-600">NCB Discount</span>
                       <span className="font-semibold text-green-600">{previousPolicy.ncbDiscount}%</span>
                     </div>
+                    {/* NEW: Previous Policy Hypothecation */}
+                    {previousPolicy.hypothecation !== 'N/A' && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Hypothecation</span>
+                        <span className="font-medium text-gray-900">{previousPolicy.hypothecation}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Claim History</span>
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -1156,7 +1208,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Documents Section - UPDATED: Compact design showing only tags or file types */}
+              {/* Documents Section */}
               {documents.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                   <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 px-5 py-4 border-b border-indigo-200">
@@ -1243,7 +1295,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* Payout Details - UPDATED with correct OD + Addons amount */}
+              {/* Payout Details */}
               {(payout.netPremium > 0 || payout.odAddonAmount > 0) && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                   <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-5 py-4 border-b border-emerald-200">
@@ -1350,14 +1402,6 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
       </div>
     </div>
   );
-};
-
-// Helper function to format file size
-const formatFileSize = (bytes) => {
-  if (!bytes) return '';
-  if (bytes < 1024) return bytes + ' bytes';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 };
 
 export default PolicyModal;
