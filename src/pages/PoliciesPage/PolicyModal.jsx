@@ -667,7 +667,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
                 </div>
                 {/* NEW: Credit Type Badge */}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-300">Credit Type:</span>
+                  <span className="text-sm text-gray-300">Pollicy Issued By:</span>
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${creditTypeDisplay.class}`}>
                     <creditTypeDisplay.icon className="w-3 h-3" />
                     {creditTypeDisplay.text}
@@ -769,7 +769,7 @@ const PolicyModal = ({ policy, isOpen, onClose }) => {
 
                   {/* NEW: Credit Type Information */}
                   <div className="pt-3 border-t border-gray-100">
-                    <label className="text-xs text-gray-500 uppercase font-semibold">Credit Information</label>
+                    <label className="text-xs text-gray-500 uppercase font-semibold">Pollicy Information</label>
                     <div className="flex items-center gap-2 mt-2">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${creditTypeDisplay.class}`}>
                         <creditTypeDisplay.icon className="w-3 h-3" />

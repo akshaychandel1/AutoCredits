@@ -6,7 +6,7 @@ import { z } from 'zod';
 import {
   FaCar, FaInfoCircle,FaPlus,FaArrowRight, FaCalculator,
   FaMapMarkerAlt,FaCheckCircle,FaExclamationTriangle,FaCloudUploadAlt,FaListAlt,FaExternalLinkAlt, FaTags,FaTag,FaSpinner,FaMoneyBillWave, FaEdit,FaHistory ,
-  FaUser,FaReceipt,FaEye,FaDownload,FaGift,FaUserTie,
+  FaUser,FaReceipt,FaEye,FaDownload,FaGift,FaUserTie,FaBuilding,
   FaPhone,FaFileContract,FaShieldAlt,FaUsers,
   FaEnvelope,
   FaSave,
@@ -34,8 +34,8 @@ import {
 } from 'lucide-react';
 import PDFGenerationService from "./PDFGenerationService";
 import { useLocation } from 'react-router-dom';
-
 import INRCurrencyInput from "../../components/INRCurrencyInput";
+// import VehicleDetails from "./VehicleDetails";
 // ================== VALIDATION RULES ==================
 const validationRules = {
   // Step 1: Case Details validation - UNCHANGED
@@ -418,1277 +418,11 @@ const steps = [
 const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1";
 
 // ================== STEP 1: Case Details ==================
-
-// const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
-//   // Relationship options for auto-suggest
-//   const relationshipOptions = [
-//     "Spouse", "Son", "Mother", "Father", "Daughter", "Child", "Brother", "Sister", "Grandparent", "Father-in-law",
-//     "Mother-in-law", "Brother-in-law", "Sister-in-law", "Son-in-law",
-//     "Daughter-in-law",
-//   ];
-
-//   // Credit type options - UPDATED: Added Broker option
-//   const creditTypeOptions = [
-//     { value: "auto", label: "Autocredits India LLP" },
-//     { value: "broker", label: "Broker" }, // NEW: Added Broker option
-//     { value: "showroom", label: "Showroom" },
-//     { value: "customer", label: "Customer" }
-//   ];
-
-//   // Broker name suggestions - NEW: Added broker name options
-//   const brokerNameOptions = [
-//     "ABC Insurance Brokers",
-//     "XYZ Financial Services", 
-//     "SecureLife Insurance Brokers",
-//     "Prime Risk Solutions",
-//     "Global Insurance Partners",
-//     "Reliance Insurance Brokers",
-//     "Pioneer Risk Advisors",
-//     "Capital Insurance Services",
-//     "Heritage Insurance Brokers",
-//     "Summit Risk Management"
-//   ];
-
-//   // NEW: Agent names for source origin
-//   const agentNameOptions = [
-//     "Rahul Sharma",
-//     "Priya Patel",
-//     "Amit Kumar",
-//     "Sneha Desai",
-//     "Vikram Singh",
-//     "Anjali Mehta",
-//     "Rajesh Gupta",
-//     "Pooja Reddy",
-//     "Sanjay Malhotra",
-//     "Neha Choudhary",
-//     "Karan Joshi",
-//     "Divya Iyer",
-//     "Arun Khanna",
-//     "Swati Nair",
-//     "Deepak Verma",
-//     "Maya Srinivasan",
-//     "Rohit Bajaj",
-//     "Shweta Kapoor",
-//     "Nitin Agarwal",
-//     "Tanvi Shah"
-//   ];
-
-//   // State for relationship suggestions
-//   const [relationshipSuggestions, setRelationshipSuggestions] = useState([]);
-//   const [showRelationshipSuggestions, setShowRelationshipSuggestions] = useState(false);
-  
-//   // NEW: State for broker name suggestions
-//   const [brokerNameSuggestions, setBrokerNameSuggestions] = useState([]);
-//   const [showBrokerNameSuggestions, setShowBrokerNameSuggestions] = useState(false);
-  
-//   // NEW: State for source origin (agent name) suggestions
-//   const [agentNameSuggestions, setAgentNameSuggestions] = useState([]);
-//   const [showAgentNameSuggestions, setShowAgentNameSuggestions] = useState(false);
-  
-//   // State for pincode loading
-//   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
-//   const [pincodeError, setPincodeError] = useState('');
-
-//   // Base API URL
-//   const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app";
-
-//   // Format text to have first letter uppercase and other letters lowercase
-//   const formatName = (text) => {
-//     return text.replace(/\w\S*/g, (txt) => {
-//       return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-//     });
-//   };
-
-//   // Fetch city from pincode using reliable public API
-//   const fetchCityFromPincode = async (pincode) => {
-//     if (!pincode || pincode.length !== 6) return;
-    
-//     setIsPincodeLoading(true);
-//     setPincodeError('');
-    
-//     try {
-//       console.log('🔍 Fetching city for pincode:', pincode);
-      
-//       // Use reliable public pincode API
-//       const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-      
-//       console.log('📡 Response status:', response.status);
-      
-//       if (!response.ok) {
-//         throw new Error(`API responded with status: ${response.status}`);
-//       }
-      
-//       const data = await response.json();
-//       console.log('📊 API Response data:', data);
-      
-//       if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.[0]?.District) {
-//         const cityName = data[0].PostOffice[0].District;
-//         const formattedCity = formatName(cityName);
-        
-//         handleChange({
-//           target: {
-//             name: 'city',
-//             value: formattedCity
-//           }
-//         });
-//         setPincodeError('');
-//         console.log('✅ City found:', formattedCity);
-//       } else {
-//         setPincodeError('Pincode not found. Please enter city manually.');
-//       }
-//     } catch (error) {
-//       console.error('❌ Error fetching pincode data:', error);
-//       setPincodeError('Unable to fetch city data. Please enter city manually.');
-//     } finally {
-//       setIsPincodeLoading(false);
-//     }
-//   };
-
-//   // Pincode change handler with proper API triggering
-//   const handlePincodeChange = (e) => {
-//     const { name, value } = e.target;
-    
-//     // Allow only numbers and limit to 6 digits
-//     const numbersOnly = value.replace(/[^\d]/g, '').slice(0, 6);
-    
-//     handleChange({
-//       target: {
-//         name: name,
-//         value: numbersOnly
-//       }
-//     });
-    
-//     // Clear previous errors
-//     setPincodeError('');
-    
-//     console.log('🔢 Pincode input:', numbersOnly, 'Length:', numbersOnly.length);
-    
-//     // Fetch city when pincode is exactly 6 digits
-//     if (numbersOnly.length === 6) {
-//       console.log('🚀 Triggering API call for pincode:', numbersOnly);
-//       // Immediate API call without delay
-//       fetchCityFromPincode(numbersOnly);
-//     }
-//   };
-
-//   // Handle text input change with formatting
-//   // const handleTextChange = (e, shouldFormat = false) => {
-//   //   const { name, value } = e.target;
-    
-//   //   if (shouldFormat) {
-//   //     const formattedValue = formatName(value);
-//   //     handleChange({
-//   //       target: {
-//   //         name: name,
-//   //         value: formattedValue
-//   //       }
-//   //     });
-//   //   } else {
-//   //     handleChange(e);
-//   //   }
-//   // };
-
-
-
-
-
-
-// const handleTextChange = (e, shouldFormat = false) => {
-//   const { name, value } = e.target;
-
-//   const specialFields = ["companyName", "contactPersonName", "customerName", "employeeName"];
-
-//   // If field is one of the special fields → use smart name formatting
-//   if (specialFields.includes(name)) {
-//     const formattedValue = value
-//       .split(" ")
-//       .map(word => {
-//         if (!word) return "";
-
-//         // Keep acronyms (LLP, LTD) fully uppercase
-//         if (word === word.toUpperCase()) return word;
-
-//         // Capitalize first letter only
-//         return word.charAt(0).toUpperCase() + word.slice(1);
-//       })
-//       .join(" ");
-
-//     return handleChange({
-//       target: {
-//         name,
-//         value: formattedValue
-//       }
-//     });
-//   }
-
-//   // Otherwise use your existing behavior
-//   if (shouldFormat) {
-//     const formattedValue = formatName(value);
-//     return handleChange({
-//       target: {
-//         name,
-//         value: formattedValue
-//       }
-//     });
-//   }
-
-//   // No formatting at all
-//   handleChange(e);
-// };
-
-
-
-
-
-
-//   // Handle phone number input (numbers only)
-//   const handlePhoneChange = (e) => {
-//     const { name, value } = e.target;
-//     // Allow only numbers
-//     const numbersOnly = value.replace(/[^\d]/g, '');
-//     handleChange({
-//       target: {
-//         name: name,
-//         value: numbersOnly
-//       }
-//     });
-//   };
-
-//   // Handle uppercase input (for PAN, GST, etc.)
-//   const handleUppercaseChange = (e) => {
-//     const { name, value } = e.target;
-//     handleChange({
-//       target: {
-//         name: name,
-//         value: value
-//       }
-//     });
-//   };
-
-//   // Handle relationship input change for auto-suggest
-//   const handleRelationshipChange = (e) => {
-//     const value = e.target.value;
-//     handleChange(e);
-    
-//     if (value) {
-//       const filtered = relationshipOptions.filter(relation =>
-//         relation.toLowerCase().includes(value.toLowerCase())
-//       );
-//       setRelationshipSuggestions(filtered);
-//       setShowRelationshipSuggestions(true);
-//     } else {
-//       setRelationshipSuggestions([]);
-//       setShowRelationshipSuggestions(false);
-//     }
-//   };
-
-//   // NEW: Handle broker name input change for auto-suggest
-//   const handleBrokerNameChange = (e) => {
-//     const value = e.target.value;
-//     handleChange(e);
-    
-//     if (value) {
-//       const filtered = brokerNameOptions.filter(broker =>
-//         broker.toLowerCase().includes(value.toLowerCase())
-//       );
-//       setBrokerNameSuggestions(filtered);
-//       setShowBrokerNameSuggestions(true);
-//     } else {
-//       setBrokerNameSuggestions([]);
-//       setShowBrokerNameSuggestions(false);
-//     }
-//   };
-
-//   // NEW: Handle source origin (agent name) input change for auto-suggest
-//   const handleSourceOriginChange = (e) => {
-//     const value = e.target.value;
-//     handleChange(e);
-    
-//     if (value) {
-//       const filtered = agentNameOptions.filter(agent =>
-//         agent.toLowerCase().includes(value.toLowerCase())
-//       );
-//       setAgentNameSuggestions(filtered);
-//       setShowAgentNameSuggestions(true);
-//     } else {
-//       setAgentNameSuggestions([]);
-//       setShowAgentNameSuggestions(false);
-//     }
-//   };
-
-//   // Select relationship from suggestions
-//   const selectRelationship = (relation) => {
-//     handleChange({
-//       target: {
-//         name: 'relation',
-//         value: relation
-//       }
-//     });
-//     setShowRelationshipSuggestions(false);
-//     setRelationshipSuggestions([]);
-//   };
-
-//   // NEW: Select broker name from suggestions
-//   const selectBrokerName = (brokerName) => {
-//     handleChange({
-//       target: {
-//         name: 'brokerName',
-//         value: brokerName
-//       }
-//     });
-//     setShowBrokerNameSuggestions(false);
-//     setBrokerNameSuggestions([]);
-//   };
-
-//   // NEW: Select source origin (agent name) from suggestions
-//   const selectSourceOrigin = (agentName) => {
-//     handleChange({
-//       target: {
-//         name: 'sourceOrigin',
-//         value: agentName
-//       }
-//     });
-//     setShowAgentNameSuggestions(false);
-//     setAgentNameSuggestions([]);
-//   };
-
-//   // Handle vehicle type change (New Car / Used Car)
-//   const handleVehicleTypeChange = (vehicleType) => {
-//     handleChange({
-//       target: {
-//         name: 'vehicleType',
-//         value: vehicleType
-//       }
-//     });
-//   };
-
-//   // UPDATED: Handle credit type change with broker logic
-//   const handleCreditTypeChange = (e) => {
-//     const { value } = e.target;
-//     handleChange(e);
-    
-//     // UPDATED: Update form state to track if payout should be hidden
-//     // Payout should be available for auto and broker, hidden for showroom and customer
-//     const hidePayout = value === "showroom" || value === "customer";
-//     handleChange({
-//       target: {
-//         name: 'hidePayout',
-//         value: hidePayout
-//       }
-//     });
-//   };
-
-//   // UPDATED: Check if payout should be hidden
-//   const shouldHidePayout = form.creditType === "showroom" || form.creditType === "customer";
-
-//   // NEW: Check if broker name field should be enabled
-//   const shouldEnableBrokerName = form.creditType === "broker";
-
-//   return (
-//     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
-//       <div className="flex items-start justify-between">
-//         <div className="flex items-center gap-3">
-//           <div className="p-2 rounded-full bg-gray-100 text-gray-700">
-//             <FaUser />
-//           </div>
-//           <div>
-//             <h3 className="text-lg font-semibold text-gray-800">
-//               Step 1: Customer Information
-//             </h3>
-//             <p className="text-xs text-gray-500">
-//               Fill personal, contact and nominee details
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-//         {/* Buyer Type */}
-//         <div>
-//           <label className="block mb-1 text-sm font-medium text-gray-600">
-//             Buyer Type *
-//           </label>
-//           <div className="flex items-center gap-4">
-//             <label className="inline-flex items-center gap-2 text-sm">
-//               <input
-//                 type="radio"
-//                 name="buyer_type"
-//                 value="individual"
-//                 checked={form.buyer_type === "individual"}
-//                 onChange={handleChange}
-//                 className="form-radio"
-//               />
-//               <span>Individual</span>
-//             </label>
-//             <label className="inline-flex items-center gap-2 text-sm">
-//               <input
-//                 type="radio"
-//                 name="buyer_type"
-//                 value="corporate"
-//                 checked={form.buyer_type === "corporate"}
-//                 onChange={handleChange}
-//                 className="form-radio"
-//               />
-//               <span>Company</span>
-//             </label>
-//           </div>
-//           {errors.buyer_type && <p className="text-red-500 text-xs mt-1">{errors.buyer_type}</p>}
-//         </div>
-
-//         {/* Vehicle Type Toggle - Common for both Individual and Corporate */}
-//         <div>
-//           <label className="block mb-1 text-sm font-medium text-gray-600">
-//             Vehicle Type *
-//           </label>
-//           <div className="flex items-center gap-4">
-//             <label className="inline-flex items-center gap-2 text-sm">
-//               <input
-//                 type="radio"
-//                 name="vehicleType"
-//                 value="new"
-//                 checked={form.vehicleType === "new"}
-//                 onChange={() => handleVehicleTypeChange("new")}
-//                 className="form-radio"
-//               />
-//               <span>New Car</span>
-//             </label>
-//             <label className="inline-flex items-center gap-2 text-sm">
-//               <input
-//                 type="radio"
-//                 name="vehicleType"
-//                 value="used"
-//                 checked={form.vehicleType === "used"}
-//                 onChange={() => handleVehicleTypeChange("used")}
-//                 className="form-radio"
-//               />
-//               <span>Used Car</span>
-//             </label>
-//           </div>
-//           {errors.vehicleType && <p className="text-red-500 text-xs mt-1">{errors.vehicleType}</p>}
-          
-//           {/* Vehicle Type Tag Display */}
-//           {/* {form.vehicleType && (
-//             <div className="mt-2">
-//               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-//                 form.vehicleType === "new" 
-//                   ? "bg-green-100 text-green-800" 
-//                   : "bg-blue-100 text-blue-800"
-//               }`}>
-//                 {form.vehicleType === "new" ? (
-//                   <>
-//                     <FaCar className="mr-1" /> New Vehicle
-//                   </>
-//                 ) : (
-//                   <>
-//                     <FaHistory className="mr-1" /> Used Vehicle
-//                   </>
-//                 )}
-//               </span>
-//               <p className="text-xs text-gray-500 mt-1">
-//                 {form.vehicleType === "new" 
-//                   ? "Step 3 (Previous Policy) will be disabled for new vehicles" 
-//                   : "Step 3 (Previous Policy) will be required for used vehicles"}
-//               </p>
-//             </div>
-//           )} */}
-//         </div>
-
-//         {/* Credit Type Dropdown - UPDATED: Added Broker option */}
-//         <div>
-//           <label className="block mb-1 text-sm font-medium text-gray-600">
-//             Policy Done By *
-//           </label>
-//           <select
-//             name="creditType"
-//             value={form.creditType || "auto"}
-//             onChange={handleCreditTypeChange}
-//             className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//               errors.creditType ? "border-red-500" : "border-gray-300"
-//             }`}
-//           >
-//             {creditTypeOptions.map(option => (
-//               <option key={option.value} value={option.value}>
-//                 {option.label}
-//               </option>
-//             ))}
-//           </select>
-//           {errors.creditType && <p className="text-red-500 text-xs mt-1">{errors.creditType}</p>}
-          
-//           {/* Credit Type Info */}
-//           {/* {form.creditType && (
-//             <div className="mt-2">
-//               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-//                 form.creditType === "auto" 
-//                   ? "bg-blue-100 text-blue-800" 
-//                   : form.creditType === "broker"
-//                   ? "bg-purple-100 text-purple-800"
-//                   : form.creditType === "showroom"
-//                   ? "bg-orange-100 text-orange-800"
-//                   : "bg-green-100 text-green-800"
-//               }`}>
-//                 {form.creditType === "auto" ? (
-//                   <>
-//                     <FaCreditCard className="mr-1" /> Autocredits India LLP
-//                   </>
-//                 ) : form.creditType === "broker" ? (
-//                   <>
-//                     <FaUserTie className="mr-1" /> Broker
-//                   </>
-//                 ) : form.creditType === "showroom" ? (
-//                   <>
-//                     <FaTags className="mr-1" /> Showroom
-//                   </>
-//                 ) : (
-//                   <>
-//                     <FaUser className="mr-1" /> Customer
-//                   </>
-//                 )}
-//               </span>
-//               <p className="text-xs text-gray-500 mt-1">
-//                 {form.creditType === "auto" || form.creditType === "broker"
-//                   ? "Payout section will be available" 
-//                   : "Payout section will be hidden"}
-//               </p>
-//             </div>
-//           )} */}
-//         </div>
-
-//         {/* NEW: Broker Name Field - Only enabled when Broker is selected */}
-//         <div>
-//           <label className="block mb-1 text-sm font-medium text-gray-600">
-//             Broker Name {shouldEnableBrokerName && "*"}
-//           </label>
-//           <div className="relative">
-//             <input
-//               type="text"
-//               name="brokerName"
-//               value={form.brokerName || ""}
-//               onChange={handleBrokerNameChange}
-//               onFocus={() => {
-//                 if (shouldEnableBrokerName) {
-//                   if (form.brokerName) {
-//                     const filtered = brokerNameOptions.filter(broker =>
-//                       broker.toLowerCase().includes(form.brokerName.toLowerCase())
-//                     );
-//                     setBrokerNameSuggestions(filtered);
-//                     setShowBrokerNameSuggestions(true);
-//                   } else {
-//                     setBrokerNameSuggestions(brokerNameOptions);
-//                     setShowBrokerNameSuggestions(true);
-//                   }
-//                 }
-//               }}
-//               onBlur={() => {
-//                 setTimeout(() => setShowBrokerNameSuggestions(false), 200);
-//               }}
-//               placeholder={shouldEnableBrokerName ? "Select or type broker name" : "Select Broker first"}
-//               disabled={!shouldEnableBrokerName}
-//               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                 !shouldEnableBrokerName 
-//                   ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-//                   : errors.brokerName ? "border-red-500" : "border-gray-300"
-//               }`}
-//             />
-            
-//             {/* Broker Name Suggestions Dropdown */}
-//             {showBrokerNameSuggestions && shouldEnableBrokerName && brokerNameSuggestions.length > 0 && (
-//               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-//                 {brokerNameSuggestions.map((broker, index) => (
-//                   <div
-//                     key={index}
-//                     className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-//                     onClick={() => selectBrokerName(broker)}
-//                   >
-//                     {broker}
-//                   </div>
-//                 ))}
-//               </div>
-//             )}
-//           </div>
-//           {errors.brokerName && <p className="text-red-500 text-xs mt-1">{errors.brokerName}</p>}
-//           {/* {!shouldEnableBrokerName && (
-//             <p className="text-gray-400 text-xs mt-1">Enable by selecting "Broker" in Policy Done By</p>
-//           )} */}
-//         </div>
-
-//         {/* NEW: Source Origin Field - Agent Name Auto-suggestion */}
-//         <div>
-//           <label className="block mb-1 text-sm font-medium text-gray-600">
-//             Source Origin
-//           </label>
-//           <div className="relative">
-//             <input
-//               type="text"
-//               name="sourceOrigin"
-//               value={form.sourceOrigin || ""}
-//               onChange={handleSourceOriginChange}
-//               onFocus={() => {
-//                 if (form.sourceOrigin) {
-//                   const filtered = agentNameOptions.filter(agent =>
-//                     agent.toLowerCase().includes(form.sourceOrigin.toLowerCase())
-//                   );
-//                   setAgentNameSuggestions(filtered);
-//                   setShowAgentNameSuggestions(true);
-//                 } else {
-//                   setAgentNameSuggestions(agentNameOptions);
-//                   setShowAgentNameSuggestions(true);
-//                 }
-//               }}
-//               onBlur={() => {
-//                 setTimeout(() => setShowAgentNameSuggestions(false), 200);
-//               }}
-//               placeholder="Select or type agent name"
-//               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                 errors.sourceOrigin ? "border-red-500" : "border-gray-300"
-//               }`}
-//             />
-            
-//             {/* Agent Name Suggestions Dropdown */}
-//             {showAgentNameSuggestions && agentNameSuggestions.length > 0 && (
-//               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-//                 {agentNameSuggestions.map((agent, index) => (
-//                   <div
-//                     key={index}
-//                     className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-//                     onClick={() => selectSourceOrigin(agent)}
-//                   >
-//                     {agent}
-//                   </div>
-//                 ))}
-//               </div>
-//             )}
-//           </div>
-//           {errors.sourceOrigin && <p className="text-red-500 text-xs mt-1">{errors.sourceOrigin}</p>}
-//           <p className="text-gray-400 text-xs mt-1">From where we got the policy client</p>
-//         </div>
-
-//         {/* Individual Fields */}
-//         {form.buyer_type === "individual" && (
-//           <>
-//             {/* Employee Name */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Employee Name *
-//               </label>
-//               <div className="flex items-center">
-//                 <FaUser className="text-gray-400 mr-2" />
-//                 <input
-//                   type="text"
-//                   name="employeeName"
-//                   value={form.employeeName || ""}
-//                   onChange={(e) => handleTextChange(e, true)}
-//                   placeholder="Enter employee name"
-//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                     errors.employeeName ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//               </div>
-//               {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName}</p>}
-//             </div>
-
-//             {/* Customer Name */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Customer Name *
-//               </label>
-//               <div className="flex items-center">
-//                 <FaUser className="text-gray-400 mr-2" />
-//                 <input
-//                   type="text"
-//                   name="customerName"
-//                   value={form.customerName || ""}
-//                   onChange={(e) => handleTextChange(e, true)}
-//                   placeholder="Enter customer name"
-//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                     errors.customerName ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//               </div>
-//               {errors.customerName && <p className="text-red-500 text-xs mt-1">{errors.customerName}</p>}
-//             </div>
-
-//             {/* Mobile Number */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Mobile Number *
-//               </label>
-//               <div className="flex items-center gap-2">
-//                 <span className="text-gray-500 px-3 py-2 border border-gray-200 rounded-l-md bg-gray-50">
-//                   +91
-//                 </span>
-//                 <input
-//                   type="text"
-//                   name="mobile"
-//                   value={form.mobile || ""}
-//                   onChange={handlePhoneChange}
-//                   maxLength='10'
-//                   placeholder="Enter 10-digit mobile number"
-//                   className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                     errors.mobile ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//               </div>
-//               {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
-//             </div>
-
-//             {/* Alternate Phone Number */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Alternate Phone Number
-//               </label>
-//               <div className="flex items-center gap-2">
-//                 <span className="text-gray-500 px-3 py-2 border border-gray-200 rounded-l-md bg-gray-50">
-//                   +91
-//                 </span>
-//                 <input
-//                   type="text"
-//                   name="alternatePhone"
-//                   value={form.alternatePhone || ""}
-//                   maxLength='10'
-//                   onChange={handlePhoneChange}
-//                   placeholder="Enter alternate number"
-//                   className="w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-//                 />
-//               </div>
-//             </div>
-
-//             {/* Email */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Email Address *
-//               </label>
-//               <div className="flex items-center">
-//                 <FaEnvelope className="text-gray-400 mr-2" />
-//                 <input
-//                   type="email"
-//                   name="email"
-//                   value={form.email || ""}
-//                   onChange={handleChange}
-//                   placeholder="Enter email address"
-//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                     errors.email ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//               </div>
-//               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-//             </div>
-
-//             {/* Gender */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Gender *
-//               </label>
-//               <select
-//                 name="gender"
-//                 value={form.gender || ""}
-//                 onChange={handleChange}
-//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                   errors.gender ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               >
-//                 <option value="">Select gender</option>
-//                 <option value="male">Male</option>
-//                 <option value="female">Female</option>
-//                 <option value="other">Other</option>
-//               </select>
-//               {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
-//             </div>
-
-//             {/* PAN */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 PAN Number
-//               </label>
-//               <input
-//                 type="text"
-//                 name="panNumber"
-//                 value={form.panNumber || ""}
-//                 onChange={handleUppercaseChange}
-//                 placeholder="ABCDE1234F"
-//                 maxLength={10}
-//                 style={{ textTransform: "uppercase" }}
-//                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-//               />
-//             </div>
-
-//             {/* Aadhaar */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Aadhaar Number
-//               </label>
-//               <input
-//                 type="text"
-//                 name="aadhaarNumber"
-//                 value={form.aadhaarNumber || ""}
-//                 onChange={handleChange}
-//                 maxLength={12}
-//                 placeholder="1234 5678 9012"
-//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                   errors.aadhaarNumber ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.aadhaarNumber && <p className="text-red-500 text-xs mt-1">{errors.aadhaarNumber}</p>}
-//             </div>
-//           </>
-//         )}
-
-//         {/* Corporate Fields */}
-//         {form.buyer_type === "corporate" && (
-//           <>
-//             {/* Employee Name */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Employee Name *
-//               </label>
-//               <div className="flex items-center">
-//                 <FaUser className="text-gray-400 mr-2" />
-//                 <input
-//                   type="text"
-//                   name="employeeName"
-//                   value={form.employeeName || ""}
-//                   onChange={(e) => handleTextChange(e, true)}
-//                   placeholder="Enter employee name"
-//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                     errors.employeeName ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//               </div>
-//               {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName}</p>}
-//             </div>
-
-//             {/* Company Name */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Company Name *
-//               </label>
-//               <div className="flex items-center">
-//                 <FaUser className="text-gray-400 mr-2" />
-//                 <input
-//                   type="text"
-//                   name="companyName"
-//                   value={form.companyName || ""}
-//                   onChange={(e) => handleTextChange(e, true)}
-//                   placeholder="Enter company name"
-//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                     errors.companyName ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//               </div>
-//               {errors.companyName && <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>}
-//             </div>
-
-//             {/* Contact Person Name */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Contact Person Name *
-//               </label>
-//               <input
-//                 type="text"
-//                 name="contactPersonName"
-//                 value={form.contactPersonName || ""}
-//                 onChange={(e) => handleTextChange(e, true)}
-//                 placeholder="Enter contact person name"
-//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                   errors.contactPersonName ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.contactPersonName && <p className="text-red-500 text-xs mt-1">{errors.contactPersonName}</p>}
-//             </div>
-
-//             {/* Mobile Number */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Mobile Number *
-//               </label>
-//               <div className="flex items-center gap-2">
-//                 <span className="text-gray-500 px-3 py-2 border border-gray-200 rounded-l-md bg-gray-50">
-//                   +91
-//                 </span>
-//                 <input
-//                   type="text"
-//                   name="mobile"
-//                   value={form.mobile || ""}
-//                   onChange={handlePhoneChange}
-//                   maxLength='10'
-//                   placeholder="Enter 10-digit mobile number"
-//                   className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                     errors.mobile ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//               </div>
-//               {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
-//             </div>
-
-//             {/* Alternate Phone Number */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Alternate Phone Number
-//               </label>
-//               <div className="flex items-center gap-2">
-//                 <span className="text-gray-500 px-3 py-2 border border-gray-200 rounded-l-md bg-gray-50">
-//                   +91
-//                 </span>
-//                 <input
-//                   type="text"
-//                   name="alternatePhone"
-//                   value={form.alternatePhone || ""}
-//                   onChange={handlePhoneChange}
-//                   placeholder="Enter alternate number"
-//                   maxLength="10"
-//                   className="w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-//                 />
-//               </div>
-//             </div>
-
-//             {/* Email */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Email Address *
-//               </label>
-//               <div className="flex items-center">
-//                 <FaEnvelope className="text-gray-400 mr-2" />
-//                 <input
-//                   type="email"
-//                   name="email"
-//                   value={form.email || ""}
-//                   onChange={handleChange}
-//                   placeholder="Enter company email address"
-//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                     errors.email ? "border-red-500" : "border-gray-300"
-//                   }`}
-//                 />
-//               </div>
-//               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-//             </div>
-
-//             {/* PAN Number */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 PAN Number *
-//               </label>
-//               <input
-//                 type="text"
-//                 name="companyPanNumber"
-//                 value={form.companyPanNumber || ""}
-//                 onChange={handleUppercaseChange}
-//                 placeholder="ABCDE1234F"
-//                 maxLength={10}
-//                 style={{ textTransform: "uppercase" }}
-//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                   errors.companyPanNumber ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.companyPanNumber && <p className="text-red-500 text-xs mt-1">{errors.companyPanNumber}</p>}
-//             </div>
-
-//             {/* GST Number */}
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 GST Number
-//               </label>
-//               <input
-//                 type="text"
-//                 name="gstNumber"
-//                 value={form.gstNumber || ""}
-//                 onChange={handleUppercaseChange}
-//                 placeholder="Enter GST number"
-//                 maxLength={15}
-//                 style={{ textTransform: "uppercase" }}
-//                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-//               />
-//             </div>
-//           </>
-//         )}
-
-//         {/* Address Fields (Common for both) */}
-//         <div className="md:col-span-2">
-//           <label className="block mb-1 text-sm font-medium text-gray-600">
-//             {form.buyer_type === "corporate" ? "Office Address *" : "Residence Address *"}
-//           </label>
-//           <input
-//             type="text"
-//             name="residenceAddress"
-//             value={form.residenceAddress || ""}
-//             onChange={handleChange}
-//             placeholder={form.buyer_type === "corporate" ? "Enter complete office address" : "Enter complete address"}
-//             className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//               errors.residenceAddress ? "border-red-500" : "border-gray-300"
-//             }`}
-//           />
-//           {errors.residenceAddress && <p className="text-red-500 text-xs mt-1">{errors.residenceAddress}</p>}
-//         </div>
-
-//         {/* Pincode Field with Auto-fetch */}
-//         <div>
-//           <label className="block mb-1 text-sm font-medium text-gray-600">
-//             Pincode *
-//           </label>
-//           <div className="relative">
-//             <input
-//               type="text"
-//               name="pincode"
-//               value={form.pincode || ""}
-//               onChange={handlePincodeChange}
-//               placeholder="Enter 6-digit pincode"
-//               maxLength={6}
-//               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                 errors.pincode ? "border-red-500" : "border-gray-300"
-//               }`}
-//             />
-//             {isPincodeLoading && (
-//               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-//                 <FaSpinner className="animate-spin text-purple-600" />
-//               </div>
-//             )}
-//           </div>
-//           {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
-//           {pincodeError && <p className="text-red-500 text-xs mt-1">{pincodeError}</p>}
-//           {form.pincode && form.pincode.length === 6 && !isPincodeLoading && form.city && (
-//             <p className="text-green-600 text-xs mt-1 flex items-center">
-//               <FaCheckCircle className="mr-1" /> City auto-filled: {form.city}
-//             </p>
-//           )}
-//         </div>
-
-//         {/* City Field */}
-//         <div>
-//           <label className="block mb-1 text-sm font-medium text-gray-600">
-//             City *
-//           </label>
-//           <input
-//             type="text"
-//             name="city"
-//             value={form.city || ""}
-//             onChange={(e) => handleTextChange(e, true)}
-//             placeholder="Enter city"
-//             className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//               errors.city ? "border-red-500" : "border-gray-300"
-//             }`}
-//           />
-//           {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
-//         </div>
-
-//         {/* Nominee Info (Common for both, optional) */}
-//         <div className="md:col-span-2">
-//           <h4 className="text-md font-semibold mt-6">Nominee Information (Optional)</h4>
-//           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-3">
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Nominee Name
-//               </label>
-//               <input
-//                 type="text"
-//                 name="nomineeName"
-//                 value={form.nomineeName || ""}
-//                 onChange={(e) => handleTextChange(e, true)}
-//                 placeholder="Nominee Name"
-//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                   errors.nomineeName ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.nomineeName && <p className="text-red-500 text-xs mt-1">{errors.nomineeName}</p>}
-//             </div>
-            
-//             <div className="relative">
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Relationship
-//               </label>
-//               <input
-//                 type="text"
-//                 name="relation"
-//                 value={form.relation || ""}
-//                 onChange={handleRelationshipChange}
-//                 onFocus={() => {
-//                   if (form.relation) {
-//                     const filtered = relationshipOptions.filter(relation =>
-//                       relation.toLowerCase().includes(form.relation.toLowerCase())
-//                     );
-//                     setRelationshipSuggestions(filtered);
-//                     setShowRelationshipSuggestions(true);
-//                   } else {
-//                     setRelationshipSuggestions(relationshipOptions);
-//                     setShowRelationshipSuggestions(true);
-//                   }
-//                 }}
-//                 onBlur={() => {
-//                   setTimeout(() => setShowRelationshipSuggestions(false), 200);
-//                 }}
-//                 placeholder="Type relationship"
-//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                   errors.relation ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-              
-//               {/* Relationship Suggestions Dropdown */}
-//               {showRelationshipSuggestions && relationshipSuggestions.length > 0 && (
-//                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-//                   {relationshipSuggestions.map((relation, index) => (
-//                     <div
-//                       key={index}
-//                       className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-//                       onClick={() => selectRelationship(relation)}
-//                     >
-//                       {relation}
-//                     </div>
-//                   ))}
-//                 </div>
-//               )}
-              
-//               {errors.relation && <p className="text-red-500 text-xs mt-1">{errors.relation}</p>}
-//             </div>
-            
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Nominee Age
-//               </label>
-//               <input
-//                 type="number"
-//                 name="nomineeAge"
-//                 value={form.nomineeAge || ""}
-//                 onChange={handleChange}
-//                 placeholder="Nominee Age"
-//                 min="1"
-//                 max="130"
-//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-//                   errors.nomineeAge ? "border-red-500" : "border-gray-300"
-//                 }`}
-//               />
-//               {errors.nomineeAge && <p className="text-red-500 text-xs mt-1">{errors.nomineeAge}</p>}
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Reference Info */}
-//         <div className="md:col-span-2">
-//           <h4 className="text-md font-semibold mt-6">Reference Information (Optional)</h4>
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Reference Name
-//               </label>
-//               <input
-//                 type="text"
-//                 name="referenceName"
-//                 value={form.referenceName || ""}
-//                 onChange={(e) => handleTextChange(e, true)}
-//                 placeholder="Reference Name"
-//                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-//               />
-//             </div>
-//             <div>
-//               <label className="block mb-1 text-sm font-medium text-gray-600">
-//                 Reference Phone Number
-//               </label>
-//               <input
-//                 type="text"
-//                 name="referencePhone"
-//                 value={form.referencePhone || ""}
-//                 onChange={handlePhoneChange}
-//                 placeholder="Reference Phone Number"
-//                 maxLength="10"
-//                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-//               />
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Credit Type Summary - UPDATED: Added Broker info */}
-//         {/* {form.creditType && (
-//           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-//             <h4 className="text-md font-semibold text-gray-700 mb-2">Credit Type Summary</h4>
-//             <div className="flex items-center justify-between">
-//               <div className="flex items-center gap-3">
-//                 <div className={`p-2 rounded-full ${
-//                   form.creditType === "auto" 
-//                     ? "bg-blue-100 text-blue-600" 
-//                     : form.creditType === "broker"
-//                     ? "bg-purple-100 text-purple-600"
-//                     : form.creditType === "showroom"
-//                     ? "bg-orange-100 text-orange-600"
-//                     : "bg-green-100 text-green-600"
-//                 }`}>
-//                   {form.creditType === "auto" ? <FaCreditCard /> : 
-//                    form.creditType === "broker" ? <FaUserTie /> :
-//                    form.creditType === "showroom" ? <FaTags /> : 
-//                    <FaUser />}
-//                 </div>
-//                 <div>
-//                   <p className="font-medium text-gray-800">
-//                     {form.creditType === "auto" ? "Autocredits India LLP" : 
-//                      form.creditType === "broker" ? "Broker" + (form.brokerName ? ` - ${form.brokerName}` : "") :
-//                      form.creditType === "showroom" ? "Showroom" : 
-//                      "Customer"}
-//                   </p>
-//                   <p className="text-sm text-gray-600">
-//                     {form.creditType === "auto" || form.creditType === "broker"
-//                       ? "Payout section will be available in Step 8" 
-//                       : "Payout section will be hidden"}
-//                   </p>
-//                 </div>
-//               </div>
-//               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-//                 form.creditType === "auto" 
-//                   ? "bg-blue-100 text-blue-800" 
-//                   : form.creditType === "broker"
-//                   ? "bg-purple-100 text-purple-800"
-//                   : form.creditType === "showroom"
-//                   ? "bg-orange-100 text-orange-800"
-//                   : "bg-green-100 text-green-800"
-//               }`}>
-//                 {form.creditType === "auto" ? "Autocredits India LLP" : 
-//                  form.creditType === "broker" ? "BROKER" :
-//                  form.creditType === "showroom" ? "SHOWROOM" : 
-//                  "CUSTOMER"}
-//               </span>
-//             </div>
-//           </div>
-//         )} */}
-
-//         {/* Vehicle Type Summary */}
-//         {/* {form.vehicleType && (
-//           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-//             <h4 className="text-md font-semibold text-gray-700 mb-2">Vehicle Type Summary</h4>
-//             <div className="flex items-center justify-between">
-//               <div className="flex items-center gap-3">
-//                 <div className={`p-2 rounded-full ${
-//                   form.vehicleType === "new" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
-//                 }`}>
-//                   {form.vehicleType === "new" ? <FaCar /> : <FaHistory />}
-//                 </div>
-//                 <div>
-//                   <p className="font-medium text-gray-800">
-//                     {form.vehicleType === "new" ? "New Vehicle" : "Used Vehicle"}
-//                   </p>
-//                   <p className="text-sm text-gray-600">
-//                     {form.vehicleType === "new" 
-//                       ? "Previous policy details will not be required" 
-//                       : "Previous policy details will be required in Step 3"}
-//                   </p>
-//                 </div>
-//               </div>
-//               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-//                 form.vehicleType === "new" 
-//                   ? "bg-green-100 text-green-800" 
-//                   : "bg-blue-100 text-blue-800"
-//               }`}>
-//                 {form.vehicleType === "new" ? "NEW" : "USED"}
-//               </span>
-//             </div>
-//           </div>
-//         )} */}
-//       </div>
-//     </div>
-//   );
-// };
-// ================== STEP 2: Vehicle Details =================
-
-
 const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Relationship options for auto-suggest
   const relationshipOptions = [
     "Spouse", "Son", "Mother", "Father", "Daughter", "Child", "Brother", "Sister", "Grandparent", "Father-in-law",
-    "Mother-in-law", "Brother-in-law", "Sister-in-law", "Son-in-law",
-    "Daughter-in-law",
+    "Mother-in-law", "Brother-in-law", "Sister-in-law", "Son-in-law", "Daughter-in-law",
   ];
 
   // Credit type options - UPDATED: Added Broker option
@@ -1761,8 +495,13 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   const [customersError, setCustomersError] = useState('');
   const [prefillMessage, setPrefillMessage] = useState('');
 
+  // NEW: States for company autosuggest
+  const [filteredCompanies, setFilteredCompanies] = useState([]);
+  const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
+  const [companyPrefillMessage, setCompanyPrefillMessage] = useState('');
+
   // Base API URL
-  const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app";
+  // const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app";
 
   // Format text to have first letter uppercase and other letters lowercase
   const formatName = (text) => {
@@ -1771,17 +510,29 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     });
   };
 
-  // Fetch customers on component mount
+  // Fetch customers on component mount - UPDATED: Fetch all fields from API
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  // NEW: Detect buyer type based on first_name being "undefined"
+  useEffect(() => {
+    if (customers.length > 0) {
+      console.log("🔍 Checking customers for undefined first_name...");
+      customers.forEach(customer => {
+        if (customer.first_name === "undefined" || customer.first_name === undefined) {
+          console.log("🏢 Found corporate customer:", customer);
+          // This customer should be treated as corporate
+        }
+      });
+    }
+  }, [customers]);
 
   const fetchCustomers = async () => {
     try {
       setIsCustomersLoading(true);
       setCustomersError('');
       
-      // CORRECTED: Changed "cutomers" to "customers"
       const response = await fetch(
         "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1/customers"
       );
@@ -1793,7 +544,27 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
       const data = await response.json();
       
       if (data.data && Array.isArray(data.data)) {
-        setCustomers(data.data);
+        // Fetch ALL fields from API as requested
+        console.log("✅ Fetched customers with all fields:", data.data);
+        
+        // Process customers to handle undefined first_name
+        const processedCustomers = data.data.map(customer => {
+          // If first_name is "undefined", treat as corporate and use contactPersonName
+          if (customer.first_name === "undefined" || customer.first_name === undefined) {
+            return {
+              ...customer,
+              buyer_type: "corporate",
+              displayName: customer.contactPersonName || customer.companyName || "Corporate Customer"
+            };
+          }
+          return {
+            ...customer,
+            buyer_type: "individual",
+            displayName: `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+          };
+        });
+        
+        setCustomers(processedCustomers);
       } else {
         console.warn('Unexpected API response format:', data);
         setCustomers([]);
@@ -1923,19 +694,21 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     handleChange(e);
   };
 
-  // Handle customer name input change for auto-suggest
+  // Handle customer name input change for auto-suggest - UPDATED: Handle corporate detection
   const handleCustomerNameChange = (e) => {
     const { name, value } = e.target;
     
     handleChange(e);
 
-    // Filter customers based on input
+    // Filter customers based on input - only search by name and phone
     if (value.trim()) {
       const filtered = customers.filter(customer => 
-        `${customer.first_name} ${customer.last_name}`
-          .toLowerCase()
-          .includes(value.toLowerCase()) ||
-        customer.phone.includes(value)
+        customer.buyer_type === "individual" && (
+          `${customer.first_name} ${customer.last_name}`
+            .toLowerCase()
+            .includes(value.toLowerCase()) ||
+          customer.phone.includes(value)
+        )
       );
       setFilteredCustomers(filtered);
       setShowCustomerSuggestions(true);
@@ -1945,44 +718,62 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     }
   };
 
-  // Handle contact person name input change for auto-suggest
-  const handleContactPersonNameChange = (e) => {
+  // Handle company name input change for auto-suggest - UPDATED: Handle corporate detection
+  const handleCompanyNameChange = (e) => {
     const { name, value } = e.target;
     
     handleChange(e);
 
-    // Filter customers based on input
+    // Filter customers based on input - search by company name, contact person, and phone
     if (value.trim()) {
       const filtered = customers.filter(customer => 
-        `${customer.first_name} ${customer.last_name}`
-          .toLowerCase()
-          .includes(value.toLowerCase()) ||
-        customer.phone.includes(value)
+        customer.buyer_type === "corporate" && (
+          customer.companyName?.toLowerCase().includes(value.toLowerCase()) ||
+          customer.contactPersonName?.toLowerCase().includes(value.toLowerCase()) ||
+          customer.phone.includes(value)
+        )
       );
-      setFilteredCustomers(filtered);
-      setShowCustomerSuggestions(true);
+      setFilteredCompanies(filtered);
+      setShowCompanySuggestions(true);
     } else {
-      setFilteredCustomers([]);
-      setShowCustomerSuggestions(false);
+      setFilteredCompanies([]);
+      setShowCompanySuggestions(false);
     }
   };
 
-  // Select customer name specifically and prefill all data
+  // UPDATED: Select customer name specifically and prefill ALL fields for INDIVIDUAL buyer type
   const selectCustomerName = (customer) => {
-    // Map all customer data to form fields
+    console.log("🔍 Selecting customer for INDIVIDUAL buyer type:", customer);
+    
+    // Map ALL customer data to form fields for INDIVIDUAL buyer type as specified
     const fieldMappings = {
-      customerName: `${customer.first_name} ${customer.last_name}`,
-      mobile: customer.phone || '',
+      // Source origin (common for both)
+      sourceOrigin: customer.sourceOrigin || '',
+      
+      // Individual specific fields
+      customerName: `${customer.first_name || ''} ${customer.last_name || ''}`.trim(),
+      mobile: customer.phone || customer.mobile || '',
       email: customer.email || '',
+      residenceAddress: customer.address || customer.residenceAddress || '',
+      pincode: customer.pincode || '',
+      city: customer.city || '',
+      alternatePhone: customer.alternate_phone || customer.alternatePhone || '',
+      employeeName: customer.employee_name || customer.employeeName || '',
       gender: customer.gender || '',
-      residenceAddress: customer.address || '',
-      // Add more mappings as needed
+      panNumber: customer.pan || customer.panNumber || '',
+      aadhaarNumber: customer.aadhaar || customer.aadhaarNumber || '',
+      
+      // Additional fields that might be in API
+      age: customer.age || '',
+      lead_source: customer.lead_source || '',
+      lead_status: customer.lead_status || '',
+      policy_type: customer.policy_type || '',
     };
 
     let filledFields = 0;
     // Update all fields
     Object.entries(fieldMappings).forEach(([fieldName, value]) => {
-      if (value) {
+      if (value && value !== '') {
         handleChange({
           target: {
             name: fieldName,
@@ -1990,31 +781,51 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           }
         });
         filledFields++;
+        console.log(`✅ Prefilled ${fieldName}:`, value);
       }
     });
     
     setPrefillMessage(`✅ Prefilled ${filledFields} fields from customer data`);
-    setTimeout(() => setPrefillMessage(''), 3000); // Clear message after 3 seconds
+    setTimeout(() => setPrefillMessage(''), 3000);
     
     setFilteredCustomers([]);
     setShowCustomerSuggestions(false);
+    
+    console.log("🎯 Individual customer data prefilled:", fieldMappings);
   };
 
-  // Select contact person name specifically and prefill all data
-  const selectContactPersonName = (customer) => {
-    // Map all customer data to form fields for contact person
+  // UPDATED: Select company name specifically and prefill ALL fields for CORPORATE buyer type
+  const selectCompanyName = (customer) => {
+    console.log("🔍 Selecting customer for CORPORATE buyer type:", customer);
+    
+    // Map ALL customer data to company form fields for CORPORATE buyer type as specified
     const fieldMappings = {
-      contactPersonName: `${customer.first_name} ${customer.last_name}`,
-      mobile: customer.phone || '',
+      // Common contact fields
+      mobile: customer.phone || customer.mobile || '',
       email: customer.email || '',
-      gender: customer.gender || '',
-      residenceAddress: customer.address || '',
+      residenceAddress: customer.address || customer.residenceAddress || '',
+      pincode: customer.pincode || '',
+      city: customer.city || '',
+      alternatePhone: customer.alternate_phone || customer.alternatePhone || '',
+      employeeName: customer.employee_name || customer.employeeName || '',
+      panNumber: customer.pan || customer.panNumber || '',
+      
+      // Corporate specific fields
+      companyName: customer.company_name || customer.companyName || customer.displayName || '',
+      contactPersonName: customer.contact_person || customer.contactPersonName || customer.displayName || '',
+      gstNumber: customer.gst || customer.gstNumber || '',
+      
+      // Source origin and other fields
+      sourceOrigin: customer.sourceOrigin || '',
+      lead_source: customer.lead_source || '',
+      lead_status: customer.lead_status || '',
+      policy_type: customer.policy_type || '',
     };
 
     let filledFields = 0;
     // Update all fields
     Object.entries(fieldMappings).forEach(([fieldName, value]) => {
-      if (value) {
+      if (value && value !== '') {
         handleChange({
           target: {
             name: fieldName,
@@ -2022,14 +833,17 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           }
         });
         filledFields++;
+        console.log(`✅ Prefilled ${fieldName}:`, value);
       }
     });
     
-    setPrefillMessage(`✅ Prefilled ${filledFields} fields from customer data`);
-    setTimeout(() => setPrefillMessage(''), 3000); // Clear message after 3 seconds
+    setCompanyPrefillMessage(`✅ Prefilled ${filledFields} fields from company data`);
+    setTimeout(() => setCompanyPrefillMessage(''), 3000);
     
-    setFilteredCustomers([]);
-    setShowCustomerSuggestions(false);
+    setFilteredCompanies([]);
+    setShowCompanySuggestions(false);
+    
+    console.log("🏢 Corporate customer data prefilled:", fieldMappings);
   };
 
   // Handle phone number input (numbers only)
@@ -2051,7 +865,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     handleChange({
       target: {
         name: name,
-        value: value
+        value: value.toUpperCase()
       }
     });
   };
@@ -2425,10 +1239,12 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                   onFocus={() => {
                     if (form.customerName) {
                       const filtered = customers.filter(customer => 
-                        `${customer.first_name} ${customer.last_name}`
-                          .toLowerCase()
-                          .includes(form.customerName.toLowerCase()) ||
-                        customer.phone.includes(form.customerName)
+                        customer.buyer_type === "individual" && (
+                          `${customer.first_name} ${customer.last_name}`
+                            .toLowerCase()
+                            .includes(form.customerName.toLowerCase()) ||
+                          customer.phone.includes(form.customerName)
+                        )
                       );
                       setFilteredCustomers(filtered);
                     }
@@ -2469,6 +1285,10 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                         {customer.first_name} {customer.last_name}
                       </div>
                       <div className="text-xs text-gray-500">{customer.phone}</div>
+                      <div className="text-xs text-gray-400">
+                        {customer.email && `Email: ${customer.email} • `}
+                        {customer.city && `City: ${customer.city}`}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2638,95 +1458,80 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
               {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName}</p>}
             </div>
 
-            {/* Company Name */}
-            <div>
+            {/* Company Name with Autosuggest */}
+            <div className="relative">
               <label className="block mb-1 text-sm font-medium text-gray-600">
                 Company Name *
               </label>
-              <div className="flex items-center">
-                <FaUser className="text-gray-400 mr-2" />
+              <div className="flex items-center relative">
+                <FaBuilding className="text-gray-400 mr-2" />
                 <input
                   type="text"
                   name="companyName"
                   value={form.companyName || ""}
-                  onChange={(e) => handleTextChange(e, true)}
+                  onChange={handleCompanyNameChange}
+                  onFocus={() => {
+                    if (form.companyName) {
+                      const filtered = customers.filter(customer => 
+                        customer.buyer_type === "corporate" && (
+                          customer.companyName?.toLowerCase().includes(form.companyName.toLowerCase()) ||
+                          customer.contactPersonName?.toLowerCase().includes(form.companyName.toLowerCase()) ||
+                          customer.phone.includes(form.companyName)
+                        )
+                      );
+                      setFilteredCompanies(filtered);
+                    }
+                    setShowCompanySuggestions(true);
+                  }}
+                  onBlur={() => setTimeout(() => setShowCompanySuggestions(false), 200)}
                   placeholder="Enter company name"
                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
                     errors.companyName ? "border-red-500" : "border-gray-300"
                   }`}
                 />
               </div>
-              {errors.companyName && <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>}
-            </div>
-
-            {/* Contact Person Name with Autosuggest */}
-            <div className="relative">
-              <label className="block mb-1 text-sm font-medium text-gray-600">
-                Contact Person Name *
-              </label>
-              <div className="flex items-center relative">
-                <FaUser className="text-gray-400 mr-2" />
-                <input
-                  type="text"
-                  name="contactPersonName"
-                  value={form.contactPersonName || ""}
-                  onChange={handleContactPersonNameChange}
-                  onFocus={() => {
-                    if (form.contactPersonName) {
-                      const filtered = customers.filter(customer => 
-                        `${customer.first_name} ${customer.last_name}`
-                          .toLowerCase()
-                          .includes(form.contactPersonName.toLowerCase()) ||
-                        customer.phone.includes(form.contactPersonName)
-                      );
-                      setFilteredCustomers(filtered);
-                    }
-                    setShowCustomerSuggestions(true);
-                  }}
-                  onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
-                  placeholder="Enter contact person name"
-                  className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                    errors.contactPersonName ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-              </div>
               
-              {/* Prefill Success Message */}
-              {prefillMessage && (
+              {/* Company Prefill Success Message */}
+              {companyPrefillMessage && (
                 <p className="text-green-600 text-xs mt-1 flex items-center">
-                  <FaCheckCircle className="mr-1" /> {prefillMessage}
+                  <FaCheckCircle className="mr-1" /> {companyPrefillMessage}
                 </p>
               )}
               
               {/* Loading State */}
-              {isCustomersLoading && showCustomerSuggestions && (
+              {isCustomersLoading && showCompanySuggestions && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                  <div className="px-3 py-2 text-sm text-gray-500">Loading customers...</div>
+                  <div className="px-3 py-2 text-sm text-gray-500">Loading companies...</div>
                 </div>
               )}
               
-              {/* Autosuggest Dropdown */}
-              {showCustomerSuggestions && filteredCustomers.length > 0 && (
+              {/* Company Autosuggest Dropdown */}
+              {showCompanySuggestions && filteredCompanies.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {filteredCustomers.map((customer) => (
+                  {filteredCompanies.map((customer) => (
                     <div
                       key={customer._id}
-                      className="px-3 py-2 cursor-pointer hover:bg-purple-50 border-b border-gray-100 last:border-b-0"
-                      onClick={() => selectContactPersonName(customer)}
+                      className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
+                      onClick={() => selectCompanyName(customer)}
                     >
                       <div className="font-medium text-sm">
-                        {customer.first_name} {customer.last_name}
+                        {customer.companyName || customer.contactPersonName || customer.displayName}
                       </div>
                       <div className="text-xs text-gray-500">{customer.phone}</div>
+                      <div className="text-xs text-gray-400">
+                        {customer.email && `Email: ${customer.email} • `}
+                        {customer.city && `City: ${customer.city}`}
+                        {customer.gstNumber && ` • GST: ${customer.gstNumber}`}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
               
               {/* No Results */}
-              {showCustomerSuggestions && form.contactPersonName && !isCustomersLoading && filteredCustomers.length === 0 && (
+              {showCompanySuggestions && form.companyName && !isCustomersLoading && filteredCompanies.length === 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                  <div className="px-3 py-2 text-sm text-gray-500">No customers found</div>
+                  <div className="px-3 py-2 text-sm text-gray-500">No companies found</div>
                 </div>
               )}
               
@@ -2735,6 +1540,24 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 <p className="text-yellow-600 text-xs mt-1">{customersError}</p>
               )}
               
+              {errors.companyName && <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>}
+            </div>
+
+            {/* Contact Person Name */}
+            <div>
+              <label className="block mb-1 text-sm font-medium text-gray-600">
+                Contact Person Name *
+              </label>
+              <input
+                type="text"
+                name="contactPersonName"
+                value={form.contactPersonName || ""}
+                onChange={(e) => handleTextChange(e, true)}
+                placeholder="Enter contact person name"
+                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                  errors.contactPersonName ? "border-red-500" : "border-gray-300"
+                }`}
+              />
               {errors.contactPersonName && <p className="text-red-500 text-xs mt-1">{errors.contactPersonName}</p>}
             </div>
 
@@ -3035,12 +1858,22 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           </div>
         </div>
       </div>
+
+      {/* Save Button */}
+      {/* <div className="flex justify-end mt-6">
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? "Saving..." : "Save & Continue"}
+        </button>
+      </div> */}
     </div>
   );
 };
 
-
-
+// ================== STEP 2: VehicleDetails ==================
 
 const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Vehicle make options for auto-suggest
@@ -3121,6 +1954,11 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
   const [vehicleModelSuggestions, setVehicleModelSuggestions] = useState([]);
   const [showVehicleModelSuggestions, setShowVehicleModelSuggestions] = useState(false);
 
+  // State for registration number suggestions
+  const [regNoSuggestions, setRegNoSuggestions] = useState([]);
+  const [showRegNoSuggestions, setShowRegNoSuggestions] = useState(false);
+  const [isLoadingRegNo, setIsLoadingRegNo] = useState(false);
+
   // Get available models based on selected make
   const getAvailableModels = () => {
     if (!form.make || !vehicleModels[form.make]) {
@@ -3137,6 +1975,112 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
     return availableModels.filter(model =>
       model.toLowerCase().includes(inputValue.toLowerCase())
     );
+  };
+
+  // Extract vehicles array from API response
+  const extractVehiclesFromResponse = (data) => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    if (data && typeof data === 'object') {
+      // Check common response formats
+      if (Array.isArray(data.data)) return data.data;
+      if (Array.isArray(data.vehicles)) return data.vehicles;
+      if (Array.isArray(data.items)) return data.items;
+      if (Array.isArray(data.results)) return data.results;
+      if (Array.isArray(data.docs)) return data.docs;
+      
+      // If it's a single vehicle object
+      if (data.regNo || data.make || data.model) {
+        return [data];
+      }
+      
+      // Look for any array property
+      for (const key in data) {
+        if (Array.isArray(data[key])) {
+          return data[key];
+        }
+      }
+      
+      // Convert object values to array if they look like vehicles
+      const values = Object.values(data);
+      if (values.length > 0 && values.some(item => item && typeof item === 'object' && (item.regNo || item.make))) {
+        return values;
+      }
+    }
+    
+    return [];
+  };
+
+  // Fetch vehicle suggestions based on registration number
+  const fetchVehicleSuggestions = async (regNo) => {
+    if (!regNo || regNo.length < 2) {
+      setRegNoSuggestions([]);
+      setShowRegNoSuggestions(false);
+      return;
+    }
+
+    setIsLoadingRegNo(true);
+    try {
+      const response = await fetch('https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1/vehicles');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Extract vehicles from response
+      const vehicles = extractVehiclesFromResponse(data);
+      
+      // Filter vehicles by registration number
+      const filteredVehicles = vehicles.filter(vehicle => 
+        vehicle && 
+        typeof vehicle === 'object' && 
+        vehicle.regNo && 
+        typeof vehicle.regNo === 'string' &&
+        vehicle.regNo.toLowerCase().includes(regNo.toLowerCase())
+      );
+      
+      setRegNoSuggestions(filteredVehicles);
+      setShowRegNoSuggestions(filteredVehicles.length > 0);
+      
+    } catch (error) {
+      console.error('Error fetching vehicle data:', error);
+      setRegNoSuggestions([]);
+      setShowRegNoSuggestions(false);
+    } finally {
+      setIsLoadingRegNo(false);
+    }
+  };
+
+  // Handle registration number selection from suggestions
+  const handleRegNoSelect = (vehicle) => {
+    // Create a mock event object to simulate form changes
+    const updateFormField = (name, value) => {
+      handleChange({
+        target: {
+          name: name,
+          value: value !== null && value !== undefined ? value.toString() : ''
+        }
+      });
+    };
+
+    // Update all form fields with the selected vehicle data
+    updateFormField('regNo', vehicle.regNo || '');
+    updateFormField('make', vehicle.make || '');
+    updateFormField('model', vehicle.model || '');
+    updateFormField('variant', vehicle.variant || '');
+    updateFormField('engineNo', vehicle.engineNo || '');
+    updateFormField('chassisNo', vehicle.chassisNo || '');
+    updateFormField('makeMonth', vehicle.makeMonth || '');
+    updateFormField('makeYear', vehicle.makeYear || '');
+    updateFormField('cubicCapacity', vehicle.cubicCapacity || '');
+    updateFormField('vehicleTypeCategory', vehicle.vehicleTypeCategory || '4 wheeler');
+    
+    // Close the suggestions dropdown
+    setShowRegNoSuggestions(false);
   };
 
   return (
@@ -3158,28 +2102,74 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        {/* Registration Number with Auto-suggest from API */}
         <div className="md:col-span-2">
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Registration Number *
           </label>
-          <input
-            type="text"
-            name="regNo"
-            value={form.regNo || ""}
-            onChange={(e) => {
-              handleChange({
-                target: {
-                  name: e.target.name,
-                  value: e.target.value.toUpperCase()
+          <div className="relative">
+            <input
+              type="text"
+              name="regNo"
+              value={form.regNo || ""}
+              onChange={(e) => {
+                const value = e.target.value.toUpperCase();
+                handleChange({
+                  target: {
+                    name: e.target.name,
+                    value: value
+                  }
+                });
+                // Fetch suggestions when user types
+                fetchVehicleSuggestions(value);
+              }}
+              onFocus={() => {
+                if (form.regNo && form.regNo.length >= 2) {
+                  fetchVehicleSuggestions(form.regNo);
                 }
-              });
-            }}
-            placeholder="Enter Vehicle Number"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.regNo ? "border-red-500" : "border-gray-300"
-            }`}
-            style={{ textTransform: 'uppercase' }}
-          />
+              }}
+              onBlur={() => {
+                setTimeout(() => setShowRegNoSuggestions(false), 200);
+              }}
+              placeholder="Enter Vehicle Number"
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+                errors.regNo ? "border-red-500" : "border-gray-300"
+              }`}
+              style={{ textTransform: 'uppercase' }}
+            />
+            
+            {/* Loading indicator */}
+            {isLoadingRegNo && (
+              <div className="absolute right-3 top-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+              </div>
+            )}
+            
+            {/* Registration Number Suggestions Dropdown */}
+            {showRegNoSuggestions && regNoSuggestions.length > 0 && (
+              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                {regNoSuggestions.map((vehicle, index) => (
+                  <div
+                    key={vehicle._id || vehicle.regNo || index}
+                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm border-b border-gray-100 last:border-b-0"
+                    onClick={() => handleRegNoSelect(vehicle)}
+                  >
+                    <div className="font-medium">{vehicle.regNo}</div>
+                    <div className="text-xs text-gray-500">
+                      {vehicle.make} {vehicle.model} {vehicle.variant ? `- ${vehicle.variant}` : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* No results message */}
+            {showRegNoSuggestions && regNoSuggestions.length === 0 && !isLoadingRegNo && (
+              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg px-3 py-2 text-sm text-gray-500">
+                No vehicles found
+              </div>
+            )}
+          </div>
           {errors.regNo && <p className="text-red-500 text-xs mt-1">{errors.regNo}</p>}
         </div>
 
@@ -3341,7 +2331,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           {errors.variant && <p className="text-red-500 text-xs mt-1">{errors.variant}</p>}
         </div>
 
-        {/* NEW: Cubic Capacity (cc) field */}
+        {/* Cubic Capacity (cc) field */}
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Cubic Capacity (cc)
@@ -3395,7 +2385,7 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
           {errors.chassisNo && <p className="text-red-500 text-xs mt-1">{errors.chassisNo}</p>}
         </div>
 
-        {/* NEW: Types of Vehicle dropdown */}
+        {/* Types of Vehicle dropdown */}
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Types of Vehicle
@@ -3462,13 +2452,14 @@ const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) =>
         <div className="md:col-span-3">
           <div className="mt-4 p-3 rounded-md bg-gray-50 border border-gray-100 text-sm text-gray-600">
             <strong>Note:</strong> All vehicle details must be accurate as they
-            will be verified during policy issuance.
+            will be verified during policy issuance. You can start typing the registration number to auto-fill details from existing records.
           </div>
         </div>
       </div>
     </div>
   );
 };
+
 // ================== STEP 3: Previous Policy Details ==================
 const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Insurance companies options
@@ -11521,6 +10512,7 @@ const NewPolicyPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const hasClearedStorage = useRef(false);
+  const hasInitializedRenewal = useRef(false); // NEW: Track renewal initialization
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     buyer_type: "individual",
@@ -11979,12 +10971,13 @@ const NewPolicyPage = () => {
     return displayStep;
   };
 
-  // Function to handle step click
+  // FIXED: Function to handle step click - ALLOW ALL STEPS IN RENEWAL
   const handleStepClick = (clickedStep) => {
     if (isSaving || isCompleted) return;
     
     const actualStep = getActualStep(clickedStep);
     
+    // FIXED: Always allow navigation to any step, even in renewal cases
     // Validate if we can navigate to this step
     if (clickedStep < getDisplayStep(step)) {
       // Going back - always allowed
@@ -12270,19 +11263,18 @@ const NewPolicyPage = () => {
     });
   }, [isRenewal, renewalPolicyId, id, step, form.isRenewal, form.renewal_id, loadingPolicy]);
 
-  // NEW: Effect to handle initial step setting for renewal cases
+  // FIXED: Effect to handle initial step setting for renewal cases - ALLOW ACCESS TO ALL STEPS
   useEffect(() => {
-    if (form.isRenewal && !loadingPolicy) {
-      // For renewal cases, start directly on step 3 (Previous Policy)
-      if (step === 1) {
-        console.log("🔄 Renewal case detected - navigating directly to Previous Policy step");
-        setStep(3);
-        
-        // Clear any accepted quote for renewal cases
-        if (acceptedQuote) {
-          console.log("🔄 Clearing accepted quote for renewal case");
-          setAcceptedQuote(null);
-        }
+    // Only run initial navigation once when component mounts and it's a renewal case
+    if (form.isRenewal && !loadingPolicy && step === 1 && !hasInitializedRenewal.current) {
+      console.log("🔄 Initial renewal setup - navigating to Previous Policy step");
+      hasInitializedRenewal.current = true;
+      setStep(3);
+      
+      // Clear any accepted quote for renewal cases
+      if (acceptedQuote) {
+        console.log("🔄 Clearing accepted quote for renewal case");
+        setAcceptedQuote(null);
       }
     }
   }, [form.isRenewal, loadingPolicy, step, acceptedQuote]);
@@ -12381,6 +11373,7 @@ const NewPolicyPage = () => {
           makeYear: renewalData.vehicle_details?.makeYear || "",
           
           // Map new policy data from renewal to previous policy for the renewal case
+          // FIXED: Auto-populate previous policy hypothecation from new policy hypothecation
           previousInsuranceCompany: renewalData.policy_info?.insuranceCompany || "",
           previousPolicyNumber: renewalData.policy_info?.policyNumber || "",
           previousPolicyType: renewalData.policy_info?.policyType || "",
@@ -12392,9 +11385,9 @@ const NewPolicyPage = () => {
           previousDueDate: renewalData.policy_info?.dueDate || "",
           previousClaimTaken: renewalData.previous_policy?.claimTakenLastYear || "no",
           previousNcbDiscount: renewalData.policy_info?.ncbDiscount || renewalData.previous_policy?.ncbDiscount || "",
-          // NEW: Map previous policy hypothecation from new policy hypothecation if available
+          // FIXED: Auto-populate previous policy hypothecation from new policy hypothecation
           previousHypothecation: renewalData.policy_info?.hypothecation || renewalData.previous_policy?.hypothecation || "",
-          // NEW: Map previous policy remarks from new policy remarks if available
+          // FIXED: Auto-populate previous policy remarks from new policy remarks
           previousPolicyRemarks: renewalData.policy_info?.remarks || renewalData.previous_policy?.remarks || "",
           
           // Renewal fields
@@ -12456,7 +11449,9 @@ const NewPolicyPage = () => {
           creditType: renewalFormData.creditType,
           brokerName: renewalFormData.brokerName,
           sourceOrigin: renewalFormData.sourceOrigin,
-          hidePayout: renewalFormData.hidePayout
+          hidePayout: renewalFormData.hidePayout,
+          previousHypothecation: renewalFormData.previousHypothecation,
+          previousPolicyRemarks: renewalFormData.previousPolicyRemarks
         });
         setForm(renewalFormData);
         
@@ -12736,7 +11731,9 @@ const NewPolicyPage = () => {
         creditType: transformedData.creditType,
         brokerName: transformedData.brokerName,
         sourceOrigin: transformedData.sourceOrigin,
-        hidePayout: transformedData.hidePayout
+        hidePayout: transformedData.hidePayout,
+        previousHypothecation: transformedData.previousHypothecation,
+        previousPolicyRemarks: transformedData.previousPolicyRemarks
       });
       
       setForm(transformedData);
@@ -12875,14 +11872,34 @@ const NewPolicyPage = () => {
       return;
     }
     
-    // Handle hypothecation fields
-    if (name === "previousHypothecation" || name === "hypothecation") {
+    // Handle hypothecation fields - FIXED: Auto-populate previous policy hypothecation when new policy hypothecation changes
+    if (name === "hypothecation") {
+      setForm((f) => ({ 
+        ...f, 
+        [name]: value,
+        // Auto-populate previous policy hypothecation when new policy hypothecation is set
+        previousHypothecation: f.previousHypothecation || value
+      }));
+      return;
+    }
+    
+    if (name === "previousHypothecation") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
     
-    // Handle remarks fields
-    if (name === "previousPolicyRemarks" || name === "newPolicyRemarks") {
+    // Handle remarks fields - FIXED: Auto-populate previous policy remarks when new policy remarks change
+    if (name === "newPolicyRemarks") {
+      setForm((f) => ({ 
+        ...f, 
+        [name]: value,
+        // Auto-populate previous policy remarks when new policy remarks are set
+        previousPolicyRemarks: f.previousPolicyRemarks || value
+      }));
+      return;
+    }
+    
+    if (name === "previousPolicyRemarks") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
@@ -14050,7 +13067,7 @@ const NewPolicyPage = () => {
               to="/policies"
               className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md text-sm text-gray-600 hover:shadow"
             >
-              <FaChevronLeft /> Back to Cases
+              <FaChevronLeft /> Back
             </Link>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">

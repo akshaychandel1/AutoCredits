@@ -1,0 +1,1264 @@
+
+
+// const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
+//   // Relationship options for auto-suggest
+//   const relationshipOptions = [
+//     "Spouse", "Son", "Mother", "Father", "Daughter", "Child", "Brother", "Sister", "Grandparent", "Father-in-law",
+//     "Mother-in-law", "Brother-in-law", "Sister-in-law", "Son-in-law",
+//     "Daughter-in-law",
+//   ];
+
+//   // Credit type options - UPDATED: Added Broker option
+//   const creditTypeOptions = [
+//     { value: "auto", label: "Autocredits India LLP" },
+//     { value: "broker", label: "Broker" }, // NEW: Added Broker option
+//     { value: "showroom", label: "Showroom" },
+//     { value: "customer", label: "Customer" }
+//   ];
+
+//   // Broker name suggestions - NEW: Added broker name options
+//   const brokerNameOptions = [
+//     "ABC Insurance Brokers",
+//     "XYZ Financial Services", 
+//     "SecureLife Insurance Brokers",
+//     "Prime Risk Solutions",
+//     "Global Insurance Partners",
+//     "Reliance Insurance Brokers",
+//     "Pioneer Risk Advisors",
+//     "Capital Insurance Services",
+//     "Heritage Insurance Brokers",
+//     "Summit Risk Management"
+//   ];
+
+//   // NEW: Agent names for source origin
+//   const agentNameOptions = [
+//     "Rahul Sharma",
+//     "Priya Patel",
+//     "Amit Kumar",
+//     "Sneha Desai",
+//     "Vikram Singh",
+//     "Anjali Mehta",
+//     "Rajesh Gupta",
+//     "Pooja Reddy",
+//     "Sanjay Malhotra",
+//     "Neha Choudhary",
+//     "Karan Joshi",
+//     "Divya Iyer",
+//     "Arun Khanna",
+//     "Swati Nair",
+//     "Deepak Verma",
+//     "Maya Srinivasan",
+//     "Rohit Bajaj",
+//     "Shweta Kapoor",
+//     "Nitin Agarwal",
+//     "Tanvi Shah"
+//   ];
+
+//   // State for relationship suggestions
+//   const [relationshipSuggestions, setRelationshipSuggestions] = useState([]);
+//   const [showRelationshipSuggestions, setShowRelationshipSuggestions] = useState(false);
+  
+//   // NEW: State for broker name suggestions
+//   const [brokerNameSuggestions, setBrokerNameSuggestions] = useState([]);
+//   const [showBrokerNameSuggestions, setShowBrokerNameSuggestions] = useState(false);
+  
+//   // NEW: State for source origin (agent name) suggestions
+//   const [agentNameSuggestions, setAgentNameSuggestions] = useState([]);
+//   const [showAgentNameSuggestions, setShowAgentNameSuggestions] = useState(false);
+  
+//   // State for pincode loading
+//   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
+//   const [pincodeError, setPincodeError] = useState('');
+
+//   // Base API URL
+//   const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app";
+
+//   // Format text to have first letter uppercase and other letters lowercase
+//   const formatName = (text) => {
+//     return text.replace(/\w\S*/g, (txt) => {
+//       return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+//     });
+//   };
+
+//   // Fetch city from pincode using reliable public API
+//   const fetchCityFromPincode = async (pincode) => {
+//     if (!pincode || pincode.length !== 6) return;
+    
+//     setIsPincodeLoading(true);
+//     setPincodeError('');
+    
+//     try {
+//       console.log('🔍 Fetching city for pincode:', pincode);
+      
+//       // Use reliable public pincode API
+//       const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      
+//       console.log('📡 Response status:', response.status);
+      
+//       if (!response.ok) {
+//         throw new Error(`API responded with status: ${response.status}`);
+//       }
+      
+//       const data = await response.json();
+//       console.log('📊 API Response data:', data);
+      
+//       if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.[0]?.District) {
+//         const cityName = data[0].PostOffice[0].District;
+//         const formattedCity = formatName(cityName);
+        
+//         handleChange({
+//           target: {
+//             name: 'city',
+//             value: formattedCity
+//           }
+//         });
+//         setPincodeError('');
+//         console.log('✅ City found:', formattedCity);
+//       } else {
+//         setPincodeError('Pincode not found. Please enter city manually.');
+//       }
+//     } catch (error) {
+//       console.error('❌ Error fetching pincode data:', error);
+//       setPincodeError('Unable to fetch city data. Please enter city manually.');
+//     } finally {
+//       setIsPincodeLoading(false);
+//     }
+//   };
+
+//   // Pincode change handler with proper API triggering
+//   const handlePincodeChange = (e) => {
+//     const { name, value } = e.target;
+    
+//     // Allow only numbers and limit to 6 digits
+//     const numbersOnly = value.replace(/[^\d]/g, '').slice(0, 6);
+    
+//     handleChange({
+//       target: {
+//         name: name,
+//         value: numbersOnly
+//       }
+//     });
+    
+//     // Clear previous errors
+//     setPincodeError('');
+    
+//     console.log('🔢 Pincode input:', numbersOnly, 'Length:', numbersOnly.length);
+    
+//     // Fetch city when pincode is exactly 6 digits
+//     if (numbersOnly.length === 6) {
+//       console.log('🚀 Triggering API call for pincode:', numbersOnly);
+//       // Immediate API call without delay
+//       fetchCityFromPincode(numbersOnly);
+//     }
+//   };
+
+//   // Handle text input change with formatting
+//   // const handleTextChange = (e, shouldFormat = false) => {
+//   //   const { name, value } = e.target;
+    
+//   //   if (shouldFormat) {
+//   //     const formattedValue = formatName(value);
+//   //     handleChange({
+//   //       target: {
+//   //         name: name,
+//   //         value: formattedValue
+//   //       }
+//   //     });
+//   //   } else {
+//   //     handleChange(e);
+//   //   }
+//   // };
+
+
+
+
+
+
+// const handleTextChange = (e, shouldFormat = false) => {
+//   const { name, value } = e.target;
+
+//   const specialFields = ["companyName", "contactPersonName", "customerName", "employeeName"];
+
+//   // If field is one of the special fields → use smart name formatting
+//   if (specialFields.includes(name)) {
+//     const formattedValue = value
+//       .split(" ")
+//       .map(word => {
+//         if (!word) return "";
+
+//         // Keep acronyms (LLP, LTD) fully uppercase
+//         if (word === word.toUpperCase()) return word;
+
+//         // Capitalize first letter only
+//         return word.charAt(0).toUpperCase() + word.slice(1);
+//       })
+//       .join(" ");
+
+//     return handleChange({
+//       target: {
+//         name,
+//         value: formattedValue
+//       }
+//     });
+//   }
+
+//   // Otherwise use your existing behavior
+//   if (shouldFormat) {
+//     const formattedValue = formatName(value);
+//     return handleChange({
+//       target: {
+//         name,
+//         value: formattedValue
+//       }
+//     });
+//   }
+
+//   // No formatting at all
+//   handleChange(e);
+// };
+
+
+
+
+
+
+//   // Handle phone number input (numbers only)
+//   const handlePhoneChange = (e) => {
+//     const { name, value } = e.target;
+//     // Allow only numbers
+//     const numbersOnly = value.replace(/[^\d]/g, '');
+//     handleChange({
+//       target: {
+//         name: name,
+//         value: numbersOnly
+//       }
+//     });
+//   };
+
+//   // Handle uppercase input (for PAN, GST, etc.)
+//   const handleUppercaseChange = (e) => {
+//     const { name, value } = e.target;
+//     handleChange({
+//       target: {
+//         name: name,
+//         value: value
+//       }
+//     });
+//   };
+
+//   // Handle relationship input change for auto-suggest
+//   const handleRelationshipChange = (e) => {
+//     const value = e.target.value;
+//     handleChange(e);
+    
+//     if (value) {
+//       const filtered = relationshipOptions.filter(relation =>
+//         relation.toLowerCase().includes(value.toLowerCase())
+//       );
+//       setRelationshipSuggestions(filtered);
+//       setShowRelationshipSuggestions(true);
+//     } else {
+//       setRelationshipSuggestions([]);
+//       setShowRelationshipSuggestions(false);
+//     }
+//   };
+
+//   // NEW: Handle broker name input change for auto-suggest
+//   const handleBrokerNameChange = (e) => {
+//     const value = e.target.value;
+//     handleChange(e);
+    
+//     if (value) {
+//       const filtered = brokerNameOptions.filter(broker =>
+//         broker.toLowerCase().includes(value.toLowerCase())
+//       );
+//       setBrokerNameSuggestions(filtered);
+//       setShowBrokerNameSuggestions(true);
+//     } else {
+//       setBrokerNameSuggestions([]);
+//       setShowBrokerNameSuggestions(false);
+//     }
+//   };
+
+//   // NEW: Handle source origin (agent name) input change for auto-suggest
+//   const handleSourceOriginChange = (e) => {
+//     const value = e.target.value;
+//     handleChange(e);
+    
+//     if (value) {
+//       const filtered = agentNameOptions.filter(agent =>
+//         agent.toLowerCase().includes(value.toLowerCase())
+//       );
+//       setAgentNameSuggestions(filtered);
+//       setShowAgentNameSuggestions(true);
+//     } else {
+//       setAgentNameSuggestions([]);
+//       setShowAgentNameSuggestions(false);
+//     }
+//   };
+
+//   // Select relationship from suggestions
+//   const selectRelationship = (relation) => {
+//     handleChange({
+//       target: {
+//         name: 'relation',
+//         value: relation
+//       }
+//     });
+//     setShowRelationshipSuggestions(false);
+//     setRelationshipSuggestions([]);
+//   };
+
+//   // NEW: Select broker name from suggestions
+//   const selectBrokerName = (brokerName) => {
+//     handleChange({
+//       target: {
+//         name: 'brokerName',
+//         value: brokerName
+//       }
+//     });
+//     setShowBrokerNameSuggestions(false);
+//     setBrokerNameSuggestions([]);
+//   };
+
+//   // NEW: Select source origin (agent name) from suggestions
+//   const selectSourceOrigin = (agentName) => {
+//     handleChange({
+//       target: {
+//         name: 'sourceOrigin',
+//         value: agentName
+//       }
+//     });
+//     setShowAgentNameSuggestions(false);
+//     setAgentNameSuggestions([]);
+//   };
+
+//   // Handle vehicle type change (New Car / Used Car)
+//   const handleVehicleTypeChange = (vehicleType) => {
+//     handleChange({
+//       target: {
+//         name: 'vehicleType',
+//         value: vehicleType
+//       }
+//     });
+//   };
+
+//   // UPDATED: Handle credit type change with broker logic
+//   const handleCreditTypeChange = (e) => {
+//     const { value } = e.target;
+//     handleChange(e);
+    
+//     // UPDATED: Update form state to track if payout should be hidden
+//     // Payout should be available for auto and broker, hidden for showroom and customer
+//     const hidePayout = value === "showroom" || value === "customer";
+//     handleChange({
+//       target: {
+//         name: 'hidePayout',
+//         value: hidePayout
+//       }
+//     });
+//   };
+
+//   // UPDATED: Check if payout should be hidden
+//   const shouldHidePayout = form.creditType === "showroom" || form.creditType === "customer";
+
+//   // NEW: Check if broker name field should be enabled
+//   const shouldEnableBrokerName = form.creditType === "broker";
+
+//   return (
+//     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
+//       <div className="flex items-start justify-between">
+//         <div className="flex items-center gap-3">
+//           <div className="p-2 rounded-full bg-gray-100 text-gray-700">
+//             <FaUser />
+//           </div>
+//           <div>
+//             <h3 className="text-lg font-semibold text-gray-800">
+//               Step 1: Customer Information
+//             </h3>
+//             <p className="text-xs text-gray-500">
+//               Fill personal, contact and nominee details
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+//         {/* Buyer Type */}
+//         <div>
+//           <label className="block mb-1 text-sm font-medium text-gray-600">
+//             Buyer Type *
+//           </label>
+//           <div className="flex items-center gap-4">
+//             <label className="inline-flex items-center gap-2 text-sm">
+//               <input
+//                 type="radio"
+//                 name="buyer_type"
+//                 value="individual"
+//                 checked={form.buyer_type === "individual"}
+//                 onChange={handleChange}
+//                 className="form-radio"
+//               />
+//               <span>Individual</span>
+//             </label>
+//             <label className="inline-flex items-center gap-2 text-sm">
+//               <input
+//                 type="radio"
+//                 name="buyer_type"
+//                 value="corporate"
+//                 checked={form.buyer_type === "corporate"}
+//                 onChange={handleChange}
+//                 className="form-radio"
+//               />
+//               <span>Company</span>
+//             </label>
+//           </div>
+//           {errors.buyer_type && <p className="text-red-500 text-xs mt-1">{errors.buyer_type}</p>}
+//         </div>
+
+//         {/* Vehicle Type Toggle - Common for both Individual and Corporate */}
+//         <div>
+//           <label className="block mb-1 text-sm font-medium text-gray-600">
+//             Vehicle Type *
+//           </label>
+//           <div className="flex items-center gap-4">
+//             <label className="inline-flex items-center gap-2 text-sm">
+//               <input
+//                 type="radio"
+//                 name="vehicleType"
+//                 value="new"
+//                 checked={form.vehicleType === "new"}
+//                 onChange={() => handleVehicleTypeChange("new")}
+//                 className="form-radio"
+//               />
+//               <span>New Car</span>
+//             </label>
+//             <label className="inline-flex items-center gap-2 text-sm">
+//               <input
+//                 type="radio"
+//                 name="vehicleType"
+//                 value="used"
+//                 checked={form.vehicleType === "used"}
+//                 onChange={() => handleVehicleTypeChange("used")}
+//                 className="form-radio"
+//               />
+//               <span>Used Car</span>
+//             </label>
+//           </div>
+//           {errors.vehicleType && <p className="text-red-500 text-xs mt-1">{errors.vehicleType}</p>}
+          
+//           {/* Vehicle Type Tag Display */}
+//           {/* {form.vehicleType && (
+//             <div className="mt-2">
+//               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+//                 form.vehicleType === "new" 
+//                   ? "bg-green-100 text-green-800" 
+//                   : "bg-blue-100 text-blue-800"
+//               }`}>
+//                 {form.vehicleType === "new" ? (
+//                   <>
+//                     <FaCar className="mr-1" /> New Vehicle
+//                   </>
+//                 ) : (
+//                   <>
+//                     <FaHistory className="mr-1" /> Used Vehicle
+//                   </>
+//                 )}
+//               </span>
+//               <p className="text-xs text-gray-500 mt-1">
+//                 {form.vehicleType === "new" 
+//                   ? "Step 3 (Previous Policy) will be disabled for new vehicles" 
+//                   : "Step 3 (Previous Policy) will be required for used vehicles"}
+//               </p>
+//             </div>
+//           )} */}
+//         </div>
+
+//         {/* Credit Type Dropdown - UPDATED: Added Broker option */}
+//         <div>
+//           <label className="block mb-1 text-sm font-medium text-gray-600">
+//             Policy Done By *
+//           </label>
+//           <select
+//             name="creditType"
+//             value={form.creditType || "auto"}
+//             onChange={handleCreditTypeChange}
+//             className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//               errors.creditType ? "border-red-500" : "border-gray-300"
+//             }`}
+//           >
+//             {creditTypeOptions.map(option => (
+//               <option key={option.value} value={option.value}>
+//                 {option.label}
+//               </option>
+//             ))}
+//           </select>
+//           {errors.creditType && <p className="text-red-500 text-xs mt-1">{errors.creditType}</p>}
+          
+//           {/* Credit Type Info */}
+//           {/* {form.creditType && (
+//             <div className="mt-2">
+//               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+//                 form.creditType === "auto" 
+//                   ? "bg-blue-100 text-blue-800" 
+//                   : form.creditType === "broker"
+//                   ? "bg-purple-100 text-purple-800"
+//                   : form.creditType === "showroom"
+//                   ? "bg-orange-100 text-orange-800"
+//                   : "bg-green-100 text-green-800"
+//               }`}>
+//                 {form.creditType === "auto" ? (
+//                   <>
+//                     <FaCreditCard className="mr-1" /> Autocredits India LLP
+//                   </>
+//                 ) : form.creditType === "broker" ? (
+//                   <>
+//                     <FaUserTie className="mr-1" /> Broker
+//                   </>
+//                 ) : form.creditType === "showroom" ? (
+//                   <>
+//                     <FaTags className="mr-1" /> Showroom
+//                   </>
+//                 ) : (
+//                   <>
+//                     <FaUser className="mr-1" /> Customer
+//                   </>
+//                 )}
+//               </span>
+//               <p className="text-xs text-gray-500 mt-1">
+//                 {form.creditType === "auto" || form.creditType === "broker"
+//                   ? "Payout section will be available" 
+//                   : "Payout section will be hidden"}
+//               </p>
+//             </div>
+//           )} */}
+//         </div>
+
+//         {/* NEW: Broker Name Field - Only enabled when Broker is selected */}
+//         <div>
+//           <label className="block mb-1 text-sm font-medium text-gray-600">
+//             Broker Name {shouldEnableBrokerName && "*"}
+//           </label>
+//           <div className="relative">
+//             <input
+//               type="text"
+//               name="brokerName"
+//               value={form.brokerName || ""}
+//               onChange={handleBrokerNameChange}
+//               onFocus={() => {
+//                 if (shouldEnableBrokerName) {
+//                   if (form.brokerName) {
+//                     const filtered = brokerNameOptions.filter(broker =>
+//                       broker.toLowerCase().includes(form.brokerName.toLowerCase())
+//                     );
+//                     setBrokerNameSuggestions(filtered);
+//                     setShowBrokerNameSuggestions(true);
+//                   } else {
+//                     setBrokerNameSuggestions(brokerNameOptions);
+//                     setShowBrokerNameSuggestions(true);
+//                   }
+//                 }
+//               }}
+//               onBlur={() => {
+//                 setTimeout(() => setShowBrokerNameSuggestions(false), 200);
+//               }}
+//               placeholder={shouldEnableBrokerName ? "Select or type broker name" : "Select Broker first"}
+//               disabled={!shouldEnableBrokerName}
+//               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                 !shouldEnableBrokerName 
+//                   ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+//                   : errors.brokerName ? "border-red-500" : "border-gray-300"
+//               }`}
+//             />
+            
+//             {/* Broker Name Suggestions Dropdown */}
+//             {showBrokerNameSuggestions && shouldEnableBrokerName && brokerNameSuggestions.length > 0 && (
+//               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+//                 {brokerNameSuggestions.map((broker, index) => (
+//                   <div
+//                     key={index}
+//                     className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+//                     onClick={() => selectBrokerName(broker)}
+//                   >
+//                     {broker}
+//                   </div>
+//                 ))}
+//               </div>
+//             )}
+//           </div>
+//           {errors.brokerName && <p className="text-red-500 text-xs mt-1">{errors.brokerName}</p>}
+//           {/* {!shouldEnableBrokerName && (
+//             <p className="text-gray-400 text-xs mt-1">Enable by selecting "Broker" in Policy Done By</p>
+//           )} */}
+//         </div>
+
+//         {/* NEW: Source Origin Field - Agent Name Auto-suggestion */}
+//         <div>
+//           <label className="block mb-1 text-sm font-medium text-gray-600">
+//             Source Origin
+//           </label>
+//           <div className="relative">
+//             <input
+//               type="text"
+//               name="sourceOrigin"
+//               value={form.sourceOrigin || ""}
+//               onChange={handleSourceOriginChange}
+//               onFocus={() => {
+//                 if (form.sourceOrigin) {
+//                   const filtered = agentNameOptions.filter(agent =>
+//                     agent.toLowerCase().includes(form.sourceOrigin.toLowerCase())
+//                   );
+//                   setAgentNameSuggestions(filtered);
+//                   setShowAgentNameSuggestions(true);
+//                 } else {
+//                   setAgentNameSuggestions(agentNameOptions);
+//                   setShowAgentNameSuggestions(true);
+//                 }
+//               }}
+//               onBlur={() => {
+//                 setTimeout(() => setShowAgentNameSuggestions(false), 200);
+//               }}
+//               placeholder="Select or type agent name"
+//               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                 errors.sourceOrigin ? "border-red-500" : "border-gray-300"
+//               }`}
+//             />
+            
+//             {/* Agent Name Suggestions Dropdown */}
+//             {showAgentNameSuggestions && agentNameSuggestions.length > 0 && (
+//               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+//                 {agentNameSuggestions.map((agent, index) => (
+//                   <div
+//                     key={index}
+//                     className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+//                     onClick={() => selectSourceOrigin(agent)}
+//                   >
+//                     {agent}
+//                   </div>
+//                 ))}
+//               </div>
+//             )}
+//           </div>
+//           {errors.sourceOrigin && <p className="text-red-500 text-xs mt-1">{errors.sourceOrigin}</p>}
+//           <p className="text-gray-400 text-xs mt-1">From where we got the policy client</p>
+//         </div>
+
+//         {/* Individual Fields */}
+//         {form.buyer_type === "individual" && (
+//           <>
+//             {/* Employee Name */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Employee Name *
+//               </label>
+//               <div className="flex items-center">
+//                 <FaUser className="text-gray-400 mr-2" />
+//                 <input
+//                   type="text"
+//                   name="employeeName"
+//                   value={form.employeeName || ""}
+//                   onChange={(e) => handleTextChange(e, true)}
+//                   placeholder="Enter employee name"
+//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                     errors.employeeName ? "border-red-500" : "border-gray-300"
+//                   }`}
+//                 />
+//               </div>
+//               {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName}</p>}
+//             </div>
+
+//             {/* Customer Name */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Customer Name *
+//               </label>
+//               <div className="flex items-center">
+//                 <FaUser className="text-gray-400 mr-2" />
+//                 <input
+//                   type="text"
+//                   name="customerName"
+//                   value={form.customerName || ""}
+//                   onChange={(e) => handleTextChange(e, true)}
+//                   placeholder="Enter customer name"
+//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                     errors.customerName ? "border-red-500" : "border-gray-300"
+//                   }`}
+//                 />
+//               </div>
+//               {errors.customerName && <p className="text-red-500 text-xs mt-1">{errors.customerName}</p>}
+//             </div>
+
+//             {/* Mobile Number */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Mobile Number *
+//               </label>
+//               <div className="flex items-center gap-2">
+//                 <span className="text-gray-500 px-3 py-2 border border-gray-200 rounded-l-md bg-gray-50">
+//                   +91
+//                 </span>
+//                 <input
+//                   type="text"
+//                   name="mobile"
+//                   value={form.mobile || ""}
+//                   onChange={handlePhoneChange}
+//                   maxLength='10'
+//                   placeholder="Enter 10-digit mobile number"
+//                   className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                     errors.mobile ? "border-red-500" : "border-gray-300"
+//                   }`}
+//                 />
+//               </div>
+//               {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
+//             </div>
+
+//             {/* Alternate Phone Number */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Alternate Phone Number
+//               </label>
+//               <div className="flex items-center gap-2">
+//                 <span className="text-gray-500 px-3 py-2 border border-gray-200 rounded-l-md bg-gray-50">
+//                   +91
+//                 </span>
+//                 <input
+//                   type="text"
+//                   name="alternatePhone"
+//                   value={form.alternatePhone || ""}
+//                   maxLength='10'
+//                   onChange={handlePhoneChange}
+//                   placeholder="Enter alternate number"
+//                   className="w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+//                 />
+//               </div>
+//             </div>
+
+//             {/* Email */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Email Address *
+//               </label>
+//               <div className="flex items-center">
+//                 <FaEnvelope className="text-gray-400 mr-2" />
+//                 <input
+//                   type="email"
+//                   name="email"
+//                   value={form.email || ""}
+//                   onChange={handleChange}
+//                   placeholder="Enter email address"
+//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                     errors.email ? "border-red-500" : "border-gray-300"
+//                   }`}
+//                 />
+//               </div>
+//               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+//             </div>
+
+//             {/* Gender */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Gender *
+//               </label>
+//               <select
+//                 name="gender"
+//                 value={form.gender || ""}
+//                 onChange={handleChange}
+//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                   errors.gender ? "border-red-500" : "border-gray-300"
+//                 }`}
+//               >
+//                 <option value="">Select gender</option>
+//                 <option value="male">Male</option>
+//                 <option value="female">Female</option>
+//                 <option value="other">Other</option>
+//               </select>
+//               {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
+//             </div>
+
+//             {/* PAN */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 PAN Number
+//               </label>
+//               <input
+//                 type="text"
+//                 name="panNumber"
+//                 value={form.panNumber || ""}
+//                 onChange={handleUppercaseChange}
+//                 placeholder="ABCDE1234F"
+//                 maxLength={10}
+//                 style={{ textTransform: "uppercase" }}
+//                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+//               />
+//             </div>
+
+//             {/* Aadhaar */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Aadhaar Number
+//               </label>
+//               <input
+//                 type="text"
+//                 name="aadhaarNumber"
+//                 value={form.aadhaarNumber || ""}
+//                 onChange={handleChange}
+//                 maxLength={12}
+//                 placeholder="1234 5678 9012"
+//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                   errors.aadhaarNumber ? "border-red-500" : "border-gray-300"
+//                 }`}
+//               />
+//               {errors.aadhaarNumber && <p className="text-red-500 text-xs mt-1">{errors.aadhaarNumber}</p>}
+//             </div>
+//           </>
+//         )}
+
+//         {/* Corporate Fields */}
+//         {form.buyer_type === "corporate" && (
+//           <>
+//             {/* Employee Name */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Employee Name *
+//               </label>
+//               <div className="flex items-center">
+//                 <FaUser className="text-gray-400 mr-2" />
+//                 <input
+//                   type="text"
+//                   name="employeeName"
+//                   value={form.employeeName || ""}
+//                   onChange={(e) => handleTextChange(e, true)}
+//                   placeholder="Enter employee name"
+//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                     errors.employeeName ? "border-red-500" : "border-gray-300"
+//                   }`}
+//                 />
+//               </div>
+//               {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName}</p>}
+//             </div>
+
+//             {/* Company Name */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Company Name *
+//               </label>
+//               <div className="flex items-center">
+//                 <FaUser className="text-gray-400 mr-2" />
+//                 <input
+//                   type="text"
+//                   name="companyName"
+//                   value={form.companyName || ""}
+//                   onChange={(e) => handleTextChange(e, true)}
+//                   placeholder="Enter company name"
+//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                     errors.companyName ? "border-red-500" : "border-gray-300"
+//                   }`}
+//                 />
+//               </div>
+//               {errors.companyName && <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>}
+//             </div>
+
+//             {/* Contact Person Name */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Contact Person Name *
+//               </label>
+//               <input
+//                 type="text"
+//                 name="contactPersonName"
+//                 value={form.contactPersonName || ""}
+//                 onChange={(e) => handleTextChange(e, true)}
+//                 placeholder="Enter contact person name"
+//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                   errors.contactPersonName ? "border-red-500" : "border-gray-300"
+//                 }`}
+//               />
+//               {errors.contactPersonName && <p className="text-red-500 text-xs mt-1">{errors.contactPersonName}</p>}
+//             </div>
+
+//             {/* Mobile Number */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Mobile Number *
+//               </label>
+//               <div className="flex items-center gap-2">
+//                 <span className="text-gray-500 px-3 py-2 border border-gray-200 rounded-l-md bg-gray-50">
+//                   +91
+//                 </span>
+//                 <input
+//                   type="text"
+//                   name="mobile"
+//                   value={form.mobile || ""}
+//                   onChange={handlePhoneChange}
+//                   maxLength='10'
+//                   placeholder="Enter 10-digit mobile number"
+//                   className={`w-full border rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                     errors.mobile ? "border-red-500" : "border-gray-300"
+//                   }`}
+//                 />
+//               </div>
+//               {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
+//             </div>
+
+//             {/* Alternate Phone Number */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Alternate Phone Number
+//               </label>
+//               <div className="flex items-center gap-2">
+//                 <span className="text-gray-500 px-3 py-2 border border-gray-200 rounded-l-md bg-gray-50">
+//                   +91
+//                 </span>
+//                 <input
+//                   type="text"
+//                   name="alternatePhone"
+//                   value={form.alternatePhone || ""}
+//                   onChange={handlePhoneChange}
+//                   placeholder="Enter alternate number"
+//                   maxLength="10"
+//                   className="w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+//                 />
+//               </div>
+//             </div>
+
+//             {/* Email */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Email Address *
+//               </label>
+//               <div className="flex items-center">
+//                 <FaEnvelope className="text-gray-400 mr-2" />
+//                 <input
+//                   type="email"
+//                   name="email"
+//                   value={form.email || ""}
+//                   onChange={handleChange}
+//                   placeholder="Enter company email address"
+//                   className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                     errors.email ? "border-red-500" : "border-gray-300"
+//                   }`}
+//                 />
+//               </div>
+//               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+//             </div>
+
+//             {/* PAN Number */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 PAN Number *
+//               </label>
+//               <input
+//                 type="text"
+//                 name="companyPanNumber"
+//                 value={form.companyPanNumber || ""}
+//                 onChange={handleUppercaseChange}
+//                 placeholder="ABCDE1234F"
+//                 maxLength={10}
+//                 style={{ textTransform: "uppercase" }}
+//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                   errors.companyPanNumber ? "border-red-500" : "border-gray-300"
+//                 }`}
+//               />
+//               {errors.companyPanNumber && <p className="text-red-500 text-xs mt-1">{errors.companyPanNumber}</p>}
+//             </div>
+
+//             {/* GST Number */}
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 GST Number
+//               </label>
+//               <input
+//                 type="text"
+//                 name="gstNumber"
+//                 value={form.gstNumber || ""}
+//                 onChange={handleUppercaseChange}
+//                 placeholder="Enter GST number"
+//                 maxLength={15}
+//                 style={{ textTransform: "uppercase" }}
+//                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+//               />
+//             </div>
+//           </>
+//         )}
+
+//         {/* Address Fields (Common for both) */}
+//         <div className="md:col-span-2">
+//           <label className="block mb-1 text-sm font-medium text-gray-600">
+//             {form.buyer_type === "corporate" ? "Office Address *" : "Residence Address *"}
+//           </label>
+//           <input
+//             type="text"
+//             name="residenceAddress"
+//             value={form.residenceAddress || ""}
+//             onChange={handleChange}
+//             placeholder={form.buyer_type === "corporate" ? "Enter complete office address" : "Enter complete address"}
+//             className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//               errors.residenceAddress ? "border-red-500" : "border-gray-300"
+//             }`}
+//           />
+//           {errors.residenceAddress && <p className="text-red-500 text-xs mt-1">{errors.residenceAddress}</p>}
+//         </div>
+
+//         {/* Pincode Field with Auto-fetch */}
+//         <div>
+//           <label className="block mb-1 text-sm font-medium text-gray-600">
+//             Pincode *
+//           </label>
+//           <div className="relative">
+//             <input
+//               type="text"
+//               name="pincode"
+//               value={form.pincode || ""}
+//               onChange={handlePincodeChange}
+//               placeholder="Enter 6-digit pincode"
+//               maxLength={6}
+//               className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                 errors.pincode ? "border-red-500" : "border-gray-300"
+//               }`}
+//             />
+//             {isPincodeLoading && (
+//               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+//                 <FaSpinner className="animate-spin text-purple-600" />
+//               </div>
+//             )}
+//           </div>
+//           {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
+//           {pincodeError && <p className="text-red-500 text-xs mt-1">{pincodeError}</p>}
+//           {form.pincode && form.pincode.length === 6 && !isPincodeLoading && form.city && (
+//             <p className="text-green-600 text-xs mt-1 flex items-center">
+//               <FaCheckCircle className="mr-1" /> City auto-filled: {form.city}
+//             </p>
+//           )}
+//         </div>
+
+//         {/* City Field */}
+//         <div>
+//           <label className="block mb-1 text-sm font-medium text-gray-600">
+//             City *
+//           </label>
+//           <input
+//             type="text"
+//             name="city"
+//             value={form.city || ""}
+//             onChange={(e) => handleTextChange(e, true)}
+//             placeholder="Enter city"
+//             className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//               errors.city ? "border-red-500" : "border-gray-300"
+//             }`}
+//           />
+//           {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+//         </div>
+
+//         {/* Nominee Info (Common for both, optional) */}
+//         <div className="md:col-span-2">
+//           <h4 className="text-md font-semibold mt-6">Nominee Information (Optional)</h4>
+//           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-3">
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Nominee Name
+//               </label>
+//               <input
+//                 type="text"
+//                 name="nomineeName"
+//                 value={form.nomineeName || ""}
+//                 onChange={(e) => handleTextChange(e, true)}
+//                 placeholder="Nominee Name"
+//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                   errors.nomineeName ? "border-red-500" : "border-gray-300"
+//                 }`}
+//               />
+//               {errors.nomineeName && <p className="text-red-500 text-xs mt-1">{errors.nomineeName}</p>}
+//             </div>
+            
+//             <div className="relative">
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Relationship
+//               </label>
+//               <input
+//                 type="text"
+//                 name="relation"
+//                 value={form.relation || ""}
+//                 onChange={handleRelationshipChange}
+//                 onFocus={() => {
+//                   if (form.relation) {
+//                     const filtered = relationshipOptions.filter(relation =>
+//                       relation.toLowerCase().includes(form.relation.toLowerCase())
+//                     );
+//                     setRelationshipSuggestions(filtered);
+//                     setShowRelationshipSuggestions(true);
+//                   } else {
+//                     setRelationshipSuggestions(relationshipOptions);
+//                     setShowRelationshipSuggestions(true);
+//                   }
+//                 }}
+//                 onBlur={() => {
+//                   setTimeout(() => setShowRelationshipSuggestions(false), 200);
+//                 }}
+//                 placeholder="Type relationship"
+//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                   errors.relation ? "border-red-500" : "border-gray-300"
+//                 }`}
+//               />
+              
+//               {/* Relationship Suggestions Dropdown */}
+//               {showRelationshipSuggestions && relationshipSuggestions.length > 0 && (
+//                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+//                   {relationshipSuggestions.map((relation, index) => (
+//                     <div
+//                       key={index}
+//                       className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+//                       onClick={() => selectRelationship(relation)}
+//                     >
+//                       {relation}
+//                     </div>
+//                   ))}
+//                 </div>
+//               )}
+              
+//               {errors.relation && <p className="text-red-500 text-xs mt-1">{errors.relation}</p>}
+//             </div>
+            
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Nominee Age
+//               </label>
+//               <input
+//                 type="number"
+//                 name="nomineeAge"
+//                 value={form.nomineeAge || ""}
+//                 onChange={handleChange}
+//                 placeholder="Nominee Age"
+//                 min="1"
+//                 max="130"
+//                 className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
+//                   errors.nomineeAge ? "border-red-500" : "border-gray-300"
+//                 }`}
+//               />
+//               {errors.nomineeAge && <p className="text-red-500 text-xs mt-1">{errors.nomineeAge}</p>}
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Reference Info */}
+//         <div className="md:col-span-2">
+//           <h4 className="text-md font-semibold mt-6">Reference Information (Optional)</h4>
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Reference Name
+//               </label>
+//               <input
+//                 type="text"
+//                 name="referenceName"
+//                 value={form.referenceName || ""}
+//                 onChange={(e) => handleTextChange(e, true)}
+//                 placeholder="Reference Name"
+//                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+//               />
+//             </div>
+//             <div>
+//               <label className="block mb-1 text-sm font-medium text-gray-600">
+//                 Reference Phone Number
+//               </label>
+//               <input
+//                 type="text"
+//                 name="referencePhone"
+//                 value={form.referencePhone || ""}
+//                 onChange={handlePhoneChange}
+//                 placeholder="Reference Phone Number"
+//                 maxLength="10"
+//                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Credit Type Summary - UPDATED: Added Broker info */}
+//         {/* {form.creditType && (
+//           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+//             <h4 className="text-md font-semibold text-gray-700 mb-2">Credit Type Summary</h4>
+//             <div className="flex items-center justify-between">
+//               <div className="flex items-center gap-3">
+//                 <div className={`p-2 rounded-full ${
+//                   form.creditType === "auto" 
+//                     ? "bg-blue-100 text-blue-600" 
+//                     : form.creditType === "broker"
+//                     ? "bg-purple-100 text-purple-600"
+//                     : form.creditType === "showroom"
+//                     ? "bg-orange-100 text-orange-600"
+//                     : "bg-green-100 text-green-600"
+//                 }`}>
+//                   {form.creditType === "auto" ? <FaCreditCard /> : 
+//                    form.creditType === "broker" ? <FaUserTie /> :
+//                    form.creditType === "showroom" ? <FaTags /> : 
+//                    <FaUser />}
+//                 </div>
+//                 <div>
+//                   <p className="font-medium text-gray-800">
+//                     {form.creditType === "auto" ? "Autocredits India LLP" : 
+//                      form.creditType === "broker" ? "Broker" + (form.brokerName ? ` - ${form.brokerName}` : "") :
+//                      form.creditType === "showroom" ? "Showroom" : 
+//                      "Customer"}
+//                   </p>
+//                   <p className="text-sm text-gray-600">
+//                     {form.creditType === "auto" || form.creditType === "broker"
+//                       ? "Payout section will be available in Step 8" 
+//                       : "Payout section will be hidden"}
+//                   </p>
+//                 </div>
+//               </div>
+//               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+//                 form.creditType === "auto" 
+//                   ? "bg-blue-100 text-blue-800" 
+//                   : form.creditType === "broker"
+//                   ? "bg-purple-100 text-purple-800"
+//                   : form.creditType === "showroom"
+//                   ? "bg-orange-100 text-orange-800"
+//                   : "bg-green-100 text-green-800"
+//               }`}>
+//                 {form.creditType === "auto" ? "Autocredits India LLP" : 
+//                  form.creditType === "broker" ? "BROKER" :
+//                  form.creditType === "showroom" ? "SHOWROOM" : 
+//                  "CUSTOMER"}
+//               </span>
+//             </div>
+//           </div>
+//         )} */}
+
+//         {/* Vehicle Type Summary */}
+//         {/* {form.vehicleType && (
+//           <div className="md:col-span-2 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+//             <h4 className="text-md font-semibold text-gray-700 mb-2">Vehicle Type Summary</h4>
+//             <div className="flex items-center justify-between">
+//               <div className="flex items-center gap-3">
+//                 <div className={`p-2 rounded-full ${
+//                   form.vehicleType === "new" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
+//                 }`}>
+//                   {form.vehicleType === "new" ? <FaCar /> : <FaHistory />}
+//                 </div>
+//                 <div>
+//                   <p className="font-medium text-gray-800">
+//                     {form.vehicleType === "new" ? "New Vehicle" : "Used Vehicle"}
+//                   </p>
+//                   <p className="text-sm text-gray-600">
+//                     {form.vehicleType === "new" 
+//                       ? "Previous policy details will not be required" 
+//                       : "Previous policy details will be required in Step 3"}
+//                   </p>
+//                 </div>
+//               </div>
+//               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+//                 form.vehicleType === "new" 
+//                   ? "bg-green-100 text-green-800" 
+//                   : "bg-blue-100 text-blue-800"
+//               }`}>
+//                 {form.vehicleType === "new" ? "NEW" : "USED"}
+//               </span>
+//             </div>
+//           </div>
+//         )} */}
+//       </div>
+//     </div>
+//   );
+// };
+// ================== STEP 2: Vehicle Details =================

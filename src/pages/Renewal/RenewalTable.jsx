@@ -206,12 +206,11 @@ const isValidDate = (dateString) => {
   }
 };
 
-// FIXED: ENHANCED expiry date calculation with comprehensive field checking
+// FIXED: ENHANCED expiry date calculation with comprehensive field checking and proper error handling
 const getExpiryDate = (policy) => {
   const policyInfo = policy.policy_info || {};
   const insuranceQuote = policy.insurance_quote || {};
   
-  // Debug logging for problematic policies
   const policyId = policy._id || policy.id;
   
   // Try multiple possible expiry date fields in order of priority
@@ -243,20 +242,23 @@ const getExpiryDate = (policy) => {
     }
   }
 
-  // Log detailed debug info for missing expiry dates
-  console.warn(`❌ No expiry date found for policy ${policyId}`, {
-    policyType: getPolicyType(policy),
-    policyNumber: policyInfo.policyNumber,
-    availablePolicyInfoFields: Object.keys(policyInfo),
-    availableInsuranceQuoteFields: Object.keys(insuranceQuote),
-    fieldValues: {
-      odExpiryDate: policyInfo.odExpiryDate,
-      tpExpiryDate: policyInfo.tpExpiryDate,
-      dueDate: policyInfo.dueDate,
-      expiryDate: policyInfo.expiryDate,
-      insuranceQuoteExpiry: insuranceQuote.expiryDate
-    }
-  });
+  // FIXED: Proper error handling - don't log errors for every policy, just return null
+  // Only log detailed debug info in development mode or when explicitly requested
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`ℹ️ No expiry date found for policy ${policyId}`, {
+      policyType: getPolicyType(policy),
+      policyNumber: policyInfo.policyNumber,
+      availablePolicyInfoFields: Object.keys(policyInfo),
+      availableInsuranceQuoteFields: Object.keys(insuranceQuote),
+      fieldValues: {
+        odExpiryDate: policyInfo.odExpiryDate,
+        tpExpiryDate: policyInfo.tpExpiryDate,
+        dueDate: policyInfo.dueDate,
+        expiryDate: policyInfo.expiryDate,
+        insuranceQuoteExpiry: insuranceQuote.expiryDate
+      }
+    });
+  }
 
   return null;
 };
@@ -299,7 +301,7 @@ const getDetailedExpiryInfo = (policy) => {
   };
 };
 
-// FIXED: Calculate actual days until expiry (removes Infinity)
+// FIXED: Calculate actual days until expiry (removes Infinity) with proper error handling
 const calculateDaysUntilExpiry = (expiryDate) => {
   if (!expiryDate || !isValidDate(expiryDate)) return null;
   
