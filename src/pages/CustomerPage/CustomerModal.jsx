@@ -17,12 +17,12 @@ const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generat
     contact_person_name: '',
     company_code: '',
     contact_code: '',
-    creditType: 'auto',
-    sourceOrigin: '',
-    brokerName: '',
-    lead_source: '',
-    policy_type: '4 Wheeler',
-    lead_status: 'New'
+    // Removed: creditType, sourceOrigin, brokerName, lead_source, policy_type, lead_status
+    alternate_phone: '',
+    pincode: '',
+    pan: '',
+    aadhar: '',
+    gst: ''
   });
 
   // Initialize form data when customer prop changes
@@ -41,12 +41,12 @@ const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generat
         contact_person_name: customer.contact_person_name || '',
         company_code: customer.company_code || '',
         contact_code: customer.contact_code || '',
-        creditType: customer.creditType || 'auto',
-        sourceOrigin: customer.sourceOrigin || '',
-        brokerName: customer.brokerName || '',
-        lead_source: customer.lead_source || '',
-        policy_type: customer.policy_type || '4 Wheeler',
-        lead_status: customer.lead_status || 'New'
+        // Removed fields
+        alternate_phone: customer.alternate_phone || '',
+        pincode: customer.pincode || '',
+        pan: customer.pan || '',
+        aadhar: customer.aadhar || '',
+        gst: customer.gst || ''
       });
     } else {
       // Reset form for new customer
@@ -63,12 +63,12 @@ const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generat
         contact_person_name: '',
         company_code: '',
         contact_code: '',
-        creditType: 'auto',
-        sourceOrigin: '',
-        brokerName: '',
-        lead_source: '',
-        policy_type: '4 Wheeler',
-        lead_status: 'New'
+        // Removed fields
+        alternate_phone: '',
+        pincode: '',
+        pan: '',
+        aadhar: '',
+        gst: ''
       });
     }
   }, [customer, isEditMode]);
@@ -110,13 +110,24 @@ const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generat
       return;
     }
     
-    // Handle credit type change - reset broker name if not broker
-    if (name === "creditType" && value !== "broker") {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        brokerName: ''
-      }));
+    // Handle uppercase for PAN and GST
+    if (name === 'pan' || name === 'gst') {
+      setFormData(prev => ({ ...prev, [name]: value.toUpperCase() }));
+      return;
+    }
+    
+    // Handle numeric only for phone, alternate phone, pincode, and aadhar
+    if (name === 'phone' || name === 'alternate_phone' || name === 'pincode' || name === 'aadhar') {
+      const numericValue = value.replace(/\D/g, '');
+      
+      // Set max lengths
+      let maxLength;
+      if (name === 'pincode') maxLength = 6;
+      else if (name === 'aadhar') maxLength = 12;
+      else if (name === 'phone' || name === 'alternate_phone') maxLength = 10;
+      
+      const limitedValue = numericValue.slice(0, maxLength);
+      setFormData(prev => ({ ...prev, [name]: limitedValue }));
       return;
     }
     
@@ -142,50 +153,15 @@ const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generat
     }
   };
 
-  const leadSourceOptions = [
-    'Website',
-    'Social Media',
-    'Partnership',
-    'Online',
-    'Aggregators',
-    'Others'
-  ];
-
-  const leadStatusOptions = [
-    'New',
-    'Contacted',
-    'Qualified',
-    'Proposal Sent',
-    'Negotiation',
-    'Converted',
-    'Lost'
-  ];
-
-  const policyTypeOptions = [
-    '2 Wheeler',
-    '4 Wheeler',
-    'Home Insurance',
-    'Health Insurance',
-    'Life Insurance'
-  ];
-
-  const creditTypeOptions = [
-    { value: 'auto', label: 'Autocredits India LLP' },
-    { value: 'broker', label: 'Broker' },
-    { value: 'showroom', label: 'Showroom' },
-    { value: 'customer', label: 'Customer' }
-  ];
-
-  const sourceOriginOptions = [
-    'Website',
-    'Referral',
-    'Walk-in',
-    'Call Center',
-    'Partner',
-    'Social Media',
-    'Existing Customer',
-    'Other'
-  ];
+  // Format phone number for display
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) {
+      return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+    }
+    return phone;
+  };
 
   return (
     <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -278,6 +254,40 @@ const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generat
                         <option value="Other">Other</option>
                       </select>
                     </div>
+
+                    {/* PAN Number for Individual */}
+                    <div>
+                      <label htmlFor="pan" className="block text-sm font-medium text-gray-700 mb-1">
+                        PAN Number
+                      </label>
+                      <input
+                        type="text"
+                        id="pan"
+                        name="pan"
+                        value={formData.pan}
+                        onChange={handleInputChange}
+                        placeholder="Enter PAN number"
+                        maxLength={10}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+
+                    {/* Aadhar Number for Individual */}
+                    <div>
+                      <label htmlFor="aadhar" className="block text-sm font-medium text-gray-700 mb-1">
+                        Aadhar Number
+                      </label>
+                      <input
+                        type="text"
+                        id="aadhar"
+                        name="aadhar"
+                        value={formData.aadhar}
+                        onChange={handleInputChange}
+                        placeholder="Enter 12-digit Aadhar number"
+                        maxLength={12}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
                   </>
                 ) : (
                   <>
@@ -346,6 +356,40 @@ const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generat
                         />
                       </div>
                     </div>
+
+                    {/* GST Number for Corporate */}
+                    <div>
+                      <label htmlFor="gst" className="block text-sm font-medium text-gray-700 mb-1">
+                        GST Number
+                      </label>
+                      <input
+                        type="text"
+                        id="gst"
+                        name="gst"
+                        value={formData.gst}
+                        onChange={handleInputChange}
+                        placeholder="Enter GST number"
+                        maxLength={15}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
+
+                    {/* PAN Number for Corporate */}
+                    <div>
+                      <label htmlFor="pan" className="block text-sm font-medium text-gray-700 mb-1">
+                        PAN Number (Company)
+                      </label>
+                      <input
+                        type="text"
+                        id="pan"
+                        name="pan"
+                        value={formData.pan}
+                        onChange={handleInputChange}
+                        placeholder="Enter company PAN"
+                        maxLength={10}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                      />
+                    </div>
                   </>
                 )}
 
@@ -364,174 +408,122 @@ const CustomerModal = ({ customer, onSave, onClose, generateCompanyCode, generat
                     required
                   />
                 </div>
+              </div>
+
+              {/* Right Column - Contact & Address Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Contact & Address Information</h3>
 
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone *
+                    Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="Enter phone number"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Right Column - Additional Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Additional Information</h3>
-
-                <div>
-                  <label htmlFor="creditType" className="block text-sm font-medium text-gray-700 mb-1">
-                    Credit Type *
-                  </label>
-                  <select
-                    id="creditType"
-                    name="creditType"
-                    value={formData.creditType}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    {creditTypeOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {formData.creditType === 'broker' && (
-                  <div>
-                    <label htmlFor="brokerName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Broker Name *
-                    </label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      +91
+                    </span>
                     <input
-                      type="text"
-                      id="brokerName"
-                      name="brokerName"
-                      value={formData.brokerName}
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formatPhoneNumber(formData.phone)}
                       onChange={handleInputChange}
-                      placeholder="Enter broker name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter 10-digit phone number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     />
                   </div>
-                )}
+                </div>
 
                 <div>
-                  <label htmlFor="sourceOrigin" className="block text-sm font-medium text-gray-700 mb-1">
-                    Source Origin
+                  <label htmlFor="alternate_phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Alternate Phone Number
                   </label>
-                  <select
-                    id="sourceOrigin"
-                    name="sourceOrigin"
-                    value={formData.sourceOrigin}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select source origin</option>
-                    {sourceOriginOptions.map(source => (
-                      <option key={source} value={source}>
-                        {source}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      +91
+                    </span>
+                    <input
+                      type="tel"
+                      id="alternate_phone"
+                      name="alternate_phone"
+                      value={formatPhoneNumber(formData.alternate_phone)}
+                      onChange={handleInputChange}
+                      placeholder="Enter alternate phone number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
+                    Address *
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     id="address"
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="Enter full address"
+                    placeholder="Enter complete address"
+                    rows="2"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    placeholder="Enter city"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="pincode" className="block text-sm font-medium text-gray-700 mb-1">
+                      Pincode *
+                    </label>
+                    <input
+                      type="text"
+                      id="pincode"
+                      name="pincode"
+                      value={formData.pincode}
+                      onChange={handleInputChange}
+                      placeholder="Enter 6-digit pincode"
+                      maxLength={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      placeholder="Enter city"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label htmlFor="lead_source" className="block text-sm font-medium text-gray-700 mb-1">
-                    Lead Source
-                  </label>
-                  <select
-                    id="lead_source"
-                    name="lead_source"
-                    value={formData.lead_source}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select lead source</option>
-                    {leadSourceOptions.map(source => (
-                      <option key={source} value={source}>
-                        {source}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="policy_type" className="block text-sm font-medium text-gray-700 mb-1">
-                    Policy Type
-                  </label>
-                  <select
-                    id="policy_type"
-                    name="policy_type"
-                    value={formData.policy_type}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select policy type</option>
-                    {policyTypeOptions.map(type => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="lead_status" className="block text-sm font-medium text-gray-700 mb-1">
-                    Lead Status
-                  </label>
-                  <select
-                    id="lead_status"
-                    name="lead_status"
-                    value={formData.lead_status}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {leadStatusOptions.map(status => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Common fields that appear for both individual and corporate */}
+                {formData.buyer_type === 'corporate' && (
+                  <div>
+                    <label htmlFor="aadhar" className="block text-sm font-medium text-gray-700 mb-1">
+                      Aadhar Number (Contact Person)
+                    </label>
+                    <input
+                      type="text"
+                      id="aadhar"
+                      name="aadhar"
+                      value={formData.aadhar}
+                      onChange={handleInputChange}
+                      placeholder="Enter contact person's Aadhar"
+                      maxLength={12}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

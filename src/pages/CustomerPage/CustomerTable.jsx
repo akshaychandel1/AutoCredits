@@ -1,12 +1,33 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Plus, RefreshCw, Download, Search, Edit, Trash2, Eye, 
-  User, Building, Filter, X, Mail, Phone, MapPin, IdCard, 
-  Briefcase, UserCheck, FileText, Shield, Calendar, Users, Target,
-  ChevronDown, ChevronUp, CheckCircle, Clock, AlertTriangle
-} from 'lucide-react';
+  FaUser, 
+  FaBuilding, 
+  FaPhone, 
+  FaEnvelope, 
+  FaMapMarkerAlt, 
+  FaEye, 
+  FaEdit, 
+  FaTrash, 
+  FaSearch, 
+  FaDownload, 
+  FaFilter, 
+  FaTimes, 
+  FaChevronDown, 
+  FaChevronUp,
+  FaUserTie,
+  FaHandshake,
+  FaStoreAlt,
+  FaIdCard,
+  FaFileAlt,
+  FaShieldAlt,
+  FaCalendarAlt,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaClock
+} from 'react-icons/fa';
 
-// Advanced Search Component
+// ================== ADVANCED SEARCH COMPONENT ==================
+
 const AdvancedSearch = ({ 
   isOpen, 
   onClose, 
@@ -36,8 +57,8 @@ const AdvancedSearch = ({
   const handleReset = () => {
     const resetFilters = {
       customerName: '',
+      mobile: '',
       email: '',
-      phone: '',
       city: '',
       companyName: '',
       contactPerson: '',
@@ -55,19 +76,20 @@ const AdvancedSearch = ({
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Advanced Search</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <FaTimes className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Customer Information */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Customer Name</label>
               <input
@@ -75,6 +97,17 @@ const AdvancedSearch = ({
                 value={localFilters.customerName}
                 onChange={(e) => handleFilterChange('customerName', e.target.value)}
                 placeholder="Search by customer name"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Mobile Number</label>
+              <input
+                type="text"
+                value={localFilters.mobile}
+                onChange={(e) => handleFilterChange('mobile', e.target.value)}
+                placeholder="Search by mobile"
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
@@ -90,28 +123,7 @@ const AdvancedSearch = ({
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Phone</label>
-              <input
-                type="text"
-                value={localFilters.phone}
-                onChange={(e) => handleFilterChange('phone', e.target.value)}
-                placeholder="Search by phone"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">City</label>
-              <input
-                type="text"
-                value={localFilters.city}
-                onChange={(e) => handleFilterChange('city', e.target.value)}
-                placeholder="Search by city"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-
+            {/* Company Information */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Company Name</label>
               <input
@@ -134,6 +146,19 @@ const AdvancedSearch = ({
               />
             </div>
 
+            {/* Location */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">City</label>
+              <input
+                type="text"
+                value={localFilters.city}
+                onChange={(e) => handleFilterChange('city', e.target.value)}
+                placeholder="Search by city"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Business Information */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Policy Type</label>
               <select
@@ -213,7 +238,132 @@ const AdvancedSearch = ({
   );
 };
 
-// Main Customer Table Component
+// ================== UTILITY FUNCTIONS ==================
+
+// Safe value function to handle undefined/null values
+const getSafeValue = (value, fallback = '') => {
+  if (value === undefined || value === null || value === '' || value === 'undefined' || value === 'null') return fallback;
+  return String(value).trim();
+};
+
+// Format date function
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  try {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  } catch {
+    return '';
+  }
+};
+
+// Get customer display name with proper fallbacks
+const getCustomerDisplayName = (customer) => {
+  if (!customer) return 'Unknown Customer';
+  
+  // Check if first_name is undefined or "undefined"
+  const firstName = getSafeValue(customer.first_name);
+  const isFirstNameInvalid = firstName === 'undefined' || !firstName;
+  
+  // Get other potential names
+  const lastName = getSafeValue(customer.last_name);
+  const companyName = getSafeValue(customer.company_name);
+  const contactPersonName = getSafeValue(customer.contact_person_name);
+  const employeeName = getSafeValue(customer.employeeName);
+  const name = getSafeValue(customer.name);
+  
+  // Priority order for display name:
+  // 1. Company Name (if first_name is invalid and company name exists)
+  if (isFirstNameInvalid && companyName) {
+    return companyName;
+  }
+  
+  // 2. Contact Person Name
+  if (contactPersonName) {
+    return contactPersonName;
+  }
+  
+  // 3. Employee Name
+  if (employeeName) {
+    return employeeName;
+  }
+  
+  // 4. Name field
+  if (name) {
+    return name;
+  }
+  
+  // 5. First + Last name (if first_name is valid)
+  if (!isFirstNameInvalid) {
+    const individualName = `${firstName} ${lastName}`.trim();
+    if (individualName) return individualName;
+  }
+  
+  // 6. Final fallbacks based on buyer type
+  if (customer.buyer_type === 'corporate') {
+    return 'Corporate Customer';
+  }
+  
+  return 'Individual Customer';
+};
+
+// Get credit type display info
+const getCreditTypeInfo = (creditType, brokerName = '') => {
+  const types = {
+    auto: { 
+      label: 'Autocredits', 
+      class: 'bg-blue-100 text-blue-800',
+      icon: FaHandshake
+    },
+    broker: { 
+      label: brokerName ? `Broker (${brokerName})` : 'Broker', 
+      class: 'bg-purple-100 text-purple-800',
+      icon: FaUserTie
+    },
+    showroom: { 
+      label: 'Showroom', 
+      class: 'bg-orange-100 text-orange-800',
+      icon: FaStoreAlt
+    },
+    customer: { 
+      label: 'Customer', 
+      class: 'bg-green-100 text-green-800',
+      icon: FaUser
+    }
+  };
+  
+  const safeCreditType = getSafeValue(creditType, 'auto');
+  return types[safeCreditType] || { 
+    label: safeCreditType, 
+    class: 'bg-gray-100 text-gray-800',
+    icon: FaUser
+  };
+};
+
+// Get status display info
+const getStatusDisplay = (status) => {
+  const safeStatus = getSafeValue(status, 'New');
+  const statusConfig = {
+    'Active': { class: 'bg-emerald-100 text-emerald-800 border border-emerald-200', icon: FaCheckCircle },
+    'New': { class: 'bg-yellow-100 text-yellow-800 border border-yellow-200', icon: FaClock },
+    'Converted': { class: 'bg-purple-100 text-purple-800 border border-purple-200', icon: FaCheckCircle },
+    'Hot': { class: 'bg-red-100 text-red-800 border border-red-200', icon: FaExclamationTriangle },
+    'Warm': { class: 'bg-orange-100 text-orange-800 border border-orange-200', icon: FaClock },
+    'Cold': { class: 'bg-blue-100 text-blue-800 border border-blue-200', icon: FaClock },
+    'Open': { class: 'bg-indigo-100 text-indigo-800 border border-indigo-200', icon: FaClock }
+  };
+  
+  return statusConfig[safeStatus] || { 
+    class: 'bg-gray-100 text-gray-800 border border-gray-200', 
+    icon: FaClock 
+  };
+};
+
+// ================== MAIN CUSTOMER TABLE COMPONENT ==================
+
 const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh, onAddNew }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -227,8 +377,8 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [searchFilters, setSearchFilters] = useState({
     customerName: '',
+    mobile: '',
     email: '',
-    phone: '',
     city: '',
     companyName: '',
     contactPerson: '',
@@ -247,17 +397,6 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     });
   }, [customers]);
 
-  // Get customer display name with fallback logic
-  const getCustomerDisplayName = (customer) => {
-    if (customer.buyer_type === 'corporate') {
-      return customer.company_name || customer.contact_person_name || 'Corporate Customer';
-    }
-    if (customer.first_name || customer.last_name) {
-      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
-    }
-    return customer.contact_person_name || 'Individual Customer';
-  };
-
   // Enhanced search function with advanced filters
   const filteredCustomers = useMemo(() => {
     let filtered = sortedCustomers;
@@ -268,24 +407,24 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     if (hasAdvancedFilters) {
       filtered = filtered.filter(customer => {
         const customerName = getCustomerDisplayName(customer).toLowerCase();
-        const email = (customer.email || '').toLowerCase();
-        const phone = (customer.phone || '');
-        const city = (customer.city || '').toLowerCase();
-        const companyName = (customer.company_name || '').toLowerCase();
-        const contactPerson = (customer.contact_person_name || '').toLowerCase();
-        const policyType = (customer.policy_type || '').toLowerCase();
-        const leadStatus = (customer.lead_status || '').toLowerCase();
-        const creditType = (customer.creditType || '').toLowerCase();
-        const sourceOrigin = (customer.sourceOrigin || '').toLowerCase();
+        const mobile = getSafeValue(customer.mobile).toLowerCase();
+        const email = getSafeValue(customer.email).toLowerCase();
+        const city = getSafeValue(customer.city).toLowerCase();
+        const companyName = getSafeValue(customer.company_name).toLowerCase();
+        const contactPerson = getSafeValue(customer.contact_person_name).toLowerCase();
+        const policyType = getSafeValue(customer.policy_type).toLowerCase();
+        const leadStatus = getSafeValue(customer.lead_status).toLowerCase();
+        const creditType = getSafeValue(customer.creditType).toLowerCase();
+        const sourceOrigin = getSafeValue(customer.sourceOrigin).toLowerCase();
 
         const matchesCustomerName = !searchFilters.customerName || 
           customerName.includes(searchFilters.customerName.toLowerCase());
 
+        const matchesMobile = !searchFilters.mobile || 
+          mobile.includes(searchFilters.mobile);
+
         const matchesEmail = !searchFilters.email || 
           email.includes(searchFilters.email.toLowerCase());
-
-        const matchesPhone = !searchFilters.phone || 
-          phone.includes(searchFilters.phone);
 
         const matchesCity = !searchFilters.city || 
           city.includes(searchFilters.city.toLowerCase());
@@ -308,7 +447,7 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
         const matchesSourceOrigin = !searchFilters.sourceOrigin || 
           sourceOrigin.includes(searchFilters.sourceOrigin.toLowerCase());
 
-        return matchesCustomerName && matchesEmail && matchesPhone && matchesCity &&
+        return matchesCustomerName && matchesMobile && matchesEmail && matchesCity &&
                matchesCompanyName && matchesContactPerson && matchesPolicyType &&
                matchesLeadStatus && matchesCreditType && matchesSourceOrigin;
       });
@@ -319,17 +458,17 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(customer => {
         const customerName = getCustomerDisplayName(customer).toLowerCase();
-        const email = (customer.email || '').toLowerCase();
-        const phone = (customer.phone || '');
-        const city = (customer.city || '').toLowerCase();
-        const companyName = (customer.company_name || '').toLowerCase();
-        const contactPerson = (customer.contact_person_name || '').toLowerCase();
-        const customerId = (customer._id || '').toLowerCase();
+        const mobile = getSafeValue(customer.mobile).toLowerCase();
+        const email = getSafeValue(customer.email).toLowerCase();
+        const city = getSafeValue(customer.city).toLowerCase();
+        const companyName = getSafeValue(customer.company_name).toLowerCase();
+        const contactPerson = getSafeValue(customer.contact_person_name).toLowerCase();
+        const customerId = getSafeValue(customer._id).toLowerCase();
         
         return (
           customerName.includes(query) ||
+          mobile.includes(query) ||
           email.includes(query) ||
-          phone.includes(query) ||
           city.includes(query) ||
           companyName.includes(query) ||
           contactPerson.includes(query) ||
@@ -391,45 +530,46 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     setSelectAll(false);
   }, [currentPage]);
 
-  // Helper functions
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    } catch {
-      return 'Invalid Date';
-    }
-  };
+  // Get customer details for display
+  const getCustomerDetails = (customer) => {
+    const isCorporate = customer.buyer_type === 'corporate';
+    const displayName = getCustomerDisplayName(customer);
+    const creditTypeInfo = getCreditTypeInfo(customer.creditType, customer.brokerName);
+    const statusDisplay = getStatusDisplay(customer.lead_status);
+    const StatusIcon = statusDisplay.icon;
 
-  // Get credit type display info
-  const getCreditTypeInfo = (creditType, brokerName = '') => {
-    const types = {
-      auto: { label: 'Autocredits India LLP', color: 'blue', icon: <Shield className="w-3 h-3" /> },
-      broker: { label: `Broker${brokerName ? ` - ${brokerName}` : ''}`, color: 'purple', icon: <UserCheck className="w-3 h-3" /> },
-      showroom: { label: 'Showroom', color: 'orange', icon: <Building className="w-3 h-3" /> },
-      customer: { label: 'Customer', color: 'green', icon: <User className="w-3 h-3" /> }
+    return {
+      id: getSafeValue(customer._id),
+      displayName,
+      isCorporate,
+      creditTypeInfo,
+      statusDisplay,
+      StatusIcon,
+      firstName: getSafeValue(customer.first_name),
+      lastName: getSafeValue(customer.last_name),
+      companyName: getSafeValue(customer.company_name),
+      contactPersonName: getSafeValue(customer.contact_person_name),
+      employeeName: getSafeValue(customer.employeeName),
+      email: getSafeValue(customer.email),
+      phone: getSafeValue(customer.phone),
+      mobile: getSafeValue(customer.mobile),
+      gender: getSafeValue(customer.gender),
+      address: getSafeValue(customer.address),
+      city: getSafeValue(customer.city),
+      pincode: getSafeValue(customer.pincode),
+      leadSource: getSafeValue(customer.lead_source),
+      policyType: getSafeValue(customer.policy_type),
+      leadStatus: getSafeValue(customer.lead_status),
+      sourceOrigin: getSafeValue(customer.sourceOrigin),
+      brokerName: getSafeValue(customer.brokerName),
+      alternatePhone: getSafeValue(customer.alternate_phone),
+      createdDate: formatDate(customer.created_at || customer.ts),
+      updatedDate: formatDate(customer.updated_at),
+      age: customer.age ? `${customer.age} yrs` : '',
+      panNumber: getSafeValue(customer.panNumber),
+      aadhaarNumber: getSafeValue(customer.aadhaarNumber),
+      gstNumber: getSafeValue(customer.gstNumber)
     };
-    
-    return types[creditType] || { label: creditType, color: 'gray', icon: <FileText className="w-3 h-3" /> };
-  };
-
-  // Get status display info
-  const getStatusDisplay = (status) => {
-    const statusConfig = {
-      'Active': { class: 'bg-emerald-100 text-emerald-800', icon: CheckCircle },
-      'New': { class: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      'Converted': { class: 'bg-purple-100 text-purple-800', icon: CheckCircle },
-      'Hot': { class: 'bg-red-100 text-red-800', icon: AlertTriangle },
-      'Warm': { class: 'bg-orange-100 text-orange-800', icon: Clock },
-      'Cold': { class: 'bg-blue-100 text-blue-800', icon: Clock },
-      'Open': { class: 'bg-blue-100 text-blue-800', icon: Clock }
-    };
-    
-    return statusConfig[status] || { class: 'bg-gray-100 text-gray-800', icon: Clock };
   };
 
   const handleViewClick = (customer) => {
@@ -474,7 +614,7 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
   };
 
   // Export to CSV
-  const exportToCSV = () => {
+  const handleExport = () => {
     const customersToExport = selectedRows.size > 0 
       ? filteredCustomers.filter(customer => selectedRows.has(customer._id))
       : filteredCustomers;
@@ -486,7 +626,6 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
 
     const headers = [
       'Customer ID',
-      'Buyer Type',
       'Display Name',
       'First Name',
       'Last Name',
@@ -494,10 +633,11 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
       'Contact Person',
       'Email',
       'Phone',
-      'Gender',
-      'Address',
+      'Mobile',
       'City',
       'Pincode',
+      'Address',
+      'Buyer Type',
       'Lead Source',
       'Policy Type',
       'Lead Status',
@@ -508,30 +648,29 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     ];
 
     const csvData = customersToExport.map(customer => {
-      const isCorporate = customer.buyer_type === 'corporate';
-      const displayName = getCustomerDisplayName(customer);
+      const details = getCustomerDetails(customer);
       
       return [
-        customer._id || 'N/A',
-        customer.buyer_type || 'individual',
-        displayName,
-        customer.first_name || 'N/A',
-        customer.last_name || 'N/A',
-        customer.company_name || 'N/A',
-        customer.contact_person_name || 'N/A',
-        customer.email || 'N/A',
-        customer.phone || 'N/A',
-        customer.gender || 'N/A',
-        customer.address || 'N/A',
-        customer.city || 'N/A',
-        customer.pincode || 'N/A',
-        customer.lead_source || 'N/A',
-        customer.policy_type || 'N/A',
-        customer.lead_status || 'N/A',
-        customer.creditType || 'auto',
-        customer.sourceOrigin || 'direct',
-        customer.brokerName || 'N/A',
-        formatDate(customer.created_at || customer.ts)
+        details.id,
+        details.displayName,
+        details.firstName,
+        details.lastName,
+        details.companyName,
+        details.contactPersonName,
+        details.email,
+        details.phone,
+        details.mobile,
+        details.city,
+        details.pincode,
+        details.address,
+        details.isCorporate ? 'Corporate' : 'Individual',
+        details.leadSource,
+        details.policyType,
+        details.leadStatus,
+        details.creditTypeInfo.label,
+        details.sourceOrigin,
+        details.brokerName,
+        details.createdDate
       ];
     });
 
@@ -560,8 +699,8 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
   const handleResetAdvancedFilters = () => {
     setSearchFilters({
       customerName: '',
+      mobile: '',
       email: '',
-      phone: '',
       city: '',
       companyName: '',
       contactPerson: '',
@@ -581,7 +720,7 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
 
   if (loading) {
     return (
-      <div className="bg-white rounded border border-gray-200 p-6 text-center">
+      <div className="bg-white rounded border border-gray-200 p-4 text-center">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto"></div>
         <p className="mt-2 text-gray-600 text-sm">Loading customers...</p>
       </div>
@@ -590,45 +729,37 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
 
   if (!customers || customers.length === 0) {
     return (
-      <div className="bg-white rounded border border-gray-200 p-6 text-center">
-        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-          <Users className="w-5 h-5 text-gray-400" />
+      <div className="bg-white rounded border border-gray-200 p-4 text-center">
+        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+          <FaUser className="w-4 h-4 text-gray-400" />
         </div>
         <p className="text-gray-700 font-medium text-sm">No customers found</p>
         <p className="text-gray-500 text-xs">Create your first customer to get started</p>
-        <button
-          onClick={onAddNew}
-          className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-        >
-          <Plus className="w-4 h-4 inline mr-1" />
-          Add Customer
-        </button>
       </div>
     );
   }
 
   return (
     <>
-      {/* Enhanced Filters Section */}
-      <div className="bg-white rounded border border-gray-200 p-3 mb-3">
-        <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
+      {/* Compact Filters Section */}
+      <div className="bg-white rounded border border-gray-200 p-2 mb-2">
+        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-2 flex-wrap flex-1">
             {/* Search Bar */}
-            <div className="flex flex-col flex-1 min-w-[200px]">
-              <label className="text-xs font-medium text-gray-700 mb-1">Quick Search</label>
+            <div className="flex flex-col flex-1 min-w-[180px]">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
+                <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, email, phone, company..."
-                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Search customers..."
+                  className="w-full pl-8 pr-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
                   >
                     ×
                   </button>
@@ -637,88 +768,53 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
             </div>
 
             {/* Advanced Search Button */}
-            <div className="flex flex-col">
-              <label className="text-xs font-medium text-gray-700 mb-1">Advanced</label>
-              <button
-                onClick={() => setShowAdvancedSearch(true)}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[100px] justify-center"
-              >
-                <Filter className="text-xs" />
-                Advanced
-              </button>
-            </div>
+            <button
+              onClick={() => setShowAdvancedSearch(true)}
+              className="flex items-center gap-1 px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[80px] justify-center"
+            >
+              <FaFilter className="text-xs" />
+              Filters
+            </button>
 
             {/* Refresh Button */}
-            <div className="flex flex-col">
-              <label className="text-xs font-medium text-gray-700 mb-1">Refresh</label>
-              <button
-                onClick={onRefresh}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[100px] justify-center"
-              >
-                <RefreshCw className="text-xs" />
-                Refresh
-              </button>
-            </div>
+            <button
+              onClick={onRefresh}
+              className="flex items-center gap-1 px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[80px] justify-center"
+            >
+              <FaTimes className="text-xs transform rotate-45" />
+              Refresh
+            </button>
           </div>
 
           {/* Export Button */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-1">Export</label>
-            <button
-              onClick={exportToCSV}
-              disabled={filteredCustomers.length === 0}
-              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[100px] justify-center"
-            >
-              <Download className="text-xs" />
-              {selectedRows.size > 0 ? `Export (${selectedRows.size})` : 'Export All'}
-            </button>
-          </div>
+          <button
+            onClick={handleExport}
+            disabled={filteredCustomers.length === 0}
+            className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[80px] justify-center"
+          >
+            <FaDownload className="text-xs" />
+            Export
+          </button>
 
           {/* Add Customer Button */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-1">New Customer</label>
-            <button
-              onClick={onAddNew}
-              className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 transition-colors min-w-[100px] justify-center"
-            >
-              <Plus className="text-xs" />
-              Add New
-            </button>
-          </div>
+          <button
+            onClick={onAddNew}
+            className="flex items-center gap-1 px-2 py-1 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 transition-colors min-w-[80px] justify-center"
+          >
+            <FaUser className="text-xs" />
+            Add New
+          </button>
         </div>
 
-        {/* Results Count and Active Filters */}
-        <div className="mt-2 pt-2 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+        {/* Results Count */}
+        <div className="mt-1 pt-1 border-t border-gray-200 flex justify-between items-center">
           <div className="text-xs text-gray-600">
             <span className="font-medium">{filteredCustomers.length}</span> customers
             {filteredCustomers.length !== sortedCustomers.length && (
               <span className="text-gray-400 ml-1">(of {sortedCustomers.length})</span>
             )}
-            {searchQuery && (
-              <span className="text-purple-600 ml-1">for "{searchQuery}"</span>
-            )}
           </div>
           
-          {/* Active Advanced Filters */}
-          {Object.values(searchFilters).some(value => value !== '') && (
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-xs text-gray-500">Active filters:</span>
-              {Object.entries(searchFilters).map(([key, value]) => 
-                value && (
-                  <span key={key} className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
-                    {key}: {value}
-                  </span>
-                )
-              )}
-              <button
-                onClick={handleResetAdvancedFilters}
-                className="text-xs text-red-600 hover:text-red-800 ml-1"
-              >
-                Clear All
-              </button>
-            </div>
-          )}
-
           {selectedRows.size > 0 && (
             <div className="text-xs text-blue-600 font-medium">
               {selectedRows.size} selected
@@ -730,10 +826,10 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
       {/* Compact Table */}
       <div className="bg-white rounded border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[1000px]">
+          <table className="w-full text-left min-w-[800px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-1 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-8">
+                <th className="px-1 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-6">
                   <input
                     type="checkbox"
                     checked={selectAll}
@@ -741,247 +837,249 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                     className="w-3 h-3 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-1"
                   />
                 </th>
-                <th className="px-1 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-8">
+                <th className="px-1 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-6">
                   {/* Expand column */}
                 </th>
-                <th className="px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-48">
+                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-40">
                   Customer Details
                 </th>
-                <th className="px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-40">
-                  Contact Information
+                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-32">
+                  Contact Info
                 </th>
-                <th className="px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-40">
+                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-28">
                   Business Info
                 </th>
-                <th className="px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-32">
-                  Status & Dates
+                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-24">
+                  Status
                 </th>
-                <th className="px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider w-24">
+                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider w-20">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {paginatedCustomers.map((customer) => {
-                const isCorporate = customer.buyer_type === 'corporate';
-                const displayName = getCustomerDisplayName(customer);
-                const creditTypeInfo = getCreditTypeInfo(customer.creditType, customer.brokerName);
-                const statusDisplay = getStatusDisplay(customer.lead_status);
-                const StatusIcon = statusDisplay.icon;
-                const isSelected = selectedRows.has(customer._id);
-                const isExpanded = expandedRows.has(customer._id);
+                const details = getCustomerDetails(customer);
+                const isSelected = selectedRows.has(details.id);
+                const isExpanded = expandedRows.has(details.id);
+                const CreditTypeIcon = details.creditTypeInfo.icon;
 
                 return (
-                  <React.Fragment key={customer._id}>
+                  <React.Fragment key={details.id}>
                     <tr
                       className={`border-b border-gray-100 transition-colors ${
                         isSelected ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
                       }`}
                     >
                       {/* Checkbox Column */}
-                      <td className="px-1 py-2 border-r border-gray-100">
+                      <td className="px-1 py-1 border-r border-gray-100">
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => handleRowSelect(customer._id)}
+                          onChange={() => handleRowSelect(details.id)}
                           className="w-3 h-3 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-1"
                         />
                       </td>
 
                       {/* Expand Column */}
-                      <td className="px-1 py-2 border-r border-gray-100">
+                      <td className="px-1 py-1 border-r border-gray-100">
                         <button
-                          onClick={() => handleRowExpand(customer._id)}
+                          onClick={() => handleRowExpand(details.id)}
                           className="text-gray-400 hover:text-gray-600 transition-colors"
                         >
-                          {isExpanded ? <ChevronUp className="text-xs" /> : <ChevronDown className="text-xs" />}
+                          {isExpanded ? <FaChevronUp className="text-xs" /> : <FaChevronDown className="text-xs" />}
                         </button>
                       </td>
 
                       {/* Customer Details Column */}
-                      <td className="px-2 py-2 border-r border-gray-100">
-                        <div className="space-y-1.5">
-                          {/* Header with Customer ID */}
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-xs font-mono text-gray-500">
-                              ID: {customer._id?.slice(-6)}
+                      <td className="px-2 py-1 border-r border-gray-100">
+                        <div className="space-y-1">
+                          {/* Customer Info */}
+                          <div className="flex items-center gap-1">
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                              details.isCorporate ? 'bg-orange-100' : 'bg-purple-100'
+                            }`}>
+                              {details.isCorporate ? (
+                                <FaBuilding className="text-orange-600 text-xs" />
+                              ) : (
+                                <FaUser className="text-purple-600 text-xs" />
+                              )}
                             </div>
-                            <div className="flex items-center gap-1">
-                              <span className={`text-xs px-1 py-0.5 rounded ${
-                                isCorporate 
-                                  ? 'bg-orange-100 text-orange-800' 
-                                  : 'bg-purple-100 text-purple-800'
-                              }`}>
-                                {isCorporate ? 'CORP' : 'IND'}
-                              </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-gray-900 text-xs truncate">
+                                {details.displayName}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                ID: {details.id.slice(-8)}
+                              </div>
                             </div>
                           </div>
 
-                          {/* Customer Info */}
-                          <div className="space-y-1">
-                            <div className="flex items-start gap-2">
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
-                                isCorporate ? 'bg-orange-100' : 'bg-purple-100'
-                              }`}>
-                                {isCorporate ? (
-                                  <Building className="text-orange-600 text-xs" />
-                                ) : (
-                                  <User className="text-purple-600 text-xs" />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="font-semibold text-gray-900 text-sm truncate">
-                                  {displayName}
+                          {/* Company/Contact Info */}
+                          {details.isCorporate ? (
+                            <>
+                              {details.companyName && (
+                                <div className="text-xs text-gray-600 truncate">
+                                  🏢 {details.companyName}
                                 </div>
-                                
-                                {/* Company Name and Contact Person for Corporate */}
-                                {isCorporate && (
-                                  <div className="text-xs text-gray-500 mt-1 space-y-0.5">
-                                    {customer.company_name && (
-                                      <div className="flex items-center gap-1 truncate">
-                                        <Building className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
-                                        <span className="truncate">{customer.company_name}</span>
-                                      </div>
-                                    )}
-                                    {customer.contact_person_name && (
-                                      <div className="flex items-center gap-1 truncate">
-                                        <User className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
-                                        <span className="truncate">{customer.contact_person_name}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                
-                                {/* Individual customer details */}
-                                {!isCorporate && (
-                                  <div className="text-xs text-gray-500 flex items-center gap-1">
-                                    <span>{customer.gender || 'N/A'}</span>
-                                    {customer.age && <span>• {customer.age} yrs</span>}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                              )}
+                              {details.contactPersonName && (
+                                <div className="text-xs text-gray-600 truncate">
+                                  👤 {details.contactPersonName}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {(details.firstName || details.lastName) && (
+                                <div className="text-xs text-gray-600 truncate">
+                                  {details.firstName} {details.lastName}
+                                </div>
+                              )}
+                            </>
+                          )}
 
                           {/* Credit Type */}
-                          <div className="pt-1 border-t border-gray-100">
-                            <div className="flex items-center gap-1">
-                              {creditTypeInfo.icon}
-                              <span className={`text-xs px-1 py-0.5 rounded ${
-                                creditTypeInfo.color === 'blue' ? 'bg-blue-100 text-blue-800' :
-                                creditTypeInfo.color === 'purple' ? 'bg-purple-100 text-purple-800' :
-                                creditTypeInfo.color === 'orange' ? 'bg-orange-100 text-orange-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                                {creditTypeInfo.label}
-                              </span>
-                            </div>
+                          <div className="flex items-center gap-1">
+                            <CreditTypeIcon className="text-gray-400 text-xs flex-shrink-0" />
+                            <span className={`text-xs px-1 py-0.5 rounded ${details.creditTypeInfo.class}`}>
+                              {details.creditTypeInfo.label}
+                            </span>
                           </div>
                         </div>
                       </td>
 
                       {/* Contact Information Column */}
-                      <td className="px-2 py-2 border-r border-gray-100">
-                        <div className="space-y-1.5 text-xs">
-                          <div className="text-gray-700 flex items-center gap-1">
-                            <Mail className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                            <span className="truncate">{customer.email || 'N/A'}</span>
+                      <td className="px-2 py-1 border-r border-gray-100">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <FaPhone className="text-gray-400 text-xs flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-gray-900 text-xs truncate">
+                                {details.mobile || details.phone}
+                              </div>
+                              {details.alternatePhone && (
+                                <div className="text-xs text-gray-500 truncate">
+                                  Alt: {details.alternatePhone}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-gray-700 flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                            <span>{customer.phone || 'N/A'}</span>
-                          </div>
-                          <div className="text-gray-700 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                            <span className="truncate">{customer.city || 'N/A'}</span>
-                          </div>
-                          {customer.sourceOrigin && customer.sourceOrigin !== 'N/A' && (
-                            <div className="text-gray-700 flex items-center gap-1 pt-1 border-t border-gray-100">
-                              <Target className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                              <span className="truncate">Source: {customer.sourceOrigin}</span>
+
+                          {details.email && (
+                            <div className="flex items-center gap-1">
+                              <FaEnvelope className="text-gray-400 text-xs flex-shrink-0" />
+                              <div className="text-xs text-gray-600 truncate">
+                                {details.email}
+                              </div>
+                            </div>
+                          )}
+
+                          {details.city && (
+                            <div className="flex items-center gap-1">
+                              <FaMapMarkerAlt className="text-gray-400 text-xs flex-shrink-0" />
+                              <div className="text-xs text-gray-600 truncate">
+                                {details.city} {details.pincode && `- ${details.pincode}`}
+                              </div>
+                            </div>
+                          )}
+
+                          {details.sourceOrigin && (
+                            <div className="text-xs text-gray-500 truncate">
+                              📍 {details.sourceOrigin}
                             </div>
                           )}
                         </div>
                       </td>
 
-                      {/* Business Info Column */}
-                      <td className="px-2 py-2 border-r border-gray-100">
-                        <div className="space-y-1.5">
-                          <div className="flex flex-wrap gap-1">
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              customer.policy_type === '4 Wheeler' ? 'bg-blue-100 text-blue-800' :
-                              customer.policy_type === '2 Wheeler' ? 'bg-green-100 text-green-800' :
-                              customer.policy_type === 'Home Insurance' ? 'bg-purple-100 text-purple-800' :
-                              customer.policy_type === 'Health Insurance' ? 'bg-pink-100 text-pink-800' :
-                              customer.policy_type === 'Life Insurance' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {customer.policy_type || 'N/A'}
-                            </span>
-                          </div>
-                          
-                          <div className="text-xs text-gray-600 space-y-0.5">
-                            <div className="flex items-center gap-1">
-                              <FileText className="w-2.5 h-2.5" />
-                              <span>Lead: {customer.lead_source || 'N/A'}</span>
+                      {/* Business Information Column */}
+                      <td className="px-2 py-1 border-r border-gray-100">
+                        <div className="space-y-1">
+                          {details.policyType && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">Policy:</span>
+                              <span className={`text-xs px-1 py-0.5 rounded ${
+                                details.policyType === '4 Wheeler' ? 'bg-blue-100 text-blue-800' :
+                                details.policyType === '2 Wheeler' ? 'bg-green-100 text-green-800' :
+                                details.policyType === 'Home Insurance' ? 'bg-purple-100 text-purple-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {details.policyType}
+                              </span>
                             </div>
-                            {customer.brokerName && customer.brokerName !== 'N/A' && (
-                              <div className="flex items-center gap-1">
-                                <UserCheck className="w-2.5 h-2.5" />
-                                <span className="truncate">Broker: {customer.brokerName}</span>
-                              </div>
-                            )}
+                          )}
+
+                          {details.leadSource && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">Lead Source:</span>
+                              <span className="text-xs font-medium truncate ml-1">
+                                {details.leadSource}
+                              </span>
+                            </div>
+                          )}
+
+                          {details.brokerName && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">Broker:</span>
+                              <span className="text-xs font-medium truncate ml-1">
+                                {details.brokerName}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-600">Created:</span>
+                            <span className="text-xs">{details.createdDate}</span>
                           </div>
                         </div>
                       </td>
 
-                      {/* Status & Dates Column */}
-                      <td className="px-2 py-2 border-r border-gray-100">
-                        <div className="space-y-1.5">
+                      {/* Status Column */}
+                      <td className="px-2 py-1 border-r border-gray-100">
+                        <div className="space-y-1">
                           <div className="flex items-center gap-1">
-                            <StatusIcon className="text-xs" />
-                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${statusDisplay.class}`}>
-                              {customer.lead_status || 'New'}
+                            <details.StatusIcon className="text-xs" />
+                            <span className={`text-xs font-medium px-1 py-0.5 rounded ${details.statusDisplay.class}`}>
+                              {details.leadStatus || 'New'}
                             </span>
                           </div>
                           
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <div className="flex justify-between items-center">
-                              <span>Created:</span>
-                              <span className="text-xs">{formatDate(customer.created_at || customer.ts)}</span>
+                          {details.age && (
+                            <div className="text-xs text-gray-600">
+                              Age: {details.age}
                             </div>
-                            {customer.updated_at && (
-                              <div className="flex justify-between items-center">
-                                <span>Updated:</span>
-                                <span className="text-xs">{formatDate(customer.updated_at)}</span>
-                              </div>
-                            )}
-                          </div>
+                          )}
+
+                          {details.gender && (
+                            <div className="text-xs text-gray-600">
+                              Gender: {details.gender}
+                            </div>
+                          )}
                         </div>
                       </td>
 
                       {/* Actions Column */}
-                      <td className="px-2 py-2">
-                        <div className="flex flex-col gap-1">
+                      <td className="px-2 py-1">
+                        <div className="flex flex-col gap-0.5">
                           <button 
                             onClick={() => handleViewClick(customer)}
-                            className="flex items-center gap-1 text-purple-600 hover:text-purple-800 text-xs font-medium hover:bg-purple-50 px-1.5 py-1 rounded transition-colors border border-purple-200 justify-center"
+                            className="flex items-center gap-0.5 text-purple-600 hover:text-purple-800 text-xs font-medium hover:bg-purple-50 px-1 py-0.5 rounded transition-colors border border-purple-200 justify-center"
                           >
-                            <Eye className="text-xs" />
+                            <FaEye className="text-xs" />
                             View
                           </button>
                           <button 
                             onClick={() => handleEditClick(customer)}
-                            className="flex items-center gap-1 text-green-600 hover:text-green-800 text-xs font-medium hover:bg-green-50 px-1.5 py-1 rounded transition-colors border border-green-200 justify-center"
+                            className="flex items-center gap-0.5 text-green-600 hover:text-green-800 text-xs font-medium hover:bg-green-50 px-1 py-0.5 rounded transition-colors border border-green-200 justify-center"
                           >
-                            <Edit className="text-xs" />
+                            <FaEdit className="text-xs" />
                             Edit
                           </button>
                           <button 
                             onClick={() => handleDeleteClick(customer)}
-                            className="flex items-center gap-1 text-red-600 hover:text-red-800 text-xs font-medium hover:bg-red-50 px-1.5 py-1 rounded transition-colors border border-red-200 justify-center"
+                            className="flex items-center gap-0.5 text-red-600 hover:text-red-800 text-xs font-medium hover:bg-red-50 px-1 py-0.5 rounded transition-colors border border-red-200 justify-center"
                           >
-                            <Trash2 className="text-xs" />
+                            <FaTrash className="text-xs" />
                             Delete
                           </button>
                         </div>
@@ -991,127 +1089,156 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                     {/* Expanded Row with Additional Details */}
                     {isExpanded && (
                       <tr className="bg-gray-50 border-b border-gray-100">
-                        <td colSpan="7" className="px-3 py-3">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                            {/* Customer Details */}
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-gray-700 border-b pb-1">Customer Details</h4>
-                              <div className="space-y-1">
+                        <td colSpan="7" className="px-3 py-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                            {/* Personal Details */}
+                            <div className="space-y-1">
+                              <h4 className="font-semibold text-gray-700 border-b pb-0.5">Personal Details</h4>
+                              <div className="space-y-0.5">
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Customer ID:</span>
-                                  <span className="font-medium font-mono">{customer._id}</span>
+                                  <span className="font-medium">{details.id}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Type:</span>
-                                  <span className="font-medium capitalize">{customer.buyer_type}</span>
+                                  <span className="font-medium capitalize">
+                                    {details.isCorporate ? 'Corporate' : 'Individual'}
+                                  </span>
                                 </div>
-                                {isCorporate ? (
+                                {!details.isCorporate && (
                                   <>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Company Name:</span>
-                                      <span className="font-medium">{customer.company_name || 'N/A'}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Contact Person:</span>
-                                      <span className="font-medium">{customer.contact_person_name || 'N/A'}</span>
-                                    </div>
-                                    {customer.company_code && (
+                                    {details.firstName && (
                                       <div className="flex justify-between">
-                                        <span className="text-gray-600">Company Code:</span>
-                                        <span className="font-medium">{customer.company_code}</span>
+                                        <span className="text-gray-600">First Name:</span>
+                                        <span className="font-medium">{details.firstName}</span>
                                       </div>
                                     )}
-                                    {customer.contact_code && (
+                                    {details.lastName && (
                                       <div className="flex justify-between">
-                                        <span className="text-gray-600">Contact Code:</span>
-                                        <span className="font-medium">{customer.contact_code}</span>
+                                        <span className="text-gray-600">Last Name:</span>
+                                        <span className="font-medium">{details.lastName}</span>
                                       </div>
                                     )}
                                   </>
-                                ) : (
-                                  <>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">First Name:</span>
-                                      <span className="font-medium">{customer.first_name || 'N/A'}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Last Name:</span>
-                                      <span className="font-medium">{customer.last_name || 'N/A'}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Gender:</span>
-                                      <span className="font-medium">{customer.gender || 'N/A'}</span>
-                                    </div>
-                                  </>
+                                )}
+                                {details.gender && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Gender:</span>
+                                    <span className="font-medium">{details.gender}</span>
+                                  </div>
+                                )}
+                                {details.age && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Age:</span>
+                                    <span className="font-medium">{details.age}</span>
+                                  </div>
                                 )}
                               </div>
                             </div>
 
-                            {/* Contact Information */}
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-gray-700 border-b pb-1">Contact Information</h4>
-                              <div className="space-y-1">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Email:</span>
-                                  <span className="font-medium">{customer.email || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Phone:</span>
-                                  <span className="font-medium">{customer.phone || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Alternate Phone:</span>
-                                  <span className="font-medium">{customer.alternate_phone || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Address:</span>
-                                  <span className="font-medium text-right max-w-[200px]">{customer.address || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">City:</span>
-                                  <span className="font-medium">{customer.city || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Pincode:</span>
-                                  <span className="font-medium">{customer.pincode || 'N/A'}</span>
-                                </div>
+                            {/* Contact Details */}
+                            <div className="space-y-1">
+                              <h4 className="font-semibold text-gray-700 border-b pb-0.5">Contact Details</h4>
+                              <div className="space-y-0.5">
+                                {details.email && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Email:</span>
+                                    <span className="font-medium">{details.email}</span>
+                                  </div>
+                                )}
+                                {details.phone && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Phone:</span>
+                                    <span className="font-medium">{details.phone}</span>
+                                  </div>
+                                )}
+                                {details.mobile && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Mobile:</span>
+                                    <span className="font-medium">{details.mobile}</span>
+                                  </div>
+                                )}
+                                {details.alternatePhone && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Alternate Phone:</span>
+                                    <span className="font-medium">{details.alternatePhone}</span>
+                                  </div>
+                                )}
+                                {details.city && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">City:</span>
+                                    <span className="font-medium">{details.city}</span>
+                                  </div>
+                                )}
+                                {details.pincode && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Pincode:</span>
+                                    <span className="font-medium">{details.pincode}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
-                            {/* Business Information */}
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-gray-700 border-b pb-1">Business Information</h4>
-                              <div className="space-y-1">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Credit Type:</span>
-                                  <span className="font-medium">{creditTypeInfo.label}</span>
-                                </div>
-                                {customer.brokerName && (
+                            {/* Business Details */}
+                            <div className="space-y-1">
+                              <h4 className="font-semibold text-gray-700 border-b pb-0.5">Business Details</h4>
+                              <div className="space-y-0.5">
+                                {details.isCorporate && (
+                                  <>
+                                    {details.companyName && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Company Name:</span>
+                                        <span className="font-medium">{details.companyName}</span>
+                                      </div>
+                                    )}
+                                    {details.contactPersonName && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Contact Person:</span>
+                                        <span className="font-medium">{details.contactPersonName}</span>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                                {details.policyType && (
                                   <div className="flex justify-between">
-                                    <span className="text-gray-600">Broker Name:</span>
-                                    <span className="font-medium">{customer.brokerName}</span>
+                                    <span className="text-gray-600">Policy Type:</span>
+                                    <span className="font-medium">{details.policyType}</span>
+                                  </div>
+                                )}
+                                {details.leadSource && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Lead Source:</span>
+                                    <span className="font-medium">{details.leadSource}</span>
+                                  </div>
+                                )}
+                                {details.leadStatus && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Lead Status:</span>
+                                    <span className="font-medium">{details.leadStatus}</span>
                                   </div>
                                 )}
                                 <div className="flex justify-between">
-                                  <span className="text-gray-600">Source Origin:</span>
-                                  <span className="font-medium">{customer.sourceOrigin || 'N/A'}</span>
+                                  <span className="text-gray-600">Credit Type:</span>
+                                  <span className="font-medium">{details.creditTypeInfo.label}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Policy Type:</span>
-                                  <span className="font-medium">{customer.policy_type || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Lead Source:</span>
-                                  <span className="font-medium">{customer.lead_source || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Lead Status:</span>
-                                  <span className="font-medium">{customer.lead_status || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Created By:</span>
-                                  <span className="font-medium">{customer.created_by || 'System'}</span>
-                                </div>
+                                {details.brokerName && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Broker Name:</span>
+                                    <span className="font-medium">{details.brokerName}</span>
+                                  </div>
+                                )}
+                                {details.sourceOrigin && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Source Origin:</span>
+                                    <span className="font-medium">{details.sourceOrigin}</span>
+                                  </div>
+                                )}
+                                {details.createdDate && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Created Date:</span>
+                                    <span className="font-medium">{details.createdDate}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1127,43 +1254,39 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
 
         {/* Compact Pagination */}
         {totalPages > 1 && (
-          <div className="px-3 py-2 border-t border-gray-200 bg-gray-50">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="px-2 py-1 border-t border-gray-200 bg-gray-50">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-1">
               <div className="text-xs text-gray-600">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                <span className="font-medium">
-                  {Math.min(currentPage * itemsPerPage, filteredCustomers.length)}
-                </span>{' '}
-                of <span className="font-medium">{filteredCustomers.length}</span>
+                Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 py-0.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Prev
                 </button>
                 
                 {/* Page Numbers */}
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                     let pageNumber;
-                    if (totalPages <= 5) {
+                    if (totalPages <= 3) {
                       pageNumber = i + 1;
-                    } else if (currentPage <= 3) {
+                    } else if (currentPage <= 2) {
                       pageNumber = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
+                    } else if (currentPage >= totalPages - 1) {
+                      pageNumber = totalPages - 2 + i;
                     } else {
-                      pageNumber = currentPage - 2 + i;
+                      pageNumber = currentPage - 1 + i;
                     }
 
                     return (
                       <button
                         key={pageNumber}
                         onClick={() => handlePageChange(pageNumber)}
-                        className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                        className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
                           currentPage === pageNumber
                             ? 'bg-purple-500 text-white'
                             : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
@@ -1178,7 +1301,7 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 py-0.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>
@@ -1190,17 +1313,17 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
 
       {/* Empty State for Filtered Results */}
       {filteredCustomers.length === 0 && customers.length > 0 && (
-        <div className="bg-white rounded border border-gray-200 p-4 text-center">
-          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-1">
-            <Search className="w-4 h-4 text-gray-400" />
+        <div className="bg-white rounded border border-gray-200 p-3 text-center">
+          <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-1">
+            <FaUser className="w-3 h-3 text-gray-400" />
           </div>
-          <p className="text-gray-700 font-medium text-sm mb-1">No customers match your filters</p>
+          <p className="text-gray-700 font-medium text-xs mb-1">No customers match your filters</p>
           <button
             onClick={() => {
               setSearchQuery('');
               handleResetAdvancedFilters();
             }}
-            className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-xs font-medium"
+            className="px-2 py-0.5 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-xs font-medium"
           >
             Clear Filters
           </button>
@@ -1222,23 +1345,23 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
         <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded max-w-md w-full p-4">
             <div className="flex items-center mb-3">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                <FaExclamationTriangle className="w-4 h-4 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Customer</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Delete Customer</h3>
             </div>
             
-            <p className="text-gray-600 mb-4 text-sm">
+            <p className="text-gray-600 mb-3 text-xs">
               Are you sure you want to delete this customer? This action cannot be undone.
             </p>
 
             {customerToDelete && (
-              <div className="bg-gray-50 rounded p-3 mb-4">
-                <div className="text-sm text-gray-700 space-y-1">
-                  <div className="font-medium">Customer ID: {customerToDelete._id?.slice(-6)}</div>
+              <div className="bg-gray-50 rounded p-2 mb-3">
+                <div className="text-xs text-gray-700 space-y-0.5">
+                  <div className="font-medium">Customer ID: {getSafeValue(customerToDelete._id)?.slice(-8)}</div>
                   <div>Name: {getCustomerDisplayName(customerToDelete)}</div>
-                  <div>Email: {customerToDelete.email || 'N/A'}</div>
-                  <div>Phone: {customerToDelete.phone || 'N/A'}</div>
+                  <div>Email: {getSafeValue(customerToDelete.email)}</div>
+                  <div>Phone: {getSafeValue(customerToDelete.phone)}</div>
                 </div>
               </div>
             )}
@@ -1247,18 +1370,18 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
               <button
                 onClick={handleCancelDelete}
                 disabled={deleteLoading}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleteLoading}
-                className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 border border-transparent rounded hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center"
+                className="px-2 py-1 text-xs font-medium text-white bg-red-600 border border-transparent rounded hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center"
               >
                 {deleteLoading ? (
                   <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-white mr-1"></div>
                     Deleting...
                   </>
                 ) : (

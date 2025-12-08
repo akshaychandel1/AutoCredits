@@ -8,7 +8,7 @@ import {
   FaMapMarkerAlt,FaCheckCircle,FaExclamationTriangle,FaCloudUploadAlt,FaListAlt,FaExternalLinkAlt, FaTags,FaTag,FaSpinner,FaMoneyBillWave, FaEdit,FaHistory ,
   FaUser,FaReceipt,FaEye,FaDownload,FaGift,FaUserTie,FaBuilding,
   FaPhone,FaFileContract,FaShieldAlt,FaUsers,
-  FaEnvelope,
+  FaEnvelope,FaClock,
   FaSave,
   FaChevronLeft,
   FaChevronRight,
@@ -35,6 +35,8 @@ import {
 import PDFGenerationService from "./PDFGenerationService";
 import { useLocation } from 'react-router-dom';
 import INRCurrencyInput from "../../components/INRCurrencyInput";
+import AutoSuggestTextField from "./AutoSuggestTextField";
+import VehicleDetails from "./VehichleDetails";
 // import VehicleDetails from "./VehicleDetails";
 // ================== VALIDATION RULES ==================
 const validationRules = {
@@ -438,13 +440,6 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     "ABC Insurance Brokers",
     "XYZ Financial Services", 
     "SecureLife Insurance Brokers",
-    "Prime Risk Solutions",
-    "Global Insurance Partners",
-    "Reliance Insurance Brokers",
-    "Pioneer Risk Advisors",
-    "Capital Insurance Services",
-    "Heritage Insurance Brokers",
-    "Summit Risk Management"
   ];
 
   // NEW: Agent names for source origin
@@ -452,23 +447,6 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
     "Rahul Sharma",
     "Priya Patel",
     "Amit Kumar",
-    "Sneha Desai",
-    "Vikram Singh",
-    "Anjali Mehta",
-    "Rajesh Gupta",
-    "Pooja Reddy",
-    "Sanjay Malhotra",
-    "Neha Choudhary",
-    "Karan Joshi",
-    "Divya Iyer",
-    "Arun Khanna",
-    "Swati Nair",
-    "Deepak Verma",
-    "Maya Srinivasan",
-    "Rohit Bajaj",
-    "Shweta Kapoor",
-    "Nitin Agarwal",
-    "Tanvi Shah"
   ];
 
   // State for relationship suggestions
@@ -500,8 +478,8 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
   const [companyPrefillMessage, setCompanyPrefillMessage] = useState('');
 
-  // Base API URL
-  // const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app";
+  // NEW: Check if broker name field should be enabled
+  const shouldEnableBrokerName = form.creditType === "broker";
 
   // Format text to have first letter uppercase and other letters lowercase
   const formatName = (text) => {
@@ -986,9 +964,6 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // UPDATED: Check if payout should be hidden
   const shouldHidePayout = form.creditType === "showroom" || form.creditType === "customer";
 
-  // NEW: Check if broker name field should be enabled
-  const shouldEnableBrokerName = form.creditType === "broker";
-
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start justify-between">
@@ -1099,53 +1074,32 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Broker Name {shouldEnableBrokerName && "*"}
           </label>
-          <div className="relative">
-            <input
-              type="text"
-              name="brokerName"
-              value={form.brokerName || ""}
-              onChange={handleBrokerNameChange}
-              onFocus={() => {
-                if (shouldEnableBrokerName) {
-                  if (form.brokerName) {
-                    const filtered = brokerNameOptions.filter(broker =>
-                      broker.toLowerCase().includes(form.brokerName.toLowerCase())
-                    );
-                    setBrokerNameSuggestions(filtered);
-                    setShowBrokerNameSuggestions(true);
-                  } else {
-                    setBrokerNameSuggestions(brokerNameOptions);
-                    setShowBrokerNameSuggestions(true);
-                  }
-                }
-              }}
-              onBlur={() => {
-                setTimeout(() => setShowBrokerNameSuggestions(false), 200);
-              }}
-              placeholder={shouldEnableBrokerName ? "Select or type broker name" : "Select Broker first"}
-              disabled={!shouldEnableBrokerName}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                !shouldEnableBrokerName 
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-                  : errors.brokerName ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            
-            {/* Broker Name Suggestions Dropdown */}
-            {showBrokerNameSuggestions && shouldEnableBrokerName && brokerNameSuggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                {brokerNameSuggestions.map((broker, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                    onClick={() => selectBrokerName(broker)}
-                  >
-                    {broker}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <AutoSuggestTextField
+  fieldName="brokerName"
+  label=""
+  placeholder={shouldEnableBrokerName ? "Select or type broker name" : "Select Broker first"}
+  value={form.brokerName || ""}
+  onChange={(value) => {
+    handleChange({
+      target: {
+        name: 'brokerName',
+        value: value
+      }
+    });
+  }}
+  disabled={!shouldEnableBrokerName}
+  required={shouldEnableBrokerName}
+  hardcodedOptions={brokerNameOptions} // Pass hardcoded options
+  onSelect={(suggestion) => {
+    console.log('Selected broker:', suggestion);
+    handleChange({
+      target: {
+        name: 'brokerName',
+        value: suggestion.value
+      }
+    });
+  }}
+/>
           {errors.brokerName && <p className="text-red-500 text-xs mt-1">{errors.brokerName}</p>}
         </div>
 
@@ -1154,48 +1108,31 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
           <label className="block mb-1 text-sm font-medium text-gray-600">
             Source Origin
           </label>
-          <div className="relative">
-            <input
-              type="text"
-              name="sourceOrigin"
-              value={form.sourceOrigin || ""}
-              onChange={handleSourceOriginChange}
-              onFocus={() => {
-                if (form.sourceOrigin) {
-                  const filtered = agentNameOptions.filter(agent =>
-                    agent.toLowerCase().includes(form.sourceOrigin.toLowerCase())
-                  );
-                  setAgentNameSuggestions(filtered);
-                  setShowAgentNameSuggestions(true);
-                } else {
-                  setAgentNameSuggestions(agentNameOptions);
-                  setShowAgentNameSuggestions(true);
-                }
-              }}
-              onBlur={() => {
-                setTimeout(() => setShowAgentNameSuggestions(false), 200);
-              }}
-              placeholder="Select or type agent name"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.sourceOrigin ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            
-            {/* Agent Name Suggestions Dropdown */}
-            {showAgentNameSuggestions && agentNameSuggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                {agentNameSuggestions.map((agent, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                    onClick={() => selectSourceOrigin(agent)}
-                  >
-                    {agent}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <AutoSuggestTextField
+  fieldName="sourceOrigin"
+  label=""
+  placeholder="Select or type agent name"
+  value={form.sourceOrigin || ""}
+  onChange={(value) => {
+    handleChange({
+      target: {
+        name: 'sourceOrigin',
+        value: value
+      }
+    });
+  }}
+  disabled={false}
+  hardcodedOptions={agentNameOptions} // Pass hardcoded options
+  onSelect={(suggestion) => {
+    console.log('Selected source origin:', suggestion);
+    handleChange({
+      target: {
+        name: 'sourceOrigin',
+        value: suggestion.value
+      }
+    });
+  }}
+/>
           {errors.sourceOrigin && <p className="text-red-500 text-xs mt-1">{errors.sourceOrigin}</p>}
           <p className="text-gray-400 text-xs mt-1">From where we got the policy client</p>
         </div>
@@ -1875,624 +1812,11 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
 
 // ================== STEP 2: VehicleDetails ==================
 
-const VehicleDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
-  // Vehicle make options for auto-suggest
-  const vehicleMakes = [
-    "Tata Motors", "Mahindra & Mahindra", "Maruti Suzuki", "Force Motors", "Hindustan Motors",
-    "Hyundai", "Kia", "Toyota", "Honda", "Renault", "Nissan", "Volkswagen", "Skoda", "MG Motor",
-    "BMW", "Mercedes-Benz", "Audi", "Volvo", "Jeep", "Land Rover", "Jaguar", "Porsche", "Isuzu",
-    "Lexus", "Mini", "Citroen", "Peugeot", "Fiat", "Mitsubishi", "Chevrolet", "BYD",
-    "Hero MotoCorp", "Bajaj Auto", "TVS Motor", "Royal Enfield", "Mahindra Two Wheelers",
-    "Honda Motorcycle & Scooter India", "Yamaha Motor India", "Suzuki Motorcycle India", "KTM",
-    "Husqvarna", "BMW Motorrad", "Triumph Motorcycles", "Harley-Davidson", "Benelli", "CFMoto",
-    "Ducati", "Aprilia", "Vespa", "Keeway", "Ashok Leyland", "Eicher Motors", "Tata Motors Commercial",
-    "Mahindra Electric", "Piaggio Vehicles", "Olectra Greentech", "Omega Seiki Mobility", "Euler Motors",
-    "Switch Mobility", "JBM Auto", "VE Commercial Vehicles", "Ola Electric", "Ather Energy",
-    "Simple Energy", "Revolt Motors", "Ultraviolette Automotive", "Tork Motors", "PURE EV",
-    "Matter Motors", "Ampere Vehicles", "Okaya EV", "Greaves Electric Mobility", "Hero Electric",
-    "TVS iQube", "Bajaj Chetak Electric"
-  ];
-
-  // Vehicle models organized by make
-  const vehicleModels = {
-    "Tata Motors": ["Nexon", "Punch", "Harrier", "Safari", "Tiago", "Altroz", "Tigor", "Nexon EV", "Tigor EV", "Nexon iCNG"],
-    "Mahindra & Mahindra": ["Thar", "Scorpio", "XUV700", "Bolero", "XUV300", "Scorpio N", "Bolero Neo", "XUV400 EV"],
-    "Maruti Suzuki": ["Swift", "Baleno", "Brezza", "WagonR", "Dzire", "Alto", "Ertiga", "XL6", "Ciaz", "Jimny", "Invicto", "Fronx"],
-    "Hyundai": ["Creta", "Venue", "i20", "Verna", "Exter", "Tucson", "Aura", "Alcazar", "Ioniq 5", "Kona Electric"],
-    "Kia": ["Seltos", "Sonet", "Carens", "EV6", "Carnival"],
-    "Toyota": ["Innova Crysta", "Fortuner", "Camry", "Glanza", "Hyryder", "Innova Hycross", "Vellfire", "Urban Cruiser Hyryder"],
-    "Honda": ["City", "Amaze", "Elevate", "WR-V", "Jazz"],
-    "Renault": ["Kwid", "Triber", "Kiger"],
-    "Nissan": ["Magnite", "Kicks"],
-    "Volkswagen": ["Virtus", "Taigun", "Polo", "Tiguan", "T-Roc"],
-    "Skoda": ["Slavia", "Kushaq", "Kodiaq", "Superb"],
-    "MG Motor": ["Hector", "Astor", "ZS EV", "Gloster", "Comet EV"],
-    "Jeep": ["Compass", "Meridian", "Wrangler", "Grand Cherokee"],
-    "BMW": ["X1", "X3", "3 Series", "5 Series", "7 Series", "X5", "X7", "i4", "iX"],
-    "Mercedes-Benz": ["C-Class", "E-Class", "GLA", "GLC", "GLE", "S-Class", "A-Class", "EQB", "EQS"],
-    "Audi": ["A4", "A6", "Q3", "Q5", "Q7", "Q8", "e-tron", "RS5"],
-    "Volvo": ["XC40", "XC60", "XC90", "S90", "C40 Recharge"],
-    "Hero MotoCorp": ["Splendor", "HF Deluxe", "Xpulse 200", "Passion Pro", "Glamour", "Xtreme 160R"],
-    "Bajaj Auto": ["Pulsar", "Dominar", "Platina", "Avenger", "CT100", "Pulsar NS", "Pulsar RS"],
-    "TVS Motor": ["Apache RTR", "Raider", "Jupiter", "NTorq", "XL100", "Apache RR 310"],
-    "Royal Enfield": ["Classic 350", "Hunter 350", "Himalayan 450", "Meteor 350", "Bullet 350", "Interceptor 650", "Shotgun 650"],
-    "Ola Electric": ["S1 Pro", "S1 Air", "S1 X"],
-    "Ather Energy": ["450X", "450S", "450 Apex"],
-    "Tata Motors Commercial": ["Ace", "Intra", "Ultra", "Signa", "Winger", "Mint"],
-    "Ashok Leyland": ["Dost", "Boss", "Partner", "Captain", "1616", "3520"],
-    "Force Motors": ["Gurkha", "Urbania", "Traveller", "One"],
-    "Hindustan Motors": ["Ambassador"],
-    "Yamaha Motor India": ["MT-15", "R15", "FZ", "Fascino", "RayZR", "Aerox"],
-    "Suzuki Motorcycle India": ["Access 125", "Burgman Street", "Gixxer", "Avenis"],
-    "KTM": ["Duke", "RC", "Adventure", "390 Duke", "250 Duke"],
-    "Harley-Davidson": ["Sportster", "Softail", "Touring", "Street"],
-    "Ducati": ["Panigale", "Monster", "Scrambler", "Multistrada", "Diavel"],
-    "Aprilia": ["RS 457", "Tuono", "SR 160"],
-    "Vespa": ["VXL", "SXL", "Zx", "Primavera"],
-    "Eicher Motors": ["Pro 2000", "Pro 3000", "Pro 6000"],
-    "Mahindra Electric": ["eVerito", "eSupro", "Treo", "eAlfa Mini"],
-    "Piaggio Vehicles": ["Ape", "Ape Xtra", "Ape E-City"],
-    "Simple Energy": ["One"],
-    "Revolt Motors": ["RV400", "RV300"],
-    "Ultraviolette Automotive": ["F77"],
-    "Tork Motors": ["Kratos", "Kratos R"],
-    "PURE EV": ["EcoDryft", "EPluto 7G"],
-    "Matter Motors": ["Aera"],
-    "Ampere Vehicles": ["Zeal", "Reo", "Nitro"],
-    "Okaya EV": ["Freedum", "Faast", "ClassIQ"],
-    "Greaves Electric Mobility": ["Ampere Magnus", "Ampere Primus", "Ampere REO"],
-    "Hero Electric": ["Optima", "Photon", "NYX", "Flash"],
-    "TVS iQube": ["iQube S", "iQube ST"],
-    "Bajaj Chetak Electric": ["Chetak", "Chetak Urbane"]
-  };
-
-  // State for vehicle make suggestions
-  const [vehicleMakeSuggestions, setVehicleMakeSuggestions] = useState([]);
-  const [showVehicleMakeSuggestions, setShowVehicleMakeSuggestions] = useState(false);
-  
-  // State for vehicle model suggestions
-  const [vehicleModelSuggestions, setVehicleModelSuggestions] = useState([]);
-  const [showVehicleModelSuggestions, setShowVehicleModelSuggestions] = useState(false);
-
-  // State for registration number suggestions
-  const [regNoSuggestions, setRegNoSuggestions] = useState([]);
-  const [showRegNoSuggestions, setShowRegNoSuggestions] = useState(false);
-  const [isLoadingRegNo, setIsLoadingRegNo] = useState(false);
-
-  // Get available models based on selected make
-  const getAvailableModels = () => {
-    if (!form.make || !vehicleModels[form.make]) {
-      return [];
-    }
-    return vehicleModels[form.make];
-  };
-
-  // Filter models based on input
-  const filterModels = (inputValue) => {
-    const availableModels = getAvailableModels();
-    if (!inputValue) return availableModels;
-    
-    return availableModels.filter(model =>
-      model.toLowerCase().includes(inputValue.toLowerCase())
-    );
-  };
-
-  // Extract vehicles array from API response
-  const extractVehiclesFromResponse = (data) => {
-    if (Array.isArray(data)) {
-      return data;
-    }
-    
-    if (data && typeof data === 'object') {
-      // Check common response formats
-      if (Array.isArray(data.data)) return data.data;
-      if (Array.isArray(data.vehicles)) return data.vehicles;
-      if (Array.isArray(data.items)) return data.items;
-      if (Array.isArray(data.results)) return data.results;
-      if (Array.isArray(data.docs)) return data.docs;
-      
-      // If it's a single vehicle object
-      if (data.regNo || data.make || data.model) {
-        return [data];
-      }
-      
-      // Look for any array property
-      for (const key in data) {
-        if (Array.isArray(data[key])) {
-          return data[key];
-        }
-      }
-      
-      // Convert object values to array if they look like vehicles
-      const values = Object.values(data);
-      if (values.length > 0 && values.some(item => item && typeof item === 'object' && (item.regNo || item.make))) {
-        return values;
-      }
-    }
-    
-    return [];
-  };
-
-  // Fetch vehicle suggestions based on registration number
-  const fetchVehicleSuggestions = async (regNo) => {
-    if (!regNo || regNo.length < 2) {
-      setRegNoSuggestions([]);
-      setShowRegNoSuggestions(false);
-      return;
-    }
-
-    setIsLoadingRegNo(true);
-    try {
-      const response = await fetch('https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1/vehicles');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Extract vehicles from response
-      const vehicles = extractVehiclesFromResponse(data);
-      
-      // Filter vehicles by registration number
-      const filteredVehicles = vehicles.filter(vehicle => 
-        vehicle && 
-        typeof vehicle === 'object' && 
-        vehicle.regNo && 
-        typeof vehicle.regNo === 'string' &&
-        vehicle.regNo.toLowerCase().includes(regNo.toLowerCase())
-      );
-      
-      setRegNoSuggestions(filteredVehicles);
-      setShowRegNoSuggestions(filteredVehicles.length > 0);
-      
-    } catch (error) {
-      console.error('Error fetching vehicle data:', error);
-      setRegNoSuggestions([]);
-      setShowRegNoSuggestions(false);
-    } finally {
-      setIsLoadingRegNo(false);
-    }
-  };
-
-  // Handle registration number selection from suggestions
-  const handleRegNoSelect = (vehicle) => {
-    // Create a mock event object to simulate form changes
-    const updateFormField = (name, value) => {
-      handleChange({
-        target: {
-          name: name,
-          value: value !== null && value !== undefined ? value.toString() : ''
-        }
-      });
-    };
-
-    // Update all form fields with the selected vehicle data
-    updateFormField('regNo', vehicle.regNo || '');
-    updateFormField('make', vehicle.make || '');
-    updateFormField('model', vehicle.model || '');
-    updateFormField('variant', vehicle.variant || '');
-    updateFormField('engineNo', vehicle.engineNo || '');
-    updateFormField('chassisNo', vehicle.chassisNo || '');
-    updateFormField('makeMonth', vehicle.makeMonth || '');
-    updateFormField('makeYear', vehicle.makeYear || '');
-    updateFormField('cubicCapacity', vehicle.cubicCapacity || '');
-    updateFormField('vehicleTypeCategory', vehicle.vehicleTypeCategory || '4 wheeler');
-    
-    // Close the suggestions dropdown
-    setShowRegNoSuggestions(false);
-  };
-
-  return (
-    <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-full bg-gray-100 text-gray-700">
-            <FaCar />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">
-             Step 2: Vehicle Details
-            </h3>
-            <p className="text-xs text-gray-500">
-              Provide accurate vehicle information
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        {/* Registration Number with Auto-suggest from API */}
-        <div className="md:col-span-2">
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Registration Number *
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              name="regNo"
-              value={form.regNo || ""}
-              onChange={(e) => {
-                const value = e.target.value.toUpperCase();
-                handleChange({
-                  target: {
-                    name: e.target.name,
-                    value: value
-                  }
-                });
-                // Fetch suggestions when user types
-                fetchVehicleSuggestions(value);
-              }}
-              onFocus={() => {
-                if (form.regNo && form.regNo.length >= 2) {
-                  fetchVehicleSuggestions(form.regNo);
-                }
-              }}
-              onBlur={() => {
-                setTimeout(() => setShowRegNoSuggestions(false), 200);
-              }}
-              placeholder="Enter Vehicle Number"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.regNo ? "border-red-500" : "border-gray-300"
-              }`}
-              style={{ textTransform: 'uppercase' }}
-            />
-            
-            {/* Loading indicator */}
-            {isLoadingRegNo && (
-              <div className="absolute right-3 top-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
-              </div>
-            )}
-            
-            {/* Registration Number Suggestions Dropdown */}
-            {showRegNoSuggestions && regNoSuggestions.length > 0 && (
-              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                {regNoSuggestions.map((vehicle, index) => (
-                  <div
-                    key={vehicle._id || vehicle.regNo || index}
-                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm border-b border-gray-100 last:border-b-0"
-                    onClick={() => handleRegNoSelect(vehicle)}
-                  >
-                    <div className="font-medium">{vehicle.regNo}</div>
-                    <div className="text-xs text-gray-500">
-                      {vehicle.make} {vehicle.model} {vehicle.variant ? `- ${vehicle.variant}` : ''}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* No results message */}
-            {showRegNoSuggestions && regNoSuggestions.length === 0 && !isLoadingRegNo && (
-              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg px-3 py-2 text-sm text-gray-500">
-                No vehicles found
-              </div>
-            )}
-          </div>
-          {errors.regNo && <p className="text-red-500 text-xs mt-1">{errors.regNo}</p>}
-        </div>
-
-        {/* Vehicle Make with Auto-suggest */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Vehicle Make *
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              name="make"
-              value={form.make || ""}
-              onChange={(e) => {
-                handleChange(e);
-                // Show suggestions when user starts typing
-                if (e.target.value.length > 0) {
-                  const filtered = vehicleMakes.filter(make =>
-                    make.toLowerCase().includes(e.target.value.toLowerCase())
-                  );
-                  setVehicleMakeSuggestions(filtered);
-                  setShowVehicleMakeSuggestions(true);
-                } else {
-                  setShowVehicleMakeSuggestions(false);
-                }
-              }}
-              onFocus={() => {
-                if (form.make) {
-                  const filtered = vehicleMakes.filter(make =>
-                    make.toLowerCase().includes(form.make.toLowerCase())
-                  );
-                  setVehicleMakeSuggestions(filtered);
-                } else {
-                  setVehicleMakeSuggestions(vehicleMakes);
-                }
-                setShowVehicleMakeSuggestions(true);
-              }}
-              onBlur={() => {
-                setTimeout(() => setShowVehicleMakeSuggestions(false), 200);
-              }}
-              placeholder="Type vehicle make"
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.make ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            
-            {/* Vehicle Make Suggestions Dropdown */}
-            {showVehicleMakeSuggestions && vehicleMakeSuggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                {vehicleMakeSuggestions.map((make, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                    onClick={() => {
-                      handleChange({
-                        target: {
-                          name: 'make',
-                          value: make
-                        }
-                      });
-                      setShowVehicleMakeSuggestions(false);
-                    }}
-                  >
-                    {make}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {errors.make && <p className="text-red-500 text-xs mt-1">{errors.make}</p>}
-        </div>
-
-        {/* Vehicle Model with Auto-suggest */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Vehicle Model *
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              name="model"
-              value={form.model || ""}
-              onChange={(e) => {
-                handleChange(e);
-                // Show suggestions when user starts typing and make is selected
-                if (e.target.value.length > 0 && form.make) {
-                  const filtered = filterModels(e.target.value);
-                  setVehicleModelSuggestions(filtered);
-                  setShowVehicleModelSuggestions(true);
-                } else {
-                  setShowVehicleModelSuggestions(false);
-                }
-              }}
-              onFocus={() => {
-                if (form.make) {
-                  const availableModels = getAvailableModels();
-                  if (form.model) {
-                    const filtered = filterModels(form.model);
-                    setVehicleModelSuggestions(filtered);
-                  } else {
-                    setVehicleModelSuggestions(availableModels);
-                  }
-                  setShowVehicleModelSuggestions(true);
-                }
-              }}
-              onBlur={() => {
-                setTimeout(() => setShowVehicleModelSuggestions(false), 200);
-              }}
-              placeholder={form.make ? "Type vehicle model" : "Select make first"}
-              disabled={!form.make}
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                errors.model ? "border-red-500" : "border-gray-300"
-              } ${!form.make ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-            />
-            
-            {/* Vehicle Model Suggestions Dropdown */}
-            {showVehicleModelSuggestions && vehicleModelSuggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                {vehicleModelSuggestions.map((model, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                    onClick={() => {
-                      handleChange({
-                        target: {
-                          name: 'model',
-                          value: model
-                        }
-                      });
-                      setShowVehicleModelSuggestions(false);
-                    }}
-                  >
-                    {model}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {errors.model && <p className="text-red-500 text-xs mt-1">{errors.model}</p>}
-          {!form.make && (
-            <p className="text-gray-500 text-xs mt-1">Please select vehicle make first</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Vehicle Variant *
-          </label>
-          <input
-            type="text"
-            name="variant"
-            value={form.variant || ""}
-            onChange={handleChange}
-            placeholder="Select variant"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.variant ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors.variant && <p className="text-red-500 text-xs mt-1">{errors.variant}</p>}
-        </div>
-
-        {/* Cubic Capacity (cc) field */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Cubic Capacity (cc)
-          </label>
-          <input
-            type="text"
-            name="cubicCapacity"
-            value={form.cubicCapacity || ""}
-            onChange={handleChange}
-            placeholder="Enter cubic capacity"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.cubicCapacity ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {errors.cubicCapacity && <p className="text-red-500 text-xs mt-1">{errors.cubicCapacity}</p>}
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Engine Number *
-          </label>
-          <input
-            type="text"
-            name="engineNo"
-            value={form.engineNo || ""}
-            onChange={handleChange}
-            placeholder="Enter engine number"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase ${
-              errors.engineNo ? "border-red-500" : "border-gray-300"
-            }`}
-            style={{ textTransform: 'uppercase' }}
-          />
-          {errors.engineNo && <p className="text-red-500 text-xs mt-1">{errors.engineNo}</p>}
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Chassis Number *
-          </label>
-          <input
-            type="text"
-            name="chassisNo"
-            value={form.chassisNo || ""}
-            onChange={handleChange}
-            placeholder="Enter chassis number"
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none uppercase ${
-              errors.chassisNo ? "border-red-500" : "border-gray-300"
-            }`}
-            style={{ textTransform: 'uppercase' }}
-          />
-          {errors.chassisNo && <p className="text-red-500 text-xs mt-1">{errors.chassisNo}</p>}
-        </div>
-
-        {/* Types of Vehicle dropdown */}
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Types of Vehicle
-          </label>
-          <select
-            name="vehicleTypeCategory"
-            value={form.vehicleTypeCategory || "4 wheeler"}
-            onChange={handleChange}
-            className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-              errors.vehicleTypeCategory ? "border-red-500" : "border-gray-300"
-            }`}
-          >
-            <option value="4 wheeler">Four Wheeler</option>
-            <option value="two wheeler">Two Wheeler</option>
-            <option value="commercial">Commercial Vehicle</option>
-          </select>
-          {errors.vehicleTypeCategory && <p className="text-red-500 text-xs mt-1">{errors.vehicleTypeCategory}</p>}
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block mb-1 text-sm font-medium text-gray-600">
-            Manufacture Date *
-          </label>
-          <div className="flex gap-3">
-            <div className="w-1/2">
-              <select
-                name="makeMonth"
-                value={form.makeMonth || ""}
-                onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.makeMonth ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">Month</option>
-                {[
-                  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-                ].map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-              {errors.makeMonth && <p className="text-red-500 text-xs mt-1">{errors.makeMonth}</p>}
-            </div>
-            <div className="w-1/2">
-              <input
-                type="number"
-                name="makeYear"
-                value={form.makeYear || ""}
-                onChange={handleChange}
-                placeholder="Year"
-                min='1500'
-                max='3000'
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.makeYear ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.makeYear && <p className="text-red-500 text-xs mt-1">{errors.makeYear}</p>}
-            </div>
-          </div>
-        </div>
-
-        <div className="md:col-span-3">
-          <div className="mt-4 p-3 rounded-md bg-gray-50 border border-gray-100 text-sm text-gray-600">
-            <strong>Note:</strong> All vehicle details must be accurate as they
-            will be verified during policy issuance. You can start typing the registration number to auto-fill details from existing records.
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+<VehicleDetails />
 
 // ================== STEP 3: Previous Policy Details ==================
 const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // Insurance companies options
-  const insuranceCompanies = [
-    "Acko General Insurance Limited",
-    "Agriculture Insurance Company of India Limited",
-    "Bajaj General Insurance Limited",
-    "Cholamandalam MS General Insurance Company Limited",
-    "ECGC Limited",
-    "Generali Central Insurance Company Limited",
-    "Go Digit General Insurance Limited",
-    "HDFC ERGO General Insurance Company Limited",
-    "ICICI Lombard General Insurance Company Limited",
-    "IFFCO TOKIO General Insurance Company Limited",
-    "Zurich Kotak General Insurance Company (India) Limited",
-    "Kshema General Insurance Limited",
-    "Liberty General Insurance Limited",
-    "Magma General Insurance Limited",
-    "National Insurance Company Limited",
-    "Navi General Insurance Limited",
-    "Raheja QBE General Insurance Co. Ltd.",
-    "Reliance General Insurance Company Limited",
-    "Royal Sundaram General Insurance Company Limited",
-    "SBI General Insurance Company Limited",
-    "Shriram General Insurance Company Limited",
-    "Tata AIG General Insurance Company Limited",
-    "The New India Assurance Company Limited",
-    "The Oriental Insurance Company Limited",
-    "United India Insurance Company Limited",
-    "Universal Sompo General Insurance Company Limited",
-    "Zuno General Insurance Ltd. ",
-    "Bharti Axa General Insurance Co. Ltd"
-  ];
 
   // NCB options
   const ncbOptions = [0, 20, 25, 35, 45, 50];
@@ -2505,84 +1829,7 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
   ];
 
   // Hypothecation Bank options
-  const hypothecationBanks = [
-    "Not Applicable",
-    "AU Small Finance Bank",
-    "Aditya Birla Finance",
-    "Axis Bank",
-    "Bajaj Finance",
-    "Bandhan Bank",
-    "Bank of Baroda",
-    "Bank of India",
-    "Bank of Maharashtra",
-    "Berar Finance",
-    "Canara Bank",
-    "Capri Global Capital",
-    "Central Bank of India",
-    "Cholamandalam Investment & Finance",
-    "City Union Bank",
-    "Clix Capital",
-    "DCB Bank",
-    "DMI Finance",
-    "Dhanlaxmi Bank",
-    "ESAF Small Finance Bank",
-    "Electronica Finance",
-    "Equitas Small Finance Bank",
-    "Esskay Fincorp",
-    "Federal Bank",
-    "Fullerton India (SMFG India Credit)",
-    "HDB Financial Services",
-    "HDFC Bank",
-    "Hero FinCorp",
-    "Hinduja Leyland Finance",
-    "ICICI Bank",
-    "IDBI Bank",
-    "IDFC FIRST Bank",
-    "IIFL Finance",
-    "InCred Financial Services",
-    "Indian Bank",
-    "Indian Overseas Bank",
-    "IndusInd Bank",
-    "JM Financial Products",
-    "Jammu & Kashmir Bank",
-    "Jana Small Finance Bank",
-    "Karnataka Bank",
-    "Karur Vysya Bank",
-    "Kotak Mahindra Bank",
-    "Kotak Mahindra Prime",
-    "L&T Finance",
-    "MAS Financial Services",
-    "Mahindra & Mahindra Financial Services",
-    "Manappuram Finance",
-    "Muthoot Capital Services",
-    "Muthoot Finance",
-    "Navi Finserv",
-    "Northern Arc Capital",
-    "Piramal Capital & Housing Finance",
-    "Poonawalla Fincorp",
-    "Punjab & Sind Bank",
-    "Punjab National Bank",
-    "RBL Bank",
-    "Shriram Finance",
-    "South Indian Bank",
-    "State Bank of India",
-    "Sundaram Finance",
-    "Suryoday Small Finance Bank",
-    "TVS Credit Services",
-    "Tata Capital Financial Services",
-    "Tata Motors Finance",
-    "Toyota Financial Services India",
-    "U GRO Capital",
-    "UCO Bank",
-    "Ujjivan Small Finance Bank",
-    "Union Bank of India",
-    "Veritas Finance",
-    "Vistaar Financial Services",
-    "Vivriti Capital",
-    "Volkswagen Finance Private Limited",
-    "WheelsEMI Private Limited",
-    "YES Bank",
-];
+
 
   // Policy duration options based on policy type
   const getPolicyDurations = (policyType) => {
@@ -2953,51 +2200,28 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
         </h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Insurance Company */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Insurance Company
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                name="previousInsuranceCompany"
-                value={form.previousInsuranceCompany || ""}
-                onChange={handleInsuranceCompanyChange}
-                onFocus={() => {
-                  if (form.previousInsuranceCompany) {
-                    const filtered = insuranceCompanies.filter(company =>
-                      company.toLowerCase().includes(form.previousInsuranceCompany.toLowerCase())
-                    );
-                    setInsuranceCompanySuggestions(filtered);
-                  } else {
-                    setInsuranceCompanySuggestions(insuranceCompanies);
-                  }
-                  setShowInsuranceCompanySuggestions(true);
-                }}
-                onBlur={() => setTimeout(() => setShowInsuranceCompanySuggestions(false), 200)}
-                placeholder="Type insurance company"
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.previousInsuranceCompany ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              
-              {showInsuranceCompanySuggestions && insuranceCompanySuggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {insuranceCompanySuggestions.map((company, index) => (
-                    <div
-                      key={index}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                      onClick={() => selectInsuranceCompany(company)}
-                    >
-                      {company}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {errors.previousInsuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.previousInsuranceCompany}</p>}
-          </div>
+            {/* Insurance Company */}
+<div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Insurance Company
+  </label>
+  <AutoSuggestTextField
+    fieldName="insuranceCompany"
+    placeholder="Type insurance company"
+    value={form.previousInsuranceCompany || ""}
+    onChange={(value) => {
+      handleChange({
+        target: {
+          name: 'previousInsuranceCompany',
+          value: value
+        }
+      });
+    }}
+    disabled={false}
+    error={errors.previousInsuranceCompany}
+  />
+  {errors.previousInsuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.previousInsuranceCompany}</p>}
+</div> 
 
           {/* Policy Number */}
           <div>
@@ -3182,53 +2406,31 @@ const PreviousPolicyDetails = ({ form, handleChange, handleSave, isSaving, error
           </div>
 
           {/* NEW: Hypothecation Field */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Hypothecation
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                name="previousHypothecation"
-                value={form.previousHypothecation || ""}
-                onChange={handleHypothecationChange}
-                onFocus={() => {
-                  if (form.previousHypothecation) {
-                    const filtered = hypothecationBanks.filter(bank =>
-                      bank.toLowerCase().includes(form.previousHypothecation.toLowerCase())
-                    );
-                    setHypothecationSuggestions(filtered);
-                  } else {
-                    setHypothecationSuggestions(hypothecationBanks);
-                  }
-                  setShowHypothecationSuggestions(true);
-                }}
-                onBlur={() => setTimeout(() => setShowHypothecationSuggestions(false), 200)}
-                placeholder="Type bank name or select Not Applicable"
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.previousHypothecation ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              
-              {showHypothecationSuggestions && hypothecationSuggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {hypothecationSuggestions.map((bank, index) => (
-                    <div
-                      key={index}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                      onClick={() => selectHypothecation(bank)}
-                    >
-                      {bank}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {errors.previousHypothecation && <p className="text-red-500 text-xs mt-1">{errors.previousHypothecation}</p>}
-            <p className="text-xs text-gray-500 mt-1">
-              Select the bank if vehicle is financed, otherwise select "Not Applicable"
-            </p>
-          </div>
+          {/* Hypothecation Field */}
+<div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Hypothecation
+  </label>
+  <AutoSuggestTextField
+    fieldName="hypothecation"
+    placeholder="Type bank name or select Not Applicable"
+    value={form.previousHypothecation || ""}
+    onChange={(value) => {
+      handleChange({
+        target: {
+          name: 'previousHypothecation',
+          value: value
+        }
+      });
+    }}
+    disabled={false}
+    error={errors.previousHypothecation}
+  />
+  {errors.previousHypothecation && <p className="text-red-500 text-xs mt-1">{errors.previousHypothecation}</p>}
+  <p className="text-xs text-gray-500 mt-1">
+    Select the bank if vehicle is financed, otherwise select "Not Applicable"
+  </p>
+</div>
         </div>
 
         {/* NEW: Remarks Section for Previous Policy */}
@@ -3456,36 +2658,7 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
   });
 
   // Updated insurance companies list without logos and background colors
-  const insuranceCompanies = [
-    "Acko General Insurance Limited",
-    "Agriculture Insurance Company of India Limited",
-    "Bajaj General Insurance Limited",
-    "Cholamandalam MS General Insurance Company Limited",
-    "ECGC Limited",
-    "Generali Central Insurance Company Limited",
-    "Go Digit General Insurance Limited",
-    "HDFC ERGO General Insurance Company Limited",
-    "ICICI Lombard General Insurance Company Limited",
-    "IFFCO TOKIO General Insurance Company Limited",
-    "Zurich Kotak General Insurance Company (India) Limited",
-    "Kshema General Insurance Limited",
-    "Liberty General Insurance Limited",
-    "Magma General Insurance Limited",
-    "National Insurance Company Limited",
-    "Navi General Insurance Limited",
-    "Raheja QBE General Insurance Co. Ltd.",
-    "Reliance General Insurance Company Limited",
-    "Royal Sundaram General Insurance Company Limited",
-    "SBI General Insurance Company Limited",
-    "Shriram General Insurance Company Limited",
-    "Tata AIG General Insurance Company Limited",
-    "The New India Assurance Company Limited",
-    "The Oriental Insurance Company Limited",
-    "United India Insurance Company Limited",
-    "Universal Sompo General Insurance Company Limited",
-    "Zuno General Insurance Ltd.",
-    "Bharti Axa General Insurance Co. Ltd"
-  ];
+  
 
   // UPDATED: Update policy duration options when coverage type changes
   useEffect(() => {
@@ -4528,57 +3701,26 @@ const InsuranceQuotes = ({ form, handleChange, handleSave, isSaving, errors, onI
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {/* Insurance Company */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Insurance Company *
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                name="insuranceCompany"
-                value={manualQuote.insuranceCompany}
-                onChange={handleManualQuoteChange}
-                onFocus={() => setIsSuggestionsOpen(true)}
-                onBlur={() => setTimeout(() => setIsSuggestionsOpen(false), 200)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="Insurance Company"
-              />
-              
-              {/* Dropdown suggestions - COMPLETELY REMOVED LOGOS */}
-              {isSuggestionsOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {insuranceCompanies
-                    .filter(company => 
-                      company.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
-                    )
-                    .map((company, index) => (
-                      <div
-                        key={index}
-                        onClick={() => {
-                          setManualQuote(prev => ({
-                            ...prev,
-                            insuranceCompany: company
-                          }));
-                          setIsSuggestionsOpen(false);
-                        }}
-                        className="px-3 py-2 cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors border-b border-gray-100 last:border-b-0"
-                      >
-                        <span>{company}</span>
-                      </div>
-                    ))
-                  }
-                  
-                  {/* No results message */}
-                  {insuranceCompanies.filter(company => 
-                    company.toLowerCase().includes(manualQuote.insuranceCompany.toLowerCase())
-                  ).length === 0 && (
-                    <div className="px-3 py-2 text-gray-500 text-sm">
-                      No insurance companies found
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Insurance Company *
+  </label>
+  <AutoSuggestTextField
+    fieldName="insuranceCompany"
+    placeholder="Insurance Company"
+    value={manualQuote.insuranceCompany}
+    onChange={(value) => {
+      setManualQuote(prev => ({
+        ...prev,
+        insuranceCompany: value
+      }));
+    }}
+    disabled={false}
+    // Optional: You can add custom styling if needed
+    style={{
+      className: "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+    }}
+  />
+</div>
 
           {/* Coverage Type */}
           <div>
@@ -6023,57 +5165,35 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
          
          {/* Insurance Company - Auto-suggestion */}
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Insurance Company *
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                name="insuranceCompany"
-                value={form.insuranceCompany || ""}
-                onChange={handleInsuranceCompanyChange}
-                onFocus={() => {
-                  if (form.insuranceCompany) {
-                    const filtered = insuranceCompanies.filter(company =>
-                      company.toLowerCase().includes(form.insuranceCompany.toLowerCase())
-                    );
-                    setInsuranceCompanySuggestions(filtered);
-                  } else {
-                    setInsuranceCompanySuggestions(insuranceCompanies);
-                  }
-                  setShowInsuranceCompanySuggestions(true);
-                }}
-                onBlur={() => setTimeout(() => setShowInsuranceCompanySuggestions(false), 200)}
-                placeholder="Type insurance company"
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.insuranceCompany ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              
-              {showInsuranceCompanySuggestions && insuranceCompanySuggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {insuranceCompanySuggestions.map((company, index) => (
-                    <div
-                      key={index}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                      onMouseDown={(e) => e.preventDefault()} // Prevent input blur
-                      onClick={() => selectInsuranceCompany(company)}
-                    >
-                      {company}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {acceptedQuote && form.insuranceCompany === acceptedQuote.insuranceCompany && (
-              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <FaCheckCircle className="w-3 h-3" />
-                From accepted quote
-              </p>
-            )}
-            {errors.insuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.insuranceCompany}</p>}
-          </div>
-
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Insurance Company *
+  </label>
+  <AutoSuggestTextField
+    fieldName="insuranceCompany"
+    placeholder="Type insurance company"
+    value={form.insuranceCompany || ""}
+    onChange={(value) => {
+      handleChange({
+        target: {
+          name: 'insuranceCompany',
+          value: value
+        }
+      });
+    }}
+    disabled={false}
+    error={errors.insuranceCompany}
+  />
+  {acceptedQuote && form.insuranceCompany === acceptedQuote.insuranceCompany && (
+    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+      </svg>
+      From accepted quote
+    </p>
+  )}
+  {errors.insuranceCompany && <p className="text-red-500 text-xs mt-1">{errors.insuranceCompany}</p>}
+</div>
+          
           {/* Policy Type */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-600">
@@ -6341,52 +5461,29 @@ const NewPolicyDetails = ({ form, handleChange, handleSave, isSaving, errors, ac
 
           {/* NEW: Hypothecation Field */}
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-600">
-              Hypothecation
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                name="hypothecation"
-                value={form.hypothecation || ""}
-                onChange={handleHypothecationChange}
-                onFocus={() => {
-                  if (form.hypothecation) {
-                    const filtered = hypothecationBanks.filter(bank =>
-                      bank.toLowerCase().includes(form.hypothecation.toLowerCase())
-                    );
-                    setHypothecationSuggestions(filtered);
-                  } else {
-                    setHypothecationSuggestions(hypothecationBanks);
-                  }
-                  setShowHypothecationSuggestions(true);
-                }}
-                onBlur={() => setTimeout(() => setShowHypothecationSuggestions(false), 200)}
-                placeholder="Type bank name or select Not Applicable"
-                className={`w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none ${
-                  errors.hypothecation ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              
-              {showHypothecationSuggestions && hypothecationSuggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                  {hypothecationSuggestions.map((bank, index) => (
-                    <div
-                      key={index}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                      onClick={() => selectHypothecation(bank)}
-                    >
-                      {bank}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {errors.hypothecation && <p className="text-red-500 text-xs mt-1">{errors.hypothecation}</p>}
-            <p className="text-xs text-gray-500 mt-1">
-              Select the bank if vehicle is financed, otherwise select "Not Applicable"
-            </p>
-          </div>
+  <label className="block mb-1 text-sm font-medium text-gray-600">
+    Hypothecation
+  </label>
+  <AutoSuggestTextField
+    fieldName="hypothecation"
+    placeholder="Type bank name or select Not Applicable"
+    value={form.hypothecation || ""}
+    onChange={(value) => {
+      handleChange({
+        target: {
+          name: 'hypothecation',
+          value: value
+        }
+      });
+    }}
+    disabled={false}
+    error={errors.hypothecation}
+  />
+  {errors.hypothecation && <p className="text-red-500 text-xs mt-1">{errors.hypothecation}</p>}
+  <p className="text-xs text-gray-500 mt-1">
+    Select the bank if vehicle is financed, otherwise select "Not Applicable"
+  </p>
+</div>
         </div>
 
         {/* NEW: Remarks Section for New Policy */}
@@ -8765,7 +7862,7 @@ const Payment = ({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Bank ka Name</label>
                 <input
                   type="text"
                   name="bankName"
@@ -9328,7 +8425,31 @@ const Payment = ({
               <label className="block text-sm font-medium text-gray-600 mb-1">
                 Bank Name
               </label>
-              <div className="relative">
+              <AutoSuggestTextField
+              fieldName="bankName"
+  label=""
+  placeholder={"Select Bank Name"}
+  value={form.bankName || ""}
+  onChange={(value) => {
+    handleChange({
+      target: {
+        name: 'bankName',
+        value: value
+      }
+    });
+  }}
+  disabled={false}
+  onSelect={(suggestion) => {
+    console.log('Selected bank:', suggestion);
+    handleChange({
+      target: {
+        name: 'bankName',
+        value: suggestion.value
+      }
+    });
+  }}
+              />
+              {/* <div className="relative">
                 <input
                   type="text"
                   name="customerBankName"
@@ -9349,7 +8470,7 @@ const Payment = ({
                   autoComplete="off"
                 />
                 <BankSuggestions bankType="customer" />
-              </div>
+              </div> */}
               <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
             </div>
           </div>
@@ -9469,7 +8590,36 @@ const Payment = ({
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Bank Name
                 </label>
-                <div className="relative">
+                {/* <div className="bank-suggestions-container relative">
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Bank Name
+              </label> */}
+              <AutoSuggestTextField
+              fieldName="autoCreditBankName"
+              keyName="bankName"
+  label=""
+  placeholder={"Select Bank Name"}
+  value={form.autoCreditBankName || ""}
+  onChange={(value) => {
+    handleChange({
+      target: {
+        name: 'autoCreditBankName',
+        value: value
+      }
+    });
+  }}
+  disabled={false}
+  onSelect={(suggestion) => {
+    console.log('Selected bank:', suggestion);
+    handleChange({
+      target: {
+        name: 'autoCreditBankName',
+        value: suggestion.value
+      }
+    });
+  }}
+  />
+                {/* <div className="relative">
                   <input
                     type="text"
                     name="autoCreditBankName"
@@ -9490,7 +8640,8 @@ const Payment = ({
                     autoComplete="off"
                   />
                   <BankSuggestions bankType="autoCredit" />
-                </div>
+                </div> */}
+
                 <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
               </div>
             </div>
@@ -9572,7 +8723,33 @@ const Payment = ({
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Bank Name
                 </label>
-                <div className="relative">
+                  <AutoSuggestTextField
+              fieldName="inHouseBankName"
+              keyName="bankName"
+  label=""
+  placeholder={"Select Bank Name"}
+  value={form.inHouseBankName || ""}
+  onChange={(value) => {
+    handleChange({
+      target: {
+        name: 'inHouseBankName',
+        value: value
+      }
+    });
+  }}
+  disabled={false}
+  onSelect={(suggestion) => {
+    console.log('Selected bank:', suggestion);
+    handleChange({
+      target: {
+        name: 'inHouseBankName',
+        value: suggestion.value
+      }
+    });
+  }}
+  />
+
+                {/* <div className="relative">
                   <input
                     type="text"
                     name="inHouseBankName"
@@ -9593,7 +8770,7 @@ const Payment = ({
                     autoComplete="off"
                   />
                   <BankSuggestions bankType="inHouse" />
-                </div>
+                </div> */}
                 <p className="text-xs text-gray-500 mt-1">Required for bank transfers</p>
               </div>
             </div>
@@ -10512,7 +9689,7 @@ const NewPolicyPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const hasClearedStorage = useRef(false);
-  const hasInitializedRenewal = useRef(false); // NEW: Track renewal initialization
+  const hasInitializedRenewal = useRef(false);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     buyer_type: "individual",
@@ -10521,21 +9698,29 @@ const NewPolicyPage = () => {
     status: "draft",
     ts: Date.now(),
     created_by: "ADMIN123",
+    
+    // ENHANCED TIMELINE STRUCTURE
+    timeline: {
+      caseStarted: null,
+      quotesGenerated: null,
+      caseCompleted: null,
+      progressSaved: null
+    },
+    
     insuranceQuotes: [],
     previousClaimTaken: "no",
-    // FIXED: Don't hardcode default, let API data determine it
-    creditType: "", // Changed from "auto" to empty string
+    creditType: "",
     hidePayout: false,
-    // NEW: Added brokerName field
     brokerName: "",
-    // NEW: Added sourceOrigin field
     sourceOrigin: "",
+    
     // Corporate fields
     companyName: "",
     employeeName: "",
     contactPersonName: "",
     companyPanNumber: "",
     gstNumber: "",
+    
     // Individual fields
     customerName: "",
     mobile: "",
@@ -10548,26 +9733,28 @@ const NewPolicyPage = () => {
     pincode: "",
     city: "",
     alternatePhone: "",
+    
     // Nominee fields
     nomineeName: "",
     relation: "",
     nomineeAge: "",
+    
     // Reference fields
     referenceName: "",
     referencePhone: "",
+    
     // Vehicle fields
     regNo: "",
     make: "",
     model: "",
     variant: "",
-    // NEW: Added cubicCapacity field
     cubicCapacity: "",
     engineNo: "",
     chassisNo: "",
-    // NEW: Added vehicleTypeCategory field
     vehicleTypeCategory: "4 wheeler",
     makeMonth: "",
     makeYear: "",
+    
     // Previous Policy fields
     previousInsuranceCompany: "",
     previousPolicyNumber: "",
@@ -10579,20 +9766,20 @@ const NewPolicyPage = () => {
     previousTpExpiryDate: "",
     previousDueDate: "",
     previousNcbDiscount: "",
-    // NEW: Previous Policy Hypothecation
     previousHypothecation: "",
-    // NEW: Previous Policy Remarks
     previousPolicyRemarks: "",
-    // Insurance Quote fields - UPDATED: Added new IDV fields
+    
+    // Insurance Quote fields
     insurer: "",
     coverageType: "",
     premium: "",
     idv: "",
     ncb: "",
     duration: "",
-    vehicleIdv: "", // NEW: Vehicle IDV field
-    cngIdv: "",     // NEW: CNG IDV field
-    accessoriesIdv: "", // NEW: Accessories IDV field
+    vehicleIdv: "",
+    cngIdv: "",
+    accessoriesIdv: "",
+    
     // New Policy fields
     policyIssued: "",
     insuranceCompany: "",
@@ -10608,13 +9795,13 @@ const NewPolicyPage = () => {
     policyType: "",
     odExpiryDate: "",
     tpExpiryDate: "",
-    // NEW: New Policy Hypothecation
     hypothecation: "",
-    // NEW: New Policy Remarks
     newPolicyRemarks: "",
+    
     // Documents
     documents: {},
     documentTags: {},
+    
     // Payment fields
     paymentMadeBy: "Customer",
     paymentMode: "",
@@ -10626,6 +9813,7 @@ const NewPolicyPage = () => {
     subvention_payment: "No Subvention",
     paymentStatus: "Payment Pending",
     totalPaidAmount: 0,
+    
     // Payout fields
     netPremium: "",
     odAddonPercentage: 10,
@@ -10634,12 +9822,15 @@ const NewPolicyPage = () => {
     odAmount: "",
     ncbAmount: "",
     subVention: "",
+    
     // Additional fields
     policyPrefilled: false,
+    
     // Renewal fields
     renewal_id: "",
     isRenewal: false
   });
+  
   const [policyId, setPolicyId] = useState(id || null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
@@ -10649,23 +9840,78 @@ const NewPolicyPage = () => {
   const [loadingPolicy, setLoadingPolicy] = useState(!!id);
   const [acceptedQuote, setAcceptedQuote] = useState(null);
   const [paymentLedger, setPaymentLedger] = useState([]);
-
-  // FIXED: Add debounce utility and update prevention
   const [isUpdating, setIsUpdating] = useState(false);
   const lastUpdateRef = useRef(0);
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  
-  // Get individual parameters
   const isRenewal = queryParams.get('renewal') === 'true';
   const renewalPolicyId = queryParams.get('renewal_id');
 
-  // ============ COMPREHENSIVE POLICY DURATION UTILITIES ============
-  
-  // Unified duration mappings for ALL components
+  // ============ ENHANCED TIMELINE UTILITIES ============
+  const formatIndianTime = () => {
+    const now = new Date();
+    const options = { 
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    };
+    const formatter = new Intl.DateTimeFormat('en-IN', options);
+    const parts = formatter.formatToParts(now);
+    
+    const dateParts = {};
+    parts.forEach(part => {
+      dateParts[part.type] = part.value;
+    });
+    
+    return {
+      date: `${dateParts.day}/${dateParts.month}/${dateParts.year}`,
+      time: `${dateParts.hour}:${dateParts.minute}:${dateParts.second}`,
+      timestamp: now.getTime(),
+      isoString: now.toISOString(),
+      display: `${dateParts.day}/${dateParts.month}/${dateParts.year}, ${dateParts.hour}:${dateParts.minute}:${dateParts.second}`
+    };
+  };
+
+  // Update timeline with specific event
+  const updateTimeline = (event, data = null) => {
+    const indianTime = formatIndianTime();
+    
+    setForm(prev => ({
+      ...prev,
+      timeline: {
+        ...prev.timeline,
+        [event]: {
+          ...indianTime,
+          data: data
+        }
+      }
+    }));
+    
+    console.log(`⏱️ Timeline updated: ${event} at ${indianTime.display}`, data);
+    return indianTime;
+  };
+
+  // Initialize case started timestamp
+  useEffect(() => {
+    if (!loadingPolicy && !form.timeline.caseStarted) {
+      console.log("🕐 Recording case start time");
+      updateTimeline('caseStarted');
+    }
+  }, [loadingPolicy, form.timeline.caseStarted]);
+
+  // Debug timeline
+  useEffect(() => {
+    console.log("🕐 Current Timeline Data:", form.timeline);
+  }, [form.timeline]);
+
+  // ============ POLICY DURATION UTILITIES ============
   const policyDurationMappings = {
-    // Comprehensive policies - simple numbers to comprehensive labels
     "1": { 
       value: "1", 
       label: "1yr OD + 3yr TP",
@@ -10687,8 +9933,6 @@ const NewPolicyPage = () => {
       tpYears: 3,
       type: "comprehensive"
     },
-    
-    // Specific comprehensive formats
     "1yr_od_1yr_tp": { 
       value: "1yr_od_1yr_tp", 
       label: "1yr OD + 1yr TP",
@@ -10696,8 +9940,6 @@ const NewPolicyPage = () => {
       tpYears: 1,
       type: "comprehensive"
     },
-    
-    // Standalone OD policies
     "1_od": { 
       value: "1_od", 
       label: "1 Year",
@@ -10719,8 +9961,6 @@ const NewPolicyPage = () => {
       tpYears: 0,
       type: "standalone"
     },
-    
-    // Third Party policies
     "1_tp": { 
       value: "1_tp", 
       label: "1 Year",
@@ -10742,8 +9982,6 @@ const NewPolicyPage = () => {
       tpYears: 3,
       type: "thirdParty"
     },
-    
-    // Simple year formats (backward compatibility)
     "1 Year": { 
       value: "1 Year", 
       label: "1 Year",
@@ -10767,29 +10005,23 @@ const NewPolicyPage = () => {
     }
   };
 
-  // Format policy duration for display (used everywhere)
   const formatPolicyDuration = (duration) => {
     if (!duration) return '';
     
-    // If it's already a properly formatted label, return as is
     if (typeof duration === 'string' && (duration.includes('OD') || duration.includes('Year') || duration.includes('Years'))) {
       return duration;
     }
 
-    // Convert to string for consistent comparison
     const durationStr = String(duration).trim();
-    
-    // Look up in mappings
     const mapping = policyDurationMappings[durationStr];
+    
     if (mapping) {
       return mapping.label;
     }
     
-    // Fallback: return as is
     return durationStr;
   };
 
-  // Get duration options based on policy type (used in PreviousPolicy and NewPolicy)
   const getPolicyDurationOptions = (policyType) => {
     const options = [];
     
@@ -10802,7 +10034,6 @@ const NewPolicyPage = () => {
           { value: "3", label: "3yr OD + 3yr TP" }
         );
         break;
-        
       case "standalone":
         options.push(
           { value: "1_od", label: "1 Year" },
@@ -10810,7 +10041,6 @@ const NewPolicyPage = () => {
           { value: "3_od", label: "3 Years" }
         );
         break;
-        
       case "thirdParty":
         options.push(
           { value: "1_tp", label: "1 Year" },
@@ -10818,9 +10048,7 @@ const NewPolicyPage = () => {
           { value: "3_tp", label: "3 Years" }
         );
         break;
-        
       default:
-        // Default comprehensive options
         options.push(
           { value: "1yr_od_1yr_tp", label: "1yr OD + 1yr TP" },
           { value: "1", label: "1yr OD + 3yr TP" },
@@ -10832,13 +10060,10 @@ const NewPolicyPage = () => {
     return options;
   };
 
-  // Map quote duration to form duration (used in NewPolicyDetails)
   const mapQuoteDurationToForm = (quoteDuration, policyType) => {
     if (!quoteDuration) return '';
     
     const durationStr = String(quoteDuration).trim();
-    
-    // First, try exact match
     const exactMatch = Object.values(policyDurationMappings).find(
       mapping => mapping.value === durationStr || mapping.label === durationStr
     );
@@ -10847,12 +10072,10 @@ const NewPolicyPage = () => {
       return exactMatch.value;
     }
     
-    // For comprehensive policies, handle simple numbers
     if (policyType === "comprehensive" && ["1", "2", "3"].includes(durationStr)) {
-      return durationStr; // Use simple numbers for comprehensive
+      return durationStr;
     }
     
-    // Try partial matching for labels
     const partialMatch = Object.values(policyDurationMappings).find(mapping => 
       durationStr.includes(mapping.value) || mapping.label.includes(durationStr)
     );
@@ -10861,12 +10084,10 @@ const NewPolicyPage = () => {
       return partialMatch.value;
     }
     
-    // Fallback: return the first option for the policy type
     const options = getPolicyDurationOptions(policyType);
     return options.length > 0 ? options[0].value : '';
   };
 
-  // Calculate expiry dates based on duration (used in PreviousPolicy and NewPolicy)
   const calculateExpiryDates = (startDate, durationValue, policyType) => {
     if (!startDate || !durationValue) return { odExpiry: '', tpExpiry: '' };
     
@@ -10879,7 +10100,7 @@ const NewPolicyPage = () => {
       if (years === 0) return '';
       const date = new Date(start);
       date.setFullYear(date.getFullYear() + years);
-      date.setDate(date.getDate() - 1); // Subtract 1 day
+      date.setDate(date.getDate() - 1);
       return date.toISOString().split('T')[0];
     };
     
@@ -10889,12 +10110,10 @@ const NewPolicyPage = () => {
     };
   };
 
-  // UPDATED: Check if payout should be hidden based on credit type
   const shouldHidePayout = () => {
     return form.creditType === "showroom" || form.creditType === "customer";
   };
 
-  // Debounce utility function
   const debounce = (func, wait) => {
     let timeout;
     return function executedFunction(...args) {
@@ -10918,16 +10137,13 @@ const NewPolicyPage = () => {
     "Payout"
   ];
 
-  // Function to get actual steps based on vehicle type AND credit type
   const getSteps = () => {
     let filteredSteps = [...steps];
     
-    // Remove Previous Policy for new vehicles
     if (form.vehicleType === "new") {
       filteredSteps = filteredSteps.filter(step => step !== "Previous Policy");
     }
     
-    // Remove Payout for showroom/customer credit types
     if (shouldHidePayout()) {
       filteredSteps = filteredSteps.filter(step => step !== "Payout");
     }
@@ -10935,17 +10151,14 @@ const NewPolicyPage = () => {
     return filteredSteps;
   };
 
-  // Function to get actual step number for navigation
   const getActualStep = (displayStep) => {
     let actualStep = displayStep;
     
-    // Adjust for skipped steps
     if (form.vehicleType === "new" && displayStep >= 3) {
-      actualStep += 1; // Skip Previous Policy
+      actualStep += 1;
     }
     
     if (shouldHidePayout() && displayStep >= steps.indexOf("Payout") + 1) {
-      // If payout is hidden and we're beyond payout step, adjust
       const payoutIndex = steps.indexOf("Payout");
       if (displayStep > payoutIndex) {
         actualStep -= 1;
@@ -10955,40 +10168,32 @@ const NewPolicyPage = () => {
     return actualStep;
   };
 
-  // Function to get display step number
   const getDisplayStep = (actualStep) => {
     let displayStep = actualStep;
     
-    // Adjust for skipped steps
     if (form.vehicleType === "new" && actualStep >= 3) {
-      displayStep -= 1; // Skip Previous Policy
+      displayStep -= 1;
     }
     
     if (shouldHidePayout() && actualStep > steps.indexOf("Payout")) {
-      displayStep -= 1; // Skip Payout
+      displayStep -= 1;
     }
     
     return displayStep;
   };
 
-  // FIXED: Function to handle step click - ALLOW ALL STEPS IN RENEWAL
   const handleStepClick = (clickedStep) => {
     if (isSaving || isCompleted) return;
     
     const actualStep = getActualStep(clickedStep);
     
-    // FIXED: Always allow navigation to any step, even in renewal cases
-    // Validate if we can navigate to this step
     if (clickedStep < getDisplayStep(step)) {
-      // Going back - always allowed
       setStep(actualStep);
       setErrors({});
       setSaveMessage("");
     } else if (clickedStep === getDisplayStep(step)) {
-      // Current step - do nothing
       return;
     } else {
-      // Going forward - validate current step first
       if (validateCurrentStep()) {
         setStep(actualStep);
         setErrors({});
@@ -10999,113 +10204,58 @@ const NewPolicyPage = () => {
     }
   };
 
-  // Enhanced function to calculate total premium
   const getTotalPremium = () => {
-    console.log("🔍 Calculating total premium...");
-    
-    // First check if we have an accepted quote with premium
     if (acceptedQuote && acceptedQuote.totalPremium) {
-      console.log("✅ Using totalPremium from accepted quote:", acceptedQuote.totalPremium);
       return parseFloat(acceptedQuote.totalPremium);
     }
     
-    // Then check if we have premium in the insurance quote section
     if (form.premium) {
-      console.log("✅ Using premium from form.premium:", form.premium);
       return parseFloat(form.premium);
     }
     
-    // Then check if we have totalPremium in policy info
     if (form.totalPremium) {
-      console.log("✅ Using premium from form.totalPremium:", form.totalPremium);
       return parseFloat(form.totalPremium);
     }
     
-    // Check insurance quotes array
     if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
       const acceptedQuoteFromArray = form.insuranceQuotes.find(quote => quote.accepted === true);
       if (acceptedQuoteFromArray && acceptedQuoteFromArray.totalPremium) {
-        console.log("✅ Using premium from accepted quote in insuranceQuotes array:", acceptedQuoteFromArray.totalPremium);
         return parseFloat(acceptedQuoteFromArray.totalPremium);
       }
     }
     
-    console.log("❌ No premium found, defaulting to 0");
     return 0;
   };
 
   const totalPremium = getTotalPremium();
 
-  // Debug effect to track premium calculation
+  // Track timeline changes for quotesGenerated
   useEffect(() => {
-    console.log("💰 Premium Calculation Debug:");
-    console.log("   - acceptedQuote:", acceptedQuote);
-    console.log("   - form.premium:", form.premium);
-    console.log("   - form.totalPremium:", form.totalPremium);
-    console.log("   - form.insuranceQuotes:", form.insuranceQuotes);
-    console.log("   - Calculated totalPremium:", totalPremium);
-    console.log("   - Vehicle Type:", form.vehicleType);
-    console.log("   - Credit Type:", form.creditType);
-    console.log("   - Hide Payout:", shouldHidePayout());
-  }, [acceptedQuote, form.premium, form.totalPremium, form.insuranceQuotes, totalPremium, form.vehicleType, form.creditType]);
+    if (form.insuranceQuotes && form.insuranceQuotes.length > 0 && !form.timeline.quotesGenerated) {
+      updateTimeline('quotesGenerated', {
+        count: form.insuranceQuotes.length,
+        insurers: form.insuranceQuotes.map(q => q.insuranceCompany || q.insurer)
+      });
+    }
+  }, [form.insuranceQuotes]);
 
-  // Debug effect for payment ledger
-  useEffect(() => {
-    console.log("💰 Payment Ledger Updated:", {
-      ledger: paymentLedger,
-      length: paymentLedger.length,
-      total: paymentLedger.reduce((sum, p) => sum + p.amount, 0)
-    });
-  }, [paymentLedger]);
-
-  // DEBUG: Track credit type changes
-  useEffect(() => {
-    console.log("💳 Credit Type Debug:", {
-      currentCreditType: form.creditType,
-      brokerName: form.brokerName,
-      sourceOrigin: form.sourceOrigin,
-      hidePayout: form.hidePayout,
-      step: step,
-      policyId: policyId
-    });
-  }, [form.creditType, form.brokerName, form.sourceOrigin, form.hidePayout, step, policyId]);
-
-  // DEBUG: Track credit type loading
-  useEffect(() => {
-    console.log("🔍 Credit Type Loading Debug:", {
-      policyId: id,
-      isEditMode: isEditMode,
-      currentCreditType: form.creditType,
-      brokerName: form.brokerName,
-      sourceOrigin: form.sourceOrigin,
-      loadingPolicy: loadingPolicy,
-      step: step
-    });
-  }, [id, isEditMode, form.creditType, form.brokerName, form.sourceOrigin, loadingPolicy, step]);
-
-  // FIXED: Optimized quote acceptance handler with renewal reset logic
   const handleQuoteAccepted = useCallback((quote) => {
     console.log("✅ Quote accepted in parent:", quote);
     
-    // If this is a renewal case and we're accepting a new quote, clear all subsequent steps
     if (form.isRenewal) {
       console.log("🔄 Renewal case - clearing subsequent steps data");
       
-      // Reset all fields from Insurance Quotes onward
       setForm(prev => ({
         ...prev,
-        // Reset insurance quote legacy fields
         insurer: "",
         coverageType: "",
         premium: "",
         idv: "",
         ncb: "",
         duration: "",
-        // Reset new IDV fields
         vehicleIdv: "",
         cngIdv: "",
         accessoriesIdv: "",
-        // Reset new policy fields
         policyIssued: "",
         insuranceCompany: "",
         policyNumber: "",
@@ -11120,11 +10270,8 @@ const NewPolicyPage = () => {
         policyType: "",
         odExpiryDate: "",
         tpExpiryDate: "",
-        // Reset new policy hypothecation
         hypothecation: "",
-        // Reset new policy remarks
         newPolicyRemarks: "",
-        // Reset payment fields
         paymentMadeBy: "Customer",
         paymentMode: "",
         paymentAmount: "",
@@ -11135,7 +10282,6 @@ const NewPolicyPage = () => {
         subvention_payment: "No Subvention",
         paymentStatus: "Payment Pending",
         totalPaidAmount: 0,
-        // Reset payout fields
         netPremium: "",
         odAddonAmount: "",
         netAmount: "",
@@ -11144,25 +10290,16 @@ const NewPolicyPage = () => {
         subVention: ""
       }));
       
-      // Clear payment ledger
       setPaymentLedger([]);
-      
       setSaveMessage("🔄 Renewal case: New quote accepted. Subsequent steps have been reset for new policy data.");
     }
     
     setAcceptedQuote(quote);
   }, [form.isRenewal]);
 
-  // ENHANCED: Function to update payment ledger from Payment component
   const handlePaymentLedgerUpdate = (ledger) => {
-    console.log("💰 Payment ledger updated in main component:", {
-      ledger: ledger,
-      length: ledger.length,
-      total: ledger.reduce((sum, payment) => sum + payment.amount, 0)
-    });
     setPaymentLedger(ledger);
     
-    // Update form with payment status and total paid amount
     const totalPaid = ledger.reduce((sum, payment) => sum + payment.amount, 0);
     const paymentStatus = totalPaid >= totalPremium ? 'Fully Paid' : 'Payment Pending';
     
@@ -11173,7 +10310,7 @@ const NewPolicyPage = () => {
     }));
   };
 
-  // ============ FIXED CLEAR LOCALSTORAGE EFFECT ============
+  // Clear localStorage for new cases
   useEffect(() => {
     if (!isEditMode && !id && !hasClearedStorage.current) {
       console.log("🧹 Clearing localStorage for new case");
@@ -11201,12 +10338,7 @@ const NewPolicyPage = () => {
     }
   }, [isEditMode, id]);
 
-  // Debug when component mounts
-  useEffect(() => {
-    console.log("Component mounted - Edit Mode:", isEditMode, "Policy ID:", id);
-  }, [isEditMode, id]);
-
-  // FIXED: Initialize renewal state on component mount with proper handling
+  // Initialize renewal state
   useEffect(() => {
     if (isRenewal) {
       console.log("🔄 Initializing renewal case:", {
@@ -11216,28 +10348,23 @@ const NewPolicyPage = () => {
         location: window.location.href
       });
       
-      // Set renewal flags and convert vehicle type to used for renewals
       setForm(prev => ({
         ...prev,
         isRenewal: true,
         renewal_id: renewalPolicyId || "",
-        vehicleType: "used" // Renewals are always for used vehicles
+        vehicleType: "used"
       }));
 
-      // If we have a renewal policy ID and NO current ID, fetch its data for NEW renewal
       if (renewalPolicyId && !id) {
         console.log("📋 Fetching renewal source policy data for NEW renewal:", renewalPolicyId);
         fetchRenewalPolicyData(renewalPolicyId);
-      }
-      // If we have both renewalPolicyId and id, we're editing an existing renewal
-      else if (renewalPolicyId && id) {
+      } else if (renewalPolicyId && id) {
         console.log("📝 Editing existing renewal policy:", id);
-        // The main useEffect below will handle this case
       }
     }
   }, [isRenewal, renewalPolicyId, id]);
 
-  // FIXED: Handle both regular edit and renewal cases
+  // Handle both regular edit and renewal cases
   useEffect(() => {
     if (id) {
       if (isRenewal) {
@@ -11250,28 +10377,13 @@ const NewPolicyPage = () => {
     }
   }, [id, isRenewal]);
 
-  // DEBUG: Track renewal state changes
+  // Initial step setting for renewal cases
   useEffect(() => {
-    console.log("🔍 Renewal State Debug:", {
-      isRenewal,
-      renewalPolicyId,
-      id,
-      step,
-      formIsRenewal: form.isRenewal,
-      formRenewalId: form.renewal_id,
-      loadingPolicy
-    });
-  }, [isRenewal, renewalPolicyId, id, step, form.isRenewal, form.renewal_id, loadingPolicy]);
-
-  // FIXED: Effect to handle initial step setting for renewal cases - ALLOW ACCESS TO ALL STEPS
-  useEffect(() => {
-    // Only run initial navigation once when component mounts and it's a renewal case
     if (form.isRenewal && !loadingPolicy && step === 1 && !hasInitializedRenewal.current) {
       console.log("🔄 Initial renewal setup - navigating to Previous Policy step");
       hasInitializedRenewal.current = true;
       setStep(3);
       
-      // Clear any accepted quote for renewal cases
       if (acceptedQuote) {
         console.log("🔄 Clearing accepted quote for renewal case");
         setAcceptedQuote(null);
@@ -11279,15 +10391,12 @@ const NewPolicyPage = () => {
     }
   }, [form.isRenewal, loadingPolicy, step, acceptedQuote]);
 
-  // ENHANCED: Function to fetch renewal policy data for both new renewals and editing existing renewals
   const fetchRenewalPolicyData = async (policyId) => {
     setLoadingPolicy(true);
     try {
       console.log("🔍 Fetching renewal policy data for ID:", policyId);
       const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
       const policyData = response.data;
-      
-      console.log("📦 Full Renewal API Response:", policyData);
       
       if (!policyData || !policyData.data) {
         console.error("❌ No renewal policy data received from API");
@@ -11296,42 +10405,25 @@ const NewPolicyPage = () => {
       }
 
       const renewalData = policyData.data;
-      console.log("📊 Renewal Policy Data:", renewalData);
-      
-      // CRITICAL FIX: Properly load credit type from renewal data
       const creditTypeFromRenewal = renewalData.creditType || 
                                    renewalData.customer_details?.creditType || 
                                    "auto";
       
-      console.log("💳 Renewal Credit Type Loading Debug:", {
-        rootCreditType: renewalData.creditType,
-        customerDetailsCreditType: renewalData.customer_details?.creditType,
-        finalCreditType: creditTypeFromRenewal
-      });
-      
-      // Check if this is a new renewal (creating from existing policy) 
-      // or editing an existing renewal policy
-      const isNewRenewal = !renewalData.isRenewal; // If the source policy is not already a renewal
+      const isNewRenewal = !renewalData.isRenewal;
       
       if (isNewRenewal) {
         console.log("🔄 Creating NEW renewal from existing policy");
-        // Map renewal policy data to current form for NEW renewal case
-        // Only populate Case Details, Vehicle Details, and Previous Policy
         const renewalFormData = {
-          // Basic info
           buyer_type: renewalData.buyer_type || "individual",
-          vehicleType: "used", // Renewals are always used vehicles
+          vehicleType: "used",
           insurance_category: renewalData.insurance_category || "motor",
           status: "draft",
-          // FIXED: Properly preserve credit type from source policy
           creditType: creditTypeFromRenewal,
           hidePayout: creditTypeFromRenewal === "showroom" || creditTypeFromRenewal === "customer",
-          // NEW: Preserve broker name if exists
           brokerName: renewalData.brokerName || renewalData.customer_details?.brokerName || "",
-          // NEW: Preserve source origin if exists
           sourceOrigin: renewalData.sourceOrigin || renewalData.customer_details?.sourceOrigin || "",
+          timeline: renewalData.timeline || { caseStarted: null, quotesGenerated: null, caseCompleted: null, progressSaved: null },
           
-          // Customer details
           customerName: renewalData.customer_details?.name || "",
           mobile: renewalData.customer_details?.mobile || "",
           email: renewalData.customer_details?.email || "",
@@ -11345,22 +10437,18 @@ const NewPolicyPage = () => {
           city: renewalData.customer_details?.city || "",
           alternatePhone: renewalData.customer_details?.alternatePhone || "",
           
-          // Corporate fields
           companyName: renewalData.customer_details?.companyName || "",
           contactPersonName: renewalData.customer_details?.contactPersonName || "",
           companyPanNumber: renewalData.customer_details?.companyPanNumber || "",
           gstNumber: renewalData.customer_details?.gstNumber || "",
           
-          // Nominee
           nomineeName: renewalData.nominee?.name || "",
           relation: renewalData.nominee?.relation || "",
           nomineeAge: renewalData.nominee?.age || "",
           
-          // Reference
           referenceName: renewalData.reference?.name || renewalData.refrence?.name || "",
           referencePhone: renewalData.reference?.phone || renewalData.refrence?.phone || "",
           
-          // Vehicle details
           regNo: renewalData.vehicle_details?.regNo || "",
           make: renewalData.vehicle_details?.make || "",
           model: renewalData.vehicle_details?.model || "",
@@ -11372,8 +10460,6 @@ const NewPolicyPage = () => {
           makeMonth: renewalData.vehicle_details?.makeMonth || "",
           makeYear: renewalData.vehicle_details?.makeYear || "",
           
-          // Map new policy data from renewal to previous policy for the renewal case
-          // FIXED: Auto-populate previous policy hypothecation from new policy hypothecation
           previousInsuranceCompany: renewalData.policy_info?.insuranceCompany || "",
           previousPolicyNumber: renewalData.policy_info?.policyNumber || "",
           previousPolicyType: renewalData.policy_info?.policyType || "",
@@ -11385,16 +10471,12 @@ const NewPolicyPage = () => {
           previousDueDate: renewalData.policy_info?.dueDate || "",
           previousClaimTaken: renewalData.previous_policy?.claimTakenLastYear || "no",
           previousNcbDiscount: renewalData.policy_info?.ncbDiscount || renewalData.previous_policy?.ncbDiscount || "",
-          // FIXED: Auto-populate previous policy hypothecation from new policy hypothecation
           previousHypothecation: renewalData.policy_info?.hypothecation || renewalData.previous_policy?.hypothecation || "",
-          // FIXED: Auto-populate previous policy remarks from new policy remarks
           previousPolicyRemarks: renewalData.policy_info?.remarks || renewalData.previous_policy?.remarks || "",
           
-          // Renewal fields
           renewal_id: policyId,
           isRenewal: true,
           
-          // CRITICAL: Reset all subsequent steps for new renewal including new IDV fields
           insuranceQuotes: [],
           insurer: "",
           coverageType: "",
@@ -11419,9 +10501,7 @@ const NewPolicyPage = () => {
           policyType: "",
           odExpiryDate: "",
           tpExpiryDate: "",
-          // NEW: Reset new policy hypothecation
           hypothecation: "",
-          // NEW: Reset new policy remarks
           newPolicyRemarks: "",
           documents: {},
           documentTags: {},
@@ -11445,17 +10525,8 @@ const NewPolicyPage = () => {
           policyPrefilled: true
         };
         
-        console.log("✅ NEW Renewal Form Data Prepared with credit type:", {
-          creditType: renewalFormData.creditType,
-          brokerName: renewalFormData.brokerName,
-          sourceOrigin: renewalFormData.sourceOrigin,
-          hidePayout: renewalFormData.hidePayout,
-          previousHypothecation: renewalFormData.previousHypothecation,
-          previousPolicyRemarks: renewalFormData.previousPolicyRemarks
-        });
+        console.log("✅ NEW Renewal Form Data Prepared with credit type:", renewalFormData.creditType);
         setForm(renewalFormData);
-        
-        // CRITICAL: Clear accepted quote for new renewal
         setAcceptedQuote(null);
         setPaymentLedger([]);
         
@@ -11463,18 +10534,14 @@ const NewPolicyPage = () => {
         
       } else {
         console.log("📝 Editing EXISTING renewal policy");
-        // This is editing an existing renewal policy - use the regular fetchPolicyData logic
-        // but ensure renewal flags are preserved and accepted quote is cleared
         await fetchPolicyData(policyId);
         
-        // Ensure renewal flags are set and clear accepted quote
         setForm(prev => ({
           ...prev,
           isRenewal: true,
           renewal_id: renewalData.renewal_id || policyId
         }));
         
-        // Clear accepted quote for renewal edit
         setAcceptedQuote(null);
         console.log("🔄 Cleared accepted quote for renewal edit case");
       }
@@ -11487,15 +10554,12 @@ const NewPolicyPage = () => {
     }
   };
 
-  // ENHANCED: Function to fetch policy data with consistent duration handling and new IDV fields
   const fetchPolicyData = async (policyId) => {
     setLoadingPolicy(true);
     try {
       console.log("🔍 Fetching policy data for ID:", policyId);
       const response = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
       const policyData = response.data;
-      
-      console.log("📦 Full API Response:", policyData);
       
       if (!policyData || !policyData.data) {
         console.error("❌ No policy data received from API");
@@ -11504,31 +10568,18 @@ const NewPolicyPage = () => {
       }
 
       const actualData = policyData.data;
-      console.log("📊 Actual Policy Data:", actualData);
-      
-      // CRITICAL FIX: Properly load credit type from API data
-      // First check if creditType exists at root level, then check customer_details
       const creditTypeFromAPI = actualData.creditType || 
                                actualData.customer_details?.creditType || 
                                "auto";
-      
-      console.log("💳 Credit Type Loading Debug:", {
-        rootCreditType: actualData.creditType,
-        customerDetailsCreditType: actualData.customer_details?.creditType,
-        finalCreditType: creditTypeFromAPI
-      });
 
-      // FIXED: Process insurance quotes with consistent duration handling and new IDV fields
       let processedInsuranceQuotes = [];
       if (actualData.insurance_quotes && Array.isArray(actualData.insurance_quotes)) {
         processedInsuranceQuotes = actualData.insurance_quotes.map(quote => {
-          // Ensure NCB discount amount is calculated if missing
           let ncbDiscountAmount = quote.ncbDiscountAmount;
           if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
             ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
           }
 
-          // ENHANCED: Use consistent policy duration formatting
           let policyDurationLabel = quote.policyDurationLabel;
           if (!policyDurationLabel && quote.policyDuration) {
             policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
@@ -11539,27 +10590,16 @@ const NewPolicyPage = () => {
             ncbDiscountAmount: ncbDiscountAmount || 0,
             policyDurationLabel: policyDurationLabel || quote.policyDuration,
             odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0)),
-            // Ensure new IDV fields are included
             vehicleIdv: quote.vehicleIdv || 0,
             cngIdv: quote.cngIdv || 0,
             accessoriesIdv: quote.accessoriesIdv || 0
           };
         });
-        
-        console.log("✅ Processed insurance quotes with consistent duration and new IDV fields:", processedInsuranceQuotes);
       }
 
-      // CRITICAL FIX: Properly map previous policy data including TP expiry date, hypothecation and remarks
       const previousPolicyData = actualData.previous_policy || {};
-      
-      console.log("🔍 Previous Policy Data from API:", previousPolicyData);
-
-      // CRITICAL FIX: Properly map new policy data including expiry dates, hypothecation and remarks
       const policyInfoData = actualData.policy_info || {};
-      
-      console.log("🔍 New Policy Data from API:", policyInfoData);
 
-      // Transform documents array to object with tagging
       const documentsObject = {};
       const documentTagsObject = {};
       if (actualData.documents && Array.isArray(actualData.documents)) {
@@ -11570,7 +10610,6 @@ const NewPolicyPage = () => {
         });
       }
 
-      // Find accepted quote from processed insurance quotes
       let acceptedQuoteData = null;
       if (processedInsuranceQuotes.length > 0) {
         acceptedQuoteData = processedInsuranceQuotes.find(quote => quote.accepted === true);
@@ -11579,28 +10618,22 @@ const NewPolicyPage = () => {
         }
       }
 
-      // NEW: Clear accepted quote if this is a renewal case
       if (actualData.isRenewal) {
         console.log("🔄 Renewal case detected - clearing accepted quote");
         acceptedQuoteData = null;
       }
 
-      // Create a clean transformed data object with ALL fields properly mapped including credit type, broker name, and source origin
       const transformedData = {
-        // Basic info
         buyer_type: actualData.buyer_type || "individual",
         vehicleType: actualData.vehicleType || "used",
         insurance_category: actualData.insurance_category || "motor",
         status: actualData.status || "draft",
-        // CRITICAL FIX: Properly load credit type from API
         creditType: creditTypeFromAPI,
         hidePayout: actualData.hidePayout || (creditTypeFromAPI === "showroom" || creditTypeFromAPI === "customer"),
-        // NEW: Load broker name
         brokerName: actualData.brokerName || actualData.customer_details?.brokerName || "",
-        // NEW: Load source origin
         sourceOrigin: actualData.sourceOrigin || actualData.customer_details?.sourceOrigin || "",
+        timeline: actualData.timeline || { caseStarted: null, quotesGenerated: null, caseCompleted: null, progressSaved: null },
         
-        // Customer details - handle both individual and corporate
         customerName: actualData.customer_details?.name || "",
         mobile: actualData.customer_details?.mobile || "",
         email: actualData.customer_details?.email || "",
@@ -11614,22 +10647,18 @@ const NewPolicyPage = () => {
         city: actualData.customer_details?.city || "",
         alternatePhone: actualData.customer_details?.alternatePhone || "",
         
-        // Corporate fields
         companyName: actualData.customer_details?.companyName || "",
         contactPersonName: actualData.customer_details?.contactPersonName || "",
         companyPanNumber: actualData.customer_details?.companyPanNumber || "",
         gstNumber: actualData.customer_details?.gstNumber || "",
         
-        // Nominee
         nomineeName: actualData.nominee?.name || "",
         relation: actualData.nominee?.relation || "",
         nomineeAge: actualData.nominee?.age || "",
         
-        // Reference - FIXED: Corrected spelling
         referenceName: actualData.reference?.name || actualData.refrence?.name || "",
         referencePhone: actualData.reference?.phone || actualData.refrence?.phone || "",
         
-        // Vehicle details
         regNo: actualData.vehicle_details?.regNo || "",
         make: actualData.vehicle_details?.make || "",
         model: actualData.vehicle_details?.model || "",
@@ -11641,7 +10670,6 @@ const NewPolicyPage = () => {
         makeMonth: actualData.vehicle_details?.makeMonth || "",
         makeYear: actualData.vehicle_details?.makeYear || "",
         
-        // Previous policy - CRITICAL FIX: Include all expiry dates, hypothecation and remarks
         previousInsuranceCompany: previousPolicyData.insuranceCompany || "",
         previousPolicyNumber: previousPolicyData.policyNumber || "",
         previousPolicyType: previousPolicyData.policyType || "",
@@ -11653,15 +10681,11 @@ const NewPolicyPage = () => {
         previousTpExpiryDate: previousPolicyData.tpExpiryDate || "",
         previousClaimTaken: previousPolicyData.claimTakenLastYear || "no",
         previousNcbDiscount: previousPolicyData.ncbDiscount || "",
-        // NEW: Previous policy hypothecation
         previousHypothecation: previousPolicyData.hypothecation || "",
-        // NEW: Previous policy remarks
         previousPolicyRemarks: previousPolicyData.remarks || "",
         
-        // Insurance quotes - use processed quotes with new IDV fields
         insuranceQuotes: processedInsuranceQuotes,
         
-        // Insurance quote (legacy) - UPDATED: Include new IDV fields
         insurer: actualData.insurance_quote?.insurer || "",
         coverageType: actualData.insurance_quote?.coverageType || "",
         premium: actualData.insurance_quote?.premium || "",
@@ -11672,7 +10696,6 @@ const NewPolicyPage = () => {
         cngIdv: actualData.insurance_quote?.cngIdv || "",
         accessoriesIdv: actualData.insurance_quote?.accessoriesIdv || "",
         
-        // Policy info - CRITICAL FIX: Include all expiry dates, policy type, hypothecation and remarks
         policyIssued: policyInfoData.policyIssued || "",
         insuranceCompany: policyInfoData.insuranceCompany || "",
         policyNumber: policyInfoData.policyNumber || "",
@@ -11687,12 +10710,9 @@ const NewPolicyPage = () => {
         policyType: policyInfoData.policyType || "",
         odExpiryDate: policyInfoData.odExpiryDate || "",
         tpExpiryDate: policyInfoData.tpExpiryDate || "",
-        // NEW: New policy hypothecation
         hypothecation: policyInfoData.hypothecation || "",
-        // NEW: New policy remarks
         newPolicyRemarks: policyInfoData.remarks || "",
         
-        // Payment info
         paymentMadeBy: actualData.payment_info?.paymentMadeBy || "Customer",
         paymentMode: actualData.payment_info?.paymentMode || "",
         paymentAmount: actualData.payment_info?.paymentAmount || "",
@@ -11703,8 +10723,7 @@ const NewPolicyPage = () => {
         subvention_payment: actualData.payment_info?.subvention_payment || "No Subvention",
         paymentStatus: actualData.payment_info?.paymentStatus || "Payment Pending",
         totalPaidAmount: actualData.payment_info?.totalPaidAmount || 0,
-         
-        // Payout
+        
         netPremium: actualData.payout?.netPremium || "",
         odAmount: actualData.payout?.odAmount || "",
         ncbAmount: actualData.payout?.ncbAmount || "",
@@ -11713,49 +10732,30 @@ const NewPolicyPage = () => {
         odAddonAmount: actualData.payout?.odAddonAmount || "",
         netAmount: actualData.payout?.netAmount || "",
         
-        // Documents as object
         documents: documentsObject,
         documentTags: documentTagsObject,
         
-        // Renewal fields
         renewal_id: actualData.renewal_id || "",
         isRenewal: actualData.isRenewal || false,
         
-        // System fields
         ts: actualData.ts || Date.now(),
         created_by: actualData.created_by || "ADMIN123",
         policyPrefilled: true
       };
       
-      console.log("✅ Transformed Form Data with proper credit type loading:", {
-        creditType: transformedData.creditType,
-        brokerName: transformedData.brokerName,
-        sourceOrigin: transformedData.sourceOrigin,
-        hidePayout: transformedData.hidePayout,
-        previousHypothecation: transformedData.previousHypothecation,
-        previousPolicyRemarks: transformedData.previousPolicyRemarks
-      });
-      
       setForm(transformedData);
       
-      // Set accepted quote from processed quotes (only if not renewal)
       if (acceptedQuoteData && !actualData.isRenewal) {
-        console.log("✅ Setting accepted quote from processed data:", acceptedQuoteData.insuranceCompany);
         setAcceptedQuote(acceptedQuoteData);
       } else if (actualData.isRenewal) {
-        console.log("🔄 Renewal case - not setting accepted quote");
         setAcceptedQuote(null);
       }
       
-      // Set payment ledger from payment history if available
       if (actualData.payment_ledger && Array.isArray(actualData.payment_ledger)) {
-        console.log("💰 Setting payment ledger from API:", actualData.payment_ledger);
         setPaymentLedger(actualData.payment_ledger);
       } else if (actualData.payment_info?.paymentHistory && Array.isArray(actualData.payment_info.paymentHistory)) {
-        console.log("💰 Setting payment ledger from payment history:", actualData.payment_info.paymentHistory);
         setPaymentLedger(actualData.payment_info.paymentHistory);
       } else {
-        console.log("💰 No payment ledger found in API response");
         setPaymentLedger([]);
       }
       
@@ -11763,14 +10763,12 @@ const NewPolicyPage = () => {
       
     } catch (error) {
       console.error("❌ Error fetching policy data:", error);
-      console.error("❌ Error details:", error.response?.data);
       setSaveMessage(`❌ Error loading policy data: ${error.message}`);
     } finally {
       setLoadingPolicy(false);
     }
   };
 
-  // Enhanced handleChange to properly handle all field types including new IDV fields, credit type, broker name, and source origin
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (errors[name]) {
@@ -11792,7 +10790,6 @@ const NewPolicyPage = () => {
       return;
     }
     
-    // Handle documents object updates
     if (name.startsWith("documents.")) {
       const docId = name.split('.')[1];
       setForm((f) => ({ 
@@ -11805,7 +10802,6 @@ const NewPolicyPage = () => {
       return;
     }
     
-    // Handle document tags updates
     if (name.startsWith("documentTags.")) {
       const docId = name.split('.')[1];
       setForm((f) => ({ 
@@ -11819,7 +10815,6 @@ const NewPolicyPage = () => {
     }
     
     if (name === "insuranceQuotes" && Array.isArray(value)) {
-      console.log("💰 Updating insuranceQuotes array:", value);
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
@@ -11833,16 +10828,13 @@ const NewPolicyPage = () => {
       return;
     }
     
-    // Handle vehicleType change - special logic
     if (name === "vehicleType") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
     
-    // UPDATED: Handle credit type change with payout visibility logic and broker name reset
     if (name === "creditType") {
       const hidePayout = value === "showroom" || value === "customer";
-      // Clear broker name if credit type is changed from broker to something else
       const brokerName = value === "broker" ? form.brokerName : "";
       
       setForm((f) => ({ 
@@ -11854,30 +10846,25 @@ const NewPolicyPage = () => {
       return;
     }
     
-    // Handle broker name change
     if (name === "brokerName") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
     
-    // NEW: Handle source origin change
     if (name === "sourceOrigin") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
     
-    // Handle new IDV fields
     if (name === "vehicleIdv" || name === "cngIdv" || name === "accessoriesIdv") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
     
-    // Handle hypothecation fields - FIXED: Auto-populate previous policy hypothecation when new policy hypothecation changes
     if (name === "hypothecation") {
       setForm((f) => ({ 
         ...f, 
         [name]: value,
-        // Auto-populate previous policy hypothecation when new policy hypothecation is set
         previousHypothecation: f.previousHypothecation || value
       }));
       return;
@@ -11888,12 +10875,10 @@ const NewPolicyPage = () => {
       return;
     }
     
-    // Handle remarks fields - FIXED: Auto-populate previous policy remarks when new policy remarks change
     if (name === "newPolicyRemarks") {
       setForm((f) => ({ 
         ...f, 
         [name]: value,
-        // Auto-populate previous policy remarks when new policy remarks are set
         previousPolicyRemarks: f.previousPolicyRemarks || value
       }));
       return;
@@ -11904,13 +10889,11 @@ const NewPolicyPage = () => {
       return;
     }
     
-    // NEW: Handle cubic capacity field
     if (name === "cubicCapacity") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
     
-    // NEW: Handle vehicle type category field
     if (name === "vehicleTypeCategory") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
@@ -11919,13 +10902,10 @@ const NewPolicyPage = () => {
     setForm((f) => ({ ...f, [name]: value }));
   };
 
-  // Updated documents update handler for object format
   const handleDocumentsUpdate = (documentsObject) => {
-    console.log("📄 Documents updated in main component (object):", documentsObject);
     setForm((f) => ({ 
       ...f, 
       documents: documentsObject,
-      // Initialize empty tags for new documents
       documentTags: Object.keys(documentsObject).reduce((tags, docId) => ({
         ...tags,
         [docId]: f.documentTags?.[docId] || ""
@@ -11933,21 +10913,16 @@ const NewPolicyPage = () => {
     }));
   };
 
-  // ============ ENHANCED INSURANCE QUOTES UPDATE ============
   const handleInsuranceQuotesUpdate = useCallback((quotesArray) => {
-    // Prevent infinite loop by checking if quotes actually changed
     const currentQuotes = form.insuranceQuotes || [];
     const newQuotes = quotesArray || [];
     
-    // Process quotes to ensure all required fields are present including new IDV fields
     const processedQuotes = newQuotes.map(quote => {
-      // Ensure NCB discount amount is calculated if missing
       let ncbDiscountAmount = quote.ncbDiscountAmount;
       if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
         ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
       }
 
-      // ENHANCED: Use consistent policy duration formatting
       let policyDurationLabel = quote.policyDurationLabel;
       if (!policyDurationLabel && quote.policyDuration) {
         policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
@@ -11958,16 +10933,14 @@ const NewPolicyPage = () => {
         ncbDiscountAmount: ncbDiscountAmount || 0,
         policyDurationLabel: policyDurationLabel || quote.policyDuration,
         odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (ncbDiscountAmount || 0)),
-        // Ensure new IDV fields are included
         vehicleIdv: quote.vehicleIdv || 0,
         cngIdv: quote.cngIdv || 0,
         accessoriesIdv: quote.accessoriesIdv || 0
       };
     });
 
-    // Only update if quotes actually changed
     if (JSON.stringify(currentQuotes) !== JSON.stringify(processedQuotes)) {
-      console.log("💰 Insurance quotes updated with consistent duration formatting and new IDV fields:", processedQuotes.length, "quotes");
+      console.log("💰 Insurance quotes updated:", processedQuotes.length, "quotes");
       
       setForm((f) => ({ 
         ...f, 
@@ -11986,7 +10959,6 @@ const NewPolicyPage = () => {
     }));
   };
 
-  // Validation functions - UPDATED to handle vehicle type and credit type
   const validateCurrentStep = () => {
     let stepErrors = {};
     
@@ -11998,7 +10970,6 @@ const NewPolicyPage = () => {
         stepErrors = validationRules.validateStep2(form);
         break;
       case 3:
-        // Only validate previous policy for used cars
         if (form.vehicleType === "used") {
           stepErrors = previousPolicyValidation(form);
         }
@@ -12021,7 +10992,6 @@ const NewPolicyPage = () => {
         }
         break;
       case 8:
-        // Only validate payout if it's not hidden
         if (!shouldHidePayout()) {
           stepErrors = payoutValidation(form, acceptedQuote);
         }
@@ -12034,30 +11004,24 @@ const NewPolicyPage = () => {
     return Object.keys(stepErrors).length === 0;
   };
 
-  // ============ ENHANCED DATA SANITIZATION FUNCTIONS ============
   const sanitizeDataForAPI = (data) => {
     const sanitized = JSON.parse(JSON.stringify(data, (key, value) => {
-      // Remove undefined, null, and empty strings
       if (value === undefined || value === null || value === '') {
         return undefined;
       }
-      // Ensure numbers are properly formatted
       if (typeof value === 'number' && isNaN(value)) {
         return 0;
       }
       return value;
     }));
 
-    // FIXED: Clean up insurance quotes with consistent duration handling and new IDV fields
     if (sanitized.insurance_quotes && Array.isArray(sanitized.insurance_quotes)) {
       sanitized.insurance_quotes = sanitized.insurance_quotes.map(quote => {
-        // Calculate NCB discount amount if missing
         let ncbDiscountAmount = quote.ncbDiscountAmount;
         if (!ncbDiscountAmount && quote.odAmount && quote.ncbDiscount) {
           ncbDiscountAmount = Math.round(quote.odAmount * (quote.ncbDiscount / 100));
         }
 
-        // ENHANCED: Use consistent policy duration formatting
         let policyDurationLabel = quote.policyDurationLabel;
         if (!policyDurationLabel && quote.policyDuration) {
           policyDurationLabel = formatPolicyDuration(quote.policyDuration.toString());
@@ -12082,7 +11046,6 @@ const NewPolicyPage = () => {
           addOnsPremium: parseFloat(quote.addOnsPremium) || 0,
           selectedAddOns: quote.selectedAddOns || {},
           includedAddOns: quote.includedAddOns || [],
-          // NEW: Include the new IDV fields
           vehicleIdv: parseFloat(quote.vehicleIdv) || 0,
           cngIdv: parseFloat(quote.cngIdv) || 0,
           accessoriesIdv: parseFloat(quote.accessoriesIdv) || 0,
@@ -12093,18 +11056,15 @@ const NewPolicyPage = () => {
       });
     }
 
-    // Clean up previous policy data with consistent duration handling, hypothecation and remarks
     if (sanitized.previous_policy && sanitized.previous_policy.policyDuration) {
       sanitized.previous_policy.policyDurationLabel = formatPolicyDuration(sanitized.previous_policy.policyDuration);
       sanitized.previous_policy.renewal_id = renewalPolicyId;
     }
 
-    // Clean up new policy data with consistent duration handling, hypothecation and remarks
     if (sanitized.policy_info && sanitized.policy_info.insuranceDuration) {
       sanitized.policy_info.insuranceDurationLabel = formatPolicyDuration(sanitized.policy_info.insuranceDuration);
     }
 
-    // Clean up payment ledger
     if (sanitized.payment_ledger && Array.isArray(sanitized.payment_ledger)) {
       sanitized.payment_ledger = sanitized.payment_ledger.map(payment => ({
         id: payment.id || `payment_${Date.now()}`,
@@ -12122,7 +11082,6 @@ const NewPolicyPage = () => {
       }));
     }
 
-    // Clean up documents
     if (sanitized.documents && Array.isArray(sanitized.documents)) {
       sanitized.documents = sanitized.documents.map(doc => {
         if (typeof doc === 'string') {
@@ -12148,7 +11107,11 @@ const NewPolicyPage = () => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type - INCLUDING CREDIT TYPE, BROKER NAME, AND SOURCE ORIGIN
+      // Record caseStarted if not already
+      if (!form.timeline.caseStarted) {
+        updateTimeline('caseStarted');
+      }
+      
       const customerDetails = {
         name: form.customerName || "",
         mobile: form.mobile || "",
@@ -12166,11 +11129,8 @@ const NewPolicyPage = () => {
         contactPersonName: form.contactPersonName || "",
         companyPanNumber: form.companyPanNumber || "",
         gstNumber: form.gstNumber || "",
-        // CRITICAL: Include creditType in customer_details
         creditType: form.creditType || "auto",
-        // NEW: Include broker name in customer_details
         brokerName: form.brokerName || "",
-        // NEW: Include source origin in customer_details
         sourceOrigin: form.sourceOrigin || ""
       };
 
@@ -12189,33 +11149,22 @@ const NewPolicyPage = () => {
         },
         insurance_category: form.insurance_category || "motor",
         status: form.status || "pending",
-        // FIXED: Include credit type in policy data - CRITICAL FOR DB STORAGE
         creditType: form.creditType || "auto",
-        // NEW: Include broker name in policy data
         brokerName: form.brokerName || "",
-        // NEW: Include source origin in policy data
         sourceOrigin: form.sourceOrigin || "",
         hidePayout: form.hidePayout || false,
         insurance_quotes: form.insuranceQuotes || [],
+        timeline: form.timeline,
         ts: Date.now(),
         created_by: form.created_by || "ADMIN123",
         policyPrefilled: form.policyPrefilled || false,
-        // Add renewal fields if this is a renewal
         renewal_id: form.renewal_id || "",
         isRenewal: form.isRenewal || false
       };
 
-      // Sanitize data before sending
       const sanitizedData = sanitizeDataForAPI(policyData);
       
       console.log("📝 Creating policy with sanitized data:", sanitizedData);
-      console.log("💳 CREDIT TYPE IN CREATE:", {
-        formCreditType: form.creditType,
-        sanitizedCreditType: sanitizedData.creditType,
-        customerDetailsCreditType: customerDetails.creditType,
-        brokerName: form.brokerName,
-        sourceOrigin: form.sourceOrigin
-      });
 
       const response = await axios.post(`${API_BASE_URL}/policies`, sanitizedData, {
         headers: {
@@ -12250,15 +11199,12 @@ const NewPolicyPage = () => {
     }
   };
 
-  // FIXED: Enhanced updatePolicy function with network error prevention and renewal support
   const updatePolicy = async (overrideData = null, retryCount = 0) => {
-    // Prevent multiple simultaneous updates
     if (isUpdating) {
       console.log("⏳ Update already in progress, skipping...");
       return;
     }
 
-    // Prevent too frequent updates (min 1 second between updates)
     const now = Date.now();
     if (now - lastUpdateRef.current < 1000) {
       console.log("⏰ Too frequent update, throttling...");
@@ -12287,12 +11233,9 @@ const NewPolicyPage = () => {
 
       let updateData = {};
       
-      // If overrideData is provided, use it directly (for payment data)
       if (overrideData) {
-        console.log("🔄 Using override data for update:", overrideData);
         updateData = overrideData;
       } else {
-        // Standard step-based update data
         switch (step) {
           case 1:
             const customerDetails = {
@@ -12312,11 +11255,8 @@ const NewPolicyPage = () => {
               contactPersonName: form.contactPersonName || "",
               companyPanNumber: form.companyPanNumber || "",
               gstNumber: form.gstNumber || "",
-              // CRITICAL: Include creditType in customer_details
               creditType: form.creditType || "auto",
-              // NEW: Include broker name in customer_details
               brokerName: form.brokerName || "",
-              // NEW: Include source origin in customer_details
               sourceOrigin: form.sourceOrigin || ""
             };
 
@@ -12333,15 +11273,11 @@ const NewPolicyPage = () => {
                 name: form.referenceName || "",
                 phone: form.referencePhone || ""
               },
-              // FIXED: Include credit type in step 1 update
               creditType: form.creditType || "auto",
-              // NEW: Include broker name in step 1 update
               brokerName: form.brokerName || "",
-              // NEW: Include source origin in step 1 update
               sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
               policyPrefilled: form.policyPrefilled || false,
-              // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
             };
@@ -12361,20 +11297,15 @@ const NewPolicyPage = () => {
                 makeYear: form.makeYear || ""
               },
               vehicleType: form.vehicleType,
-              // FIXED: Include credit type in all updates
               creditType: form.creditType || "auto",
-              // NEW: Include broker name in all updates
               brokerName: form.brokerName || "",
-              // NEW: Include source origin in all updates
               sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
-              // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
             };
             break;
           case 3:
-            // Only update previous policy for used cars
             if (form.vehicleType === "used") {
               updateData = {
                 previous_policy: {
@@ -12389,19 +11320,13 @@ const NewPolicyPage = () => {
                   dueDate: form.previousDueDate || "",
                   claimTakenLastYear: form.previousClaimTaken || "no",
                   ncbDiscount: parseFloat(form.previousNcbDiscount) || 0,
-                  // NEW: Include previous policy hypothecation
                   hypothecation: form.previousHypothecation || "",
-                  // NEW: Include previous policy remarks
                   remarks: form.previousPolicyRemarks || ""
                 },
-                // FIXED: Include credit type
                 creditType: form.creditType || "auto",
-                // NEW: Include broker name
                 brokerName: form.brokerName || "",
-                // NEW: Include source origin
                 sourceOrigin: form.sourceOrigin || "",
                 hidePayout: form.hidePayout || false,
-                // Include renewal fields
                 renewal_id: form.renewal_id || "",
                 isRenewal: form.isRenewal || false
               };
@@ -12416,25 +11341,19 @@ const NewPolicyPage = () => {
                 idv: parseFloat(form.idv) || 0,
                 ncb: form.ncb || "",
                 duration: form.duration || "",
-                // FIXED: Include the new IDV fields
                 vehicleIdv: parseFloat(form.vehicleIdv) || 0,
                 cngIdv: parseFloat(form.cngIdv) || 0,
                 accessoriesIdv: parseFloat(form.accessoriesIdv) || 0
               },
-              // FIXED: Include credit type
               creditType: form.creditType || "auto",
-              // NEW: Include broker name
               brokerName: form.brokerName || "",
-              // NEW: Include source origin
               sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
-              // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
             };
             break;
           case 5:
-            // FIXED: Include all new policy fields including expiry dates, hypothecation and remarks
             updateData = {
               policy_info: {
                 policyIssued: form.policyIssued || "",
@@ -12448,28 +11367,21 @@ const NewPolicyPage = () => {
                 insuranceDuration: form.insuranceDuration || "",
                 idvAmount: parseFloat(form.idvAmount) || 0,
                 totalPremium: parseFloat(form.totalPremium) || 0,
-                policyType: form.policyType || "", // FIXED: Added policyType
-                odExpiryDate: form.odExpiryDate || "", // FIXED: Added odExpiryDate
-                tpExpiryDate: form.tpExpiryDate || "", // FIXED: Added tpExpiryDate
-                // NEW: Include new policy hypothecation
+                policyType: form.policyType || "",
+                odExpiryDate: form.odExpiryDate || "",
+                tpExpiryDate: form.tpExpiryDate || "",
                 hypothecation: form.hypothecation || "",
-                // NEW: Include new policy remarks
                 remarks: form.newPolicyRemarks || ""
               },
-              // FIXED: Include credit type
               creditType: form.creditType || "auto",
-              // NEW: Include broker name
               brokerName: form.brokerName || "",
-              // NEW: Include source origin
               sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
-              // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
             };
             break;
           case 6:
-            // FIXED: Convert documents object to array properly
             const documentsArray = Object.entries(form.documents || {}).map(([docId, doc]) => ({
               ...doc,
               id: docId,
@@ -12477,20 +11389,15 @@ const NewPolicyPage = () => {
             }));
             updateData = {
               documents: documentsArray,
-              // FIXED: Include credit type
               creditType: form.creditType || "auto",
-              // NEW: Include broker name
               brokerName: form.brokerName || "",
-              // NEW: Include source origin
               sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
-              // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
             };
             break;
           case 7:
-            // FIXED: Payment data structure with ledger
             const totalPaid = paymentLedger.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
             const paymentStatus = totalPaid >= totalPremium ? 'Fully Paid' : 'Payment Pending';
             
@@ -12508,20 +11415,15 @@ const NewPolicyPage = () => {
                 totalPaidAmount: totalPaid
               },
               payment_ledger: paymentLedger,
-              // FIXED: Include credit type
               creditType: form.creditType || "auto",
-              // NEW: Include broker name
               brokerName: form.brokerName || "",
-              // NEW: Include source origin
               sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
-              // Include renewal fields
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
             };
             break;
           case 8:
-            // Only include payout data if payout is not hidden
             if (!shouldHidePayout()) {
               updateData = {
                 payout: {
@@ -12534,27 +11436,19 @@ const NewPolicyPage = () => {
                   netAmount: parseFloat(form.netAmount) || 0
                 },
                 payment_ledger: paymentLedger,
-                // FIXED: Include credit type
                 creditType: form.creditType || "auto",
-                // NEW: Include broker name
                 brokerName: form.brokerName || "",
-                // NEW: Include source origin
                 sourceOrigin: form.sourceOrigin || "",
                 hidePayout: form.hidePayout || false,
-                // Include renewal fields
                 renewal_id: form.renewal_id || "",
                 isRenewal: form.isRenewal || false
               };
             } else {
               updateData = {
-                // FIXED: Include credit type even when payout is hidden
                 creditType: form.creditType || "auto",
-                // NEW: Include broker name even when payout is hidden
                 brokerName: form.brokerName || "",
-                // NEW: Include source origin even when payout is hidden
                 sourceOrigin: form.sourceOrigin || "",
                 hidePayout: form.hidePayout || false,
-                // Include renewal fields
                 renewal_id: form.renewal_id || "",
                 isRenewal: form.isRenewal || false
               };
@@ -12562,29 +11456,23 @@ const NewPolicyPage = () => {
             break;
           default:
             updateData = {
-              // FIXED: Include credit type in all updates
               creditType: form.creditType || "auto",
-              // NEW: Include broker name in all updates
               brokerName: form.brokerName || "",
-              // NEW: Include source origin in all updates
               sourceOrigin: form.sourceOrigin || "",
               hidePayout: form.hidePayout || false,
-              // Include renewal fields in all updates
               renewal_id: form.renewal_id || "",
               isRenewal: form.isRenewal || false
             };
         }
       }
 
-      // FIXED: Always include insurance quotes in updates with consistent duration handling and new IDV fields
+      // Always include insurance quotes in updates
       if (form.insuranceQuotes && form.insuranceQuotes.length > 0) {
         updateData.insurance_quotes = form.insuranceQuotes.map(quote => ({
           ...quote,
-          // ENHANCED: Use consistent policy duration formatting
           ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
           policyDurationLabel: quote.policyDurationLabel || formatPolicyDuration(quote.policyDuration.toString()),
           odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0)),
-          // FIXED: Include the new IDV fields
           vehicleIdv: parseFloat(quote.vehicleIdv) || 0,
           cngIdv: parseFloat(quote.cngIdv) || 0,
           accessoriesIdv: parseFloat(quote.accessoriesIdv) || 0
@@ -12602,25 +11490,18 @@ const NewPolicyPage = () => {
         updateData.status = 'payment completed';
       }
 
-      // Sanitize data before sending
+      // Always include timeline in update data - UPDATE progressSaved
+      updateData.timeline = {
+        ...form.timeline,
+        progressSaved: formatIndianTime()
+      };
+
       const sanitizedUpdateData = sanitizeDataForAPI(updateData);
 
-      // DEBUG: Log exactly what's being sent
-      console.log("🚀 SENDING SANITIZED DATA TO BACKEND:", {
+      console.log("🚀 Sending update to backend:", {
         policyId,
         updateData: sanitizedUpdateData,
-        hasPaymentInfo: !!sanitizedUpdateData.payment_info,
-        hasPaymentLedger: !!sanitizedUpdateData.payment_ledger,
-        paymentLedgerLength: sanitizedUpdateData.payment_ledger?.length || 0,
-        insuranceQuotesLength: sanitizedUpdateData.insurance_quotes?.length || 0,
-        vehicleType: form.vehicleType,
-        creditType: form.creditType,
-        brokerName: form.brokerName,
-        sourceOrigin: form.sourceOrigin,
-        sanitizedCreditType: sanitizedUpdateData.creditType,
-        hidePayout: form.hidePayout,
-        isRenewal: form.isRenewal,
-        renewal_id: form.renewal_id
+        timeline: updateData.timeline
       });
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedUpdateData, {
@@ -12632,13 +11513,18 @@ const NewPolicyPage = () => {
       
       console.log("✅ API Response:", response.data);
       
+      // Update local timeline state after successful save
+      setForm(prev => ({
+        ...prev,
+        timeline: updateData.timeline
+      }));
+      
       setSaveMessage(isEditMode ? "✅ Policy updated successfully!" : "✅ Progress saved successfully!");
       
       return response.data;
     } catch (error) {
       console.error("❌ Error updating policy:", error);
       
-      // Retry logic for network errors
       if (error.code === 'ERR_NETWORK' && retryCount < MAX_RETRIES) {
         console.log(`🔄 Retrying API call (${retryCount + 1}/${MAX_RETRIES})...`);
         await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
@@ -12663,22 +11549,22 @@ const NewPolicyPage = () => {
     }
   };
 
-  // FIXED: Debounced update policy for auto-saves
   const debouncedUpdatePolicy = useRef(
     debounce((overrideData = null) => {
       updatePolicy(overrideData);
     }, 2000)
   ).current;
 
-  // ENHANCED handleSave function to accept payment data
   const handleSave = async (paymentData = null) => {
     if (!validateCurrentStep()) {
       setSaveMessage("❌ Please fix the validation errors before saving");
       return;
     }
     
+    // Record save event
+    updateTimeline('progressSaved');
+    
     try {
-      // If paymentData is provided, use it for update
       if (paymentData) {
         console.log("💾 Saving payment data:", paymentData);
         await updatePolicy(paymentData);
@@ -12690,12 +11576,10 @@ const NewPolicyPage = () => {
     }
   };
 
-  // FIXED: Enhanced handleSaveAndExit to properly save current form state
   const handleSaveAndExit = async () => {
     try {
       setIsSaving(true);
       
-      // Validate current step before saving
       if (!validateCurrentStep()) {
         setSaveMessage("❌ Please fix the validation errors before saving");
         setIsSaving(false);
@@ -12704,24 +11588,17 @@ const NewPolicyPage = () => {
 
       console.log("💾 Save & Exit - Current form state:", {
         creditType: form.creditType,
-        brokerName: form.brokerName,
-        sourceOrigin: form.sourceOrigin,
-        hidePayout: form.hidePayout,
-        step: step
+        timeline: form.timeline
       });
 
-      // Save current progress first
       if (policyId) {
-        // For existing policies, update with current form data
         await updatePolicy();
       } else {
-        // For new policies, create first
         await createPolicy();
       }
       
       setSaveMessage("✅ Progress saved successfully! Redirecting...");
       
-      // Navigate back to policies page after successful save
       setTimeout(() => {
         navigate("/policies");
       }, 1000);
@@ -12743,7 +11620,9 @@ const NewPolicyPage = () => {
     try {
       setIsSaving(true);
       
-      // Prepare customer details based on buyer type - INCLUDING CREDIT TYPE, BROKER NAME, AND SOURCE ORIGIN
+      // Record case completion
+      updateTimeline('caseCompleted');
+      
       const customerDetails = {
         name: form.customerName,
         mobile: form.mobile,
@@ -12761,22 +11640,17 @@ const NewPolicyPage = () => {
         contactPersonName: form.contactPersonName || "",
         companyPanNumber: form.companyPanNumber || "",
         gstNumber: form.gstNumber || "",
-        // CRITICAL: Include creditType in customer_details for final save
         creditType: form.creditType || "auto",
-        // NEW: Include broker name in customer_details for final save
         brokerName: form.brokerName || "",
-        // NEW: Include source origin in customer_details for final save
         sourceOrigin: form.sourceOrigin || ""
       };
 
-      // Convert documents object to array for final save
       const documentsArray = Object.entries(form.documents || {}).map(([docId, doc]) => ({
         ...doc,
         id: docId,
         tag: form.documentTags?.[docId] || ""
       }));
 
-      // Calculate final payment status
       const totalPaid = paymentLedger.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
       const paymentStatus = totalPaid >= totalPremium ? 'Fully Paid' : 'Payment Pending';
 
@@ -12817,9 +11691,7 @@ const NewPolicyPage = () => {
           dueDate: form.previousDueDate || "",
           claimTakenLastYear: form.previousClaimTaken || "no",
           ncbDiscount: parseFloat(form.previousNcbDiscount) || 0,
-          // NEW: Include previous policy hypothecation in final save
           hypothecation: form.previousHypothecation || "",
-          // NEW: Include previous policy remarks in final save
           remarks: form.previousPolicyRemarks || ""
         } : {},
         insurance_quote: {
@@ -12829,18 +11701,15 @@ const NewPolicyPage = () => {
           idv: parseFloat(form.idv) || 0,
           ncb: form.ncb,
           duration: form.duration,
-          // FIXED: Include the new IDV fields in final save
           vehicleIdv: parseFloat(form.vehicleIdv) || 0,
           cngIdv: parseFloat(form.cngIdv) || 0,
           accessoriesIdv: parseFloat(form.accessoriesIdv) || 0
         },
-        // ENHANCED: Include processed insurance quotes with consistent policy duration and new IDV fields
         insurance_quotes: form.insuranceQuotes.map(quote => ({
           ...quote,
           ncbDiscountAmount: quote.ncbDiscountAmount || Math.round(quote.odAmount * (quote.ncbDiscount / 100)),
           policyDurationLabel: quote.policyDurationLabel || formatPolicyDuration(quote.policyDuration.toString()),
           odAmountAfterNcb: quote.odAmountAfterNcb || (quote.odAmount - (quote.ncbDiscountAmount || 0)),
-          // FIXED: Include the new IDV fields
           vehicleIdv: parseFloat(quote.vehicleIdv) || 0,
           cngIdv: parseFloat(quote.cngIdv) || 0,
           accessoriesIdv: parseFloat(quote.accessoriesIdv) || 0
@@ -12857,12 +11726,10 @@ const NewPolicyPage = () => {
           insuranceDuration: form.insuranceDuration,
           idvAmount: parseFloat(form.idvAmount) || 0,
           totalPremium: parseFloat(form.totalPremium) || 0,
-          policyType: form.policyType || "", // FIXED: Added policyType
-          odExpiryDate: form.policyType=="thirdParty"?null:form.odExpiryDate || "", // FIXED: Added odExpiryDate
-          tpExpiryDate: form.policyType=="standalone"?null:form.tpExpiryDate || "", // FIXED: Added tpExpiryDate
-          // NEW: Include new policy hypothecation in final save
+          policyType: form.policyType || "",
+          odExpiryDate: form.policyType=="thirdParty"?null:form.odExpiryDate || "",
+          tpExpiryDate: form.policyType=="standalone"?null:form.tpExpiryDate || "",
           hypothecation: form.hypothecation || "",
-          // NEW: Include new policy remarks in final save
           remarks: form.newPolicyRemarks || ""
         },
         documents: documentsArray,
@@ -12879,7 +11746,6 @@ const NewPolicyPage = () => {
           totalPaidAmount: totalPaid
         },
         payment_ledger: paymentLedger,
-        // FIXED: Only include payout if not hidden
         payout: !shouldHidePayout() ? {
           netPremium: parseFloat(form.netPremium) || 0,
           odAmount: parseFloat(form.odAmount) || 0,
@@ -12891,37 +11757,24 @@ const NewPolicyPage = () => {
         } : {},
         status: "completed",
         completed_at: Date.now(),
+        timeline: form.timeline,
         ts: form.ts,
         created_by: form.created_by,
         policyPrefilled: form.policyPrefilled || false,
-        // FIXED: CRITICAL - Include credit type in final save to store in database
         creditType: form.creditType || "auto",
-        // NEW: CRITICAL - Include broker name in final save to store in database
         brokerName: form.brokerName || "",
-        // NEW: CRITICAL - Include source origin in final save to store in database
         sourceOrigin: form.sourceOrigin || "",
         hidePayout: form.hidePayout || false,
-        // Include renewal fields in final save
         renewal_id: form.renewal_id || "",
         isRenewal: form.isRenewal || false
       };
 
-      // Sanitize final data
       const sanitizedFinalData = sanitizeDataForAPI(finalData);
 
-      console.log(`✅ Finalizing policy with vehicle type:`, form.vehicleType);
-      console.log(`✅ Finalizing policy with credit type:`, form.creditType);
-      console.log(`✅ Finalizing policy with broker name:`, form.brokerName);
-      console.log(`✅ Finalizing policy with source origin:`, form.sourceOrigin);
-      console.log(`🔍 FINAL SAVE - CREDIT TYPE CHECK:`, {
-        formCreditType: form.creditType,
-        finalDataCreditType: finalData.creditType,
-        sanitizedCreditType: sanitizedFinalData.creditType,
-        customerDetailsCreditType: customerDetails.creditType,
-        brokerName: form.brokerName,
-        sourceOrigin: form.sourceOrigin
+      console.log(`✅ Finalizing policy:`, {
+        creditType: form.creditType,
+        timeline: form.timeline
       });
-      console.log(`✅ Finalizing policy ${policyId} with complete data including new IDV fields:`, sanitizedFinalData);
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedFinalData, {
         headers: {
@@ -12946,18 +11799,14 @@ const NewPolicyPage = () => {
   };
 
   const nextStep = async () => {
-    // FIXED: Skip step 3 for new cars
     if (form.vehicleType === "new" && step === 2) {
-      // Skip directly to step 4 (Insurance Quotes) from step 2
       setStep(4);
       setErrors({});
       setSaveMessage("");
       return;
     }
 
-    // FIXED: Skip payout step if credit type is showroom or customer
     if (shouldHidePayout() && step === steps.length - 1) {
-      // If payout is hidden and we're at the step before payout, finish
       await handleFinish();
       return;
     }
@@ -12974,10 +11823,8 @@ const NewPolicyPage = () => {
 
     try {
       await updatePolicy();
-      // FIXED: Skip step 3 for new cars
       let nextStepValue = form.vehicleType === "new" && step === 2 ? 4 : step + 1;
       
-      // FIXED: Skip payout step if credit type is showroom or customer
       if (shouldHidePayout() && nextStepValue === steps.indexOf("Payout") + 1) {
         nextStepValue += 1;
       }
@@ -12991,32 +11838,26 @@ const NewPolicyPage = () => {
   };
 
   const prevStep = () => {
-    // FIXED: Handle going back from step 4 for new cars
     if (form.vehicleType === "new" && step === 4) {
-      setStep(2); // Go back to Vehicle Details
-    } 
-    // FIXED: Handle going back when payout is hidden
-    else if (shouldHidePayout() && step === steps.indexOf("Payout") + 1) {
-      setStep(step - 2); // Skip payout step
-    }
-    else {
+      setStep(2);
+    } else if (shouldHidePayout() && step === steps.indexOf("Payout") + 1) {
+      setStep(step - 2);
+    } else {
       setStep((s) => Math.max(s - 1, 1));
     }
     setErrors({});
     setSaveMessage("");
   };
 
-  // FIXED: Updated progress calculation to account for skipped steps
   const progressPercent = Math.round(((getDisplayStep(step) - 1) / (getSteps().length - 1)) * 100);
 
-  // FIXED: Updated next label to show correct step name
   const getNextLabel = () => {
     if (step < steps.length) {
       if (form.vehicleType === "new" && step === 2) {
-        return "Next: Insurance Quotes"; // Skip Previous Policy
+        return "Next: Insurance Quotes";
       }
       if (shouldHidePayout() && step === steps.length - 1) {
-        return "Finish"; // Skip Payout and finish directly
+        return "Finish";
       }
       return `Next: ${steps[step]}`;
     }
@@ -13025,7 +11866,6 @@ const NewPolicyPage = () => {
 
   const nextLabel = getNextLabel();
 
-  // ENHANCED: Step props with consistent duration utilities and credit type info
   const stepProps = {
     form,
     handleChange,
@@ -13042,14 +11882,13 @@ const NewPolicyPage = () => {
     paymentLedger,
     onPaymentLedgerUpdate: handlePaymentLedgerUpdate,
     isEditMode: !!id,
-    // Add duration utilities to ALL components
     formatPolicyDuration,
     getPolicyDurationOptions,
     mapQuoteDurationToForm,
     calculateExpiryDates,
     policyDurationMappings,
-    // FIXED: Add credit type utilities
-    shouldHidePayout: shouldHidePayout()
+    shouldHidePayout: shouldHidePayout(),
+    updateTimeline
   };
 
   if (loadingPolicy) {
@@ -13145,6 +11984,38 @@ const NewPolicyPage = () => {
           </div>
         )}
 
+        {/* Timeline Display Banner */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-gray-100 text-gray-600">
+                <FaClock />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">Case Timeline</h3>
+                <div className="text-sm text-gray-600 mt-1">
+                  {form.timeline.caseStarted ? (
+                    <div className="flex items-center gap-4">
+                      <span>Case Started: {form.timeline.caseStarted.display}</span>
+                      {form.timeline.quotesGenerated && (
+                        <span>• Quotes Generated: {form.timeline.quotesGenerated.display}</span>
+                      )}
+                      {form.timeline.progressSaved && (
+                        <span>• Progress Saved: {form.timeline.progressSaved.display}</span>
+                      )}
+                      {form.timeline.caseCompleted && (
+                        <span>• Case Completed: {form.timeline.caseCompleted.display}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span>Case timeline will be recorded as you progress...</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Credit Type Info Banner */}
         {form.creditType && (
           <div className={`border rounded-xl p-4 mb-6 ${
@@ -13207,7 +12078,6 @@ const NewPolicyPage = () => {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="text-sm text-gray-600">
-              {/* FIXED: Updated step display to account for skipped steps */}
               Step {getDisplayStep(step)} of {getSteps().length}
             </div>
             <div className="text-sm text-gray-500">
@@ -13258,7 +12128,6 @@ const NewPolicyPage = () => {
                   >
                     {title}
                   </div>
-                  {/* FIXED: Show vehicle type indicator on step 2 */}
                   {title === "Vehicle Details" && form.vehicleType && (
                     <div className={`mt-1 px-2 py-0.5 rounded-full text-xs ${
                       form.vehicleType === "new" 
@@ -13268,13 +12137,11 @@ const NewPolicyPage = () => {
                       {form.vehicleType === "new" ? "NEW" : "USED"}
                     </div>
                   )}
-                  {/* FIXED: Show renewal indicator */}
                   {form.isRenewal && title === "Previous Policy" && (
                     <div className="mt-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
                       PRE-FILLED
                     </div>
                   )}
-                  {/* FIXED: Show payout hidden indicator */}
                   {shouldHidePayout() && title === "Payout" && (
                     <div className="mt-1 px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-800">
                       HIDDEN
@@ -13289,16 +12156,14 @@ const NewPolicyPage = () => {
         {/* Step components */}
         {step === 1 && <CaseDetails {...stepProps} />}
         {step === 2 && <VehicleDetails {...stepProps} />}
-        {/* FIXED: Only show Previous Policy for used cars */}
         {step === 3 && form.vehicleType === "used" && <PreviousPolicyDetails {...stepProps} />}
         {step === 4 && <InsuranceQuotes {...stepProps} />}
         {step === 5 && <NewPolicyDetails {...stepProps} acceptedQuote={acceptedQuote} />}
         {step === 6 && <Documents {...stepProps} />}
         {step === 7 && <Payment {...stepProps} totalPremium={totalPremium} />}
-        {/* FIXED: Only show Payout if not hidden */}
         {step === 8 && !shouldHidePayout() && <PayoutDetails {...stepProps} />}
 
-        {/* FIXED FOOTER */}
+        {/* Footer */}
         <div className="fixed bottom-0 left-0 right-0 bg-gray-50/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg z-50">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between">
@@ -13321,7 +12186,6 @@ const NewPolicyPage = () => {
                 </button>
                 
                 <div className="text-sm text-gray-500 hidden md:block">
-                  {/* FIXED: Updated step display */}
                   Step {getDisplayStep(step)} of {getSteps().length}
                 </div>
               </div>
@@ -13344,7 +12208,6 @@ const NewPolicyPage = () => {
           </div>
         </div>
 
-        {/* Add padding to bottom to account for fixed footer */}
         <div className="h-20"></div>
       </div>
     </div>

@@ -40,7 +40,10 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaHandshake,
-  FaStoreAlt
+  FaStoreAlt,
+  FaMotorcycle,
+  FaTruck,
+  FaCarSide
 } from 'react-icons/fa';
 
 // ================== PAYMENT BREAKDOWN CALCULATION ==================
@@ -233,6 +236,91 @@ const getStatusDisplay = (status) => {
   };
 };
 
+// ================== VEHICLE TYPE DETECTION ==================
+
+// Function to detect vehicle type from policy data
+const getVehicleType = (policy) => {
+  // Check if vehicle_type is directly available
+  if (policy.vehicle_type) {
+    const vehicleType = policy.vehicle_type.toLowerCase();
+    if (vehicleType.includes('two') || vehicleType.includes('2') || vehicleType.includes('bike') || vehicleType.includes('motorcycle')) {
+      return 'two wheeler';
+    } else if (vehicleType.includes('four') || vehicleType.includes('4') || vehicleType.includes('car') || vehicleType.includes('suv')) {
+      return 'four wheeler';
+    } else if (vehicleType.includes('commercial') || vehicleType.includes('truck') || vehicleType.includes('bus') || vehicleType.includes('lcv') || vehicleType.includes('hcv')) {
+      return 'commercial';
+    }
+  }
+
+  // Check vehicle_details for vehicleTypeCategory
+  if (policy.vehicle_details?.vehicleTypeCategory) {
+    const category = policy.vehicle_details.vehicleTypeCategory.toLowerCase();
+    if (category.includes('two') || category.includes('2')) {
+      return 'two wheeler';
+    } else if (category.includes('four') || category.includes('4')) {
+      return 'four wheeler';
+    } else if (category.includes('commercial')) {
+      return 'commercial';
+    }
+  }
+
+  // Check vehicle_details for make to infer type
+  if (policy.vehicle_details?.make) {
+    const make = policy.vehicle_details.make.toLowerCase();
+    
+    // Two wheeler makes
+    const twoWheelerMakes = [
+      'hero', 'bajaj', 'tvs', 'honda', 'yamaha', 'suzuki', 'royal enfield', 
+      'ktm', 'harley', 'ducati', 'triumph', 'bmw', 'vespa', 'aprilia', 
+      'benelli', 'cfmoto', 'husqvarna', 'kawasaki', 'ola', 'ather', 
+      'revolt', 'ultraviolette', 'tork', 'pure ev', 'matter', 'ampere', 
+      'okaya', 'greaves', 'hero electric', 'tvs iqube', 'bajaj chetak'
+    ];
+    
+    // Commercial vehicle makes
+    const commercialMakes = [
+      'ashok leyland', 'tata motors commercial', 'eicher', 'mahindra electric', 
+      'piaggio', 'olectra', 'omega', 'euler', 'switch', 'jbm', 've commercial', 
+      'force', 'hindustan motors'
+    ];
+
+    if (twoWheelerMakes.some(brand => make.includes(brand))) {
+      return 'two wheeler';
+    } else if (commercialMakes.some(brand => make.includes(brand))) {
+      return 'commercial';
+    }
+  }
+
+  // Default to four wheeler if no other info is available
+  return 'four wheeler';
+};
+
+// Vehicle type display configuration
+const getVehicleTypeDisplay = (vehicleType) => {
+  const config = {
+    'two wheeler': {
+      text: 'Two Wheeler',
+      class: 'bg-orange-100 text-orange-800 border border-orange-200',
+      icon: FaMotorcycle,
+      color: 'orange'
+    },
+    'four wheeler': {
+      text: 'Four Wheeler',
+      class: 'bg-blue-100 text-blue-800 border border-blue-200',
+      icon: FaCarSide,
+      color: 'blue'
+    },
+    'commercial': {
+      text: 'Commercial',
+      class: 'bg-purple-100 text-purple-800 border border-purple-200',
+      icon: FaTruck,
+      color: 'purple'
+    }
+  };
+  
+  return config[vehicleType] || config['four wheeler'];
+};
+
 // ================== CSV EXPORT UTILITY ==================
 
 // Helper function to get expiry date for CSV export
@@ -294,6 +382,7 @@ const exportToCSV = (policies, selectedRows = []) => {
     'NCB Discount',
     'Status',
     'Payment Status',
+    'Vehicle Category',
     'Created Date',
     'Expiry Date',
     'Buyer Type',
@@ -346,6 +435,9 @@ const exportToCSV = (policies, selectedRows = []) => {
       }
     };
 
+    // Get vehicle category
+    const vehicleCategory = getVehicleType(policy);
+
     return [
       policy._id || policy.id || 'N/A',
       getCustomerName(),
@@ -369,6 +461,7 @@ const exportToCSV = (policies, selectedRows = []) => {
       `${policyInfo.ncbDiscount || insuranceQuote.ncb || 0}%`,
       normalizedStatus || 'N/A',
       getPaymentStatus(policy),
+      vehicleCategory,
       formatDateForCSV(policy.created_at || policy.ts),
       formatDateForCSV(getExpiryDateForCSV(policy)),
       policy.buyer_type || 'individual',
@@ -553,7 +646,8 @@ const AdvancedSearch = ({
       policyIssuedBy: '',
       brokerName: '',
       sourceOrigin: '',
-      hypothecation: ''
+      hypothecation: '',
+      vehicleCategory: ''
     };
     setLocalFilters(resetFilters);
     onResetFilters();
@@ -643,6 +737,21 @@ const AdvancedSearch = ({
                 placeholder="Search by vehicle model"
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
               />
+            </div>
+
+            {/* Vehicle Category */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Vehicle Category</label>
+              <select
+                value={localFilters.vehicleCategory}
+                onChange={(e) => handleFilterChange('vehicleCategory', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                <option value="two wheeler">Two Wheeler</option>
+                <option value="four wheeler">Four Wheeler</option>
+                <option value="commercial">Commercial</option>
+              </select>
             </div>
 
             {/* Policy Information */}
@@ -805,6 +914,84 @@ const AdvancedSearch = ({
   );
 };
 
+// ================== VEHICLE CATEGORY FILTER TABS ==================
+
+const VehicleCategoryTabs = ({ activeVehicleCategory, onVehicleCategoryChange, stats }) => {
+  const tabs = [
+    {
+      id: 'all',
+      name: 'All Vehicles',
+      count: stats.total,
+      color: 'gray',
+      activeClass: 'bg-gray-500 text-white border-gray-600',
+      inactiveClass: 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+    },
+    {
+      id: 'two wheeler',
+      name: 'Two Wheeler',
+      count: stats.twoWheeler,
+      color: 'orange',
+      activeClass: 'bg-orange-500 text-white border-orange-600',
+      inactiveClass: 'bg-white text-gray-700 hover:bg-orange-50 border-orange-200'
+    },
+    {
+      id: 'four wheeler',
+      name: 'Four Wheeler',
+      count: stats.fourWheeler,
+      color: 'blue',
+      activeClass: 'bg-blue-500 text-white border-blue-600',
+      inactiveClass: 'bg-white text-gray-700 hover:bg-blue-50 border-blue-200'
+    },
+    {
+      id: 'commercial',
+      name: 'Commercial',
+      count: stats.commercial,
+      color: 'purple',
+      activeClass: 'bg-purple-500 text-white border-purple-600',
+      inactiveClass: 'bg-white text-gray-700 hover:bg-purple-50 border-purple-200'
+    }
+  ];
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-3 overflow-hidden">
+      <div className="p-3">
+        <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+          Vehicle Category Filter
+        </h4>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onVehicleCategoryChange(tab.id)}
+              className={`flex flex-col items-center justify-center p-1.5 rounded border transition-all duration-200 hover:shadow-sm relative ${
+                activeVehicleCategory === tab.id ? tab.activeClass : tab.inactiveClass
+              }`}
+            >
+              <div className={`text-base font-bold mb-0.5 ${
+                activeVehicleCategory === tab.id ? 'text-white' : `text-${tab.color}-600`
+              }`}>
+                {tab.count}
+              </div>
+              <div className={`font-medium text-xs text-center ${
+                activeVehicleCategory === tab.id ? 'text-white' : 'text-gray-800'
+              }`}>
+                {tab.name}
+              </div>
+              
+              {/* Active indicator */}
+              {activeVehicleCategory === tab.id && (
+                <div className="absolute -top-0.5 -right-0.5">
+                  <div className={`w-1.5 h-1.5 bg-${tab.color}-500 rounded-full border border-white`}></div>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ================== MAIN POLICY TABLE COMPONENT ==================
 
 const PolicyTable = ({ policies, loading, onView, onDelete }) => {
@@ -820,6 +1007,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [activeVehicleCategory, setActiveVehicleCategory] = useState('all');
   const [searchFilters, setSearchFilters] = useState({
     customerName: '',
     mobile: '',
@@ -838,7 +1026,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     policyIssuedBy: '',
     brokerName: '',
     sourceOrigin: '',
-    hypothecation: ''
+    hypothecation: '',
+    vehicleCategory: ''
   });
 
   const navigate = useNavigate();
@@ -852,9 +1041,43 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     });
   }, [policies]);
 
-  // Enhanced search function with advanced filters
+  // Calculate vehicle category statistics
+  const vehicleStats = useMemo(() => {
+    const stats = {
+      total: sortedPolicies.length,
+      twoWheeler: 0,
+      fourWheeler: 0,
+      commercial: 0
+    };
+
+    sortedPolicies.forEach(policy => {
+      const vehicleType = getVehicleType(policy);
+      switch (vehicleType) {
+        case 'two wheeler':
+          stats.twoWheeler++;
+          break;
+        case 'four wheeler':
+          stats.fourWheeler++;
+          break;
+        case 'commercial':
+          stats.commercial++;
+          break;
+      }
+    });
+
+    return stats;
+  }, [sortedPolicies]);
+
+  // Enhanced search function with advanced filters and vehicle category
   const filteredPolicies = useMemo(() => {
     let filtered = sortedPolicies;
+
+    // Apply vehicle category filter
+    if (activeVehicleCategory !== 'all') {
+      filtered = filtered.filter(policy => 
+        getVehicleType(policy) === activeVehicleCategory
+      );
+    }
 
     // Apply advanced search filters
     const hasAdvancedFilters = Object.values(searchFilters).some(value => value !== '');
@@ -887,6 +1110,11 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
 
         const matchesVehicleModel = !searchFilters.vehicleModel || 
           (vehicle.model || '').toLowerCase().includes(searchFilters.vehicleModel.toLowerCase());
+
+        // Vehicle category filter in advanced search
+        const vehicleCategory = getVehicleType(policy);
+        const matchesVehicleCategory = !searchFilters.vehicleCategory || 
+          vehicleCategory === searchFilters.vehicleCategory;
 
         const matchesPolicyNumber = !searchFilters.policyNumber || 
           (policyInfo.policyNumber || '').toLowerCase().includes(searchFilters.policyNumber.toLowerCase());
@@ -940,8 +1168,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
           (policyInfo.hypothecation || '').toLowerCase().includes(searchFilters.hypothecation.toLowerCase());
 
         return matchesCustomerName && matchesMobile && matchesEmail && matchesRegNo && 
-               matchesVehicleMake && matchesVehicleModel && matchesPolicyNumber && 
-               matchesInsuranceCompany && matchesCity && matchesPincode &&
+               matchesVehicleMake && matchesVehicleModel && matchesVehicleCategory &&
+               matchesPolicyNumber && matchesInsuranceCompany && matchesCity && matchesPincode &&
                matchesMinPremium && matchesMaxPremium && matchesStartDate && matchesEndDate &&
                matchesPolicyIssuedBy && matchesBrokerName && matchesSourceOrigin && matchesHypothecation;
       });
@@ -1004,7 +1232,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     }
 
     return filtered;
-  }, [sortedPolicies, searchQuery, searchFilters]);
+  }, [sortedPolicies, searchQuery, searchFilters, activeVehicleCategory]);
 
   // Paginate policies
   const paginatedPolicies = useMemo(() => {
@@ -1057,7 +1285,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
   }, [currentPage]);
 
   // Helper functions
-  const getVehicleType = (policy) => policy.vehicleType || 'used';
+  const getVehicleTypeFromPolicy = (policy) => policy.vehicleType || 'used';
 
   // Get policy issued by information
   const getPolicyIssuedBy = (policy) => {
@@ -1338,7 +1566,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       policyIssuedBy: '',
       brokerName: '',
       sourceOrigin: '',
-      hypothecation: ''
+      hypothecation: '',
+      vehicleCategory: ''
     });
   };
 
@@ -1347,7 +1576,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     setCurrentPage(1);
     setSelectedRows(new Set());
     setSelectAll(false);
-  }, [searchQuery, searchFilters]);
+  }, [searchQuery, searchFilters, activeVehicleCategory]);
 
   if (loading) {
     return (
@@ -1372,6 +1601,13 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
 
   return (
     <>
+      {/* Vehicle Category Filter Tabs */}
+      <VehicleCategoryTabs
+        activeVehicleCategory={activeVehicleCategory}
+        onVehicleCategoryChange={setActiveVehicleCategory}
+        stats={vehicleStats}
+      />
+
       {/* Enhanced Filters Section */}
       <div className="bg-white rounded border border-gray-200 p-3 mb-3">
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
@@ -1435,6 +1671,9 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
             )}
             {searchQuery && (
               <span className="text-purple-600 ml-1">for "{searchQuery}"</span>
+            )}
+            {activeVehicleCategory !== 'all' && (
+              <span className="text-orange-600 ml-1">• {activeVehicleCategory}</span>
             )}
           </div>
           
@@ -1516,13 +1755,16 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                 const paymentStatus = getPaymentStatus(policy);
                 const idvAmount = getIdvAmount(policy);
                 const ncbDiscount = getNcbDiscount(policy);
-                const vehicleType = getVehicleType(policy);
+                const vehicleType = getVehicleTypeFromPolicy(policy);
                 const isSelected = selectedRows.has(policyId);
                 const isExpanded = expandedRows.has(policyId);
                 const policyIssuedBy = getPolicyIssuedBy(policy);
                 const PolicyIssuedByIcon = policyIssuedBy.icon;
                 const sourceOrigin = getSourceOrigin(policy);
                 const hypothecation = getHypothecation(policy);
+                const vehicleCategory = getVehicleType(policy);
+                const vehicleTypeDisplay = getVehicleTypeDisplay(vehicleCategory);
+                const VehicleTypeIcon = vehicleTypeDisplay.icon;
 
                 return (
                   <React.Fragment key={policyId}>
@@ -1567,6 +1809,11 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                               }`}>
                                 {vehicleType === 'new' ? 'NEW' : 'USED'}
                               </span>
+                              <span className={`text-xs px-1 py-0.5 rounded ${vehicleTypeDisplay.class}`}>
+                                <VehicleTypeIcon className="inline text-xs mr-0.5" />
+                                {vehicleCategory === 'two wheeler' ? '2W' : 
+                                 vehicleCategory === 'four wheeler' ? '4W' : 'COM'}
+                              </span>
                               {customer.isCorporate && (
                                 <span className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">
                                   Corp
@@ -1603,7 +1850,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                           <div className="pt-1 border-t border-gray-100">
                             <div className="flex items-start gap-2">
                               <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                                <FaCar className="text-blue-600 text-xs" />
+                                <VehicleTypeIcon className="text-blue-600 text-xs" />
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="font-medium text-gray-900 text-sm truncate">{vehicleInfo.main}</div>
@@ -1858,6 +2105,13 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                     <span className="font-medium font-mono text-xs">{vehicleInfo.engineNo}</span>
                                   </div>
                                 )}
+                                <div className="flex justify-between pt-1 border-t border-gray-100">
+                                  <span className="text-gray-600">Vehicle Category:</span>
+                                  <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${vehicleTypeDisplay.class}`}>
+                                    <VehicleTypeIcon className="inline text-xs mr-1" />
+                                    {vehicleTypeDisplay.text}
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
@@ -1989,6 +2243,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
           <button
             onClick={() => {
               setSearchQuery('');
+              setActiveVehicleCategory('all');
               handleResetAdvancedFilters();
             }}
             className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-xs font-medium"
