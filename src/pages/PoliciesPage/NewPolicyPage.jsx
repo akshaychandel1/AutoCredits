@@ -964,6 +964,14 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
   // UPDATED: Check if payout should be hidden
   const shouldHidePayout = form.creditType === "showroom" || form.creditType === "customer";
 
+  // NEW: Set vehicle type to "used" on component mount if not set
+  useEffect(() => {
+    if (!form.vehicleType || form.vehicleType === "") {
+      console.log("🚗 Setting default vehicle type to 'used'");
+      handleVehicleTypeChange("used");
+    }
+  }, []); // Empty dependency array to run only once on mount
+
   return (
     <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-6 mb-6">
       <div className="flex items-start justify-between">
@@ -1037,7 +1045,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
                 type="radio"
                 name="vehicleType"
                 value="used"
-                checked={form.vehicleType === "used"}
+                checked={form.vehicleType === "used" || !form.vehicleType}
                 onChange={() => handleVehicleTypeChange("used")}
                 className="form-radio"
               />
@@ -1075,31 +1083,31 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
             Broker Name {shouldEnableBrokerName && "*"}
           </label>
           <AutoSuggestTextField
-  fieldName="brokerName"
-  label=""
-  placeholder={shouldEnableBrokerName ? "Select or type broker name" : "Select Broker first"}
-  value={form.brokerName || ""}
-  onChange={(value) => {
-    handleChange({
-      target: {
-        name: 'brokerName',
-        value: value
-      }
-    });
-  }}
-  disabled={!shouldEnableBrokerName}
-  required={shouldEnableBrokerName}
-  hardcodedOptions={brokerNameOptions} // Pass hardcoded options
-  onSelect={(suggestion) => {
-    console.log('Selected broker:', suggestion);
-    handleChange({
-      target: {
-        name: 'brokerName',
-        value: suggestion.value
-      }
-    });
-  }}
-/>
+            fieldName="brokerName"
+            label=""
+            placeholder={shouldEnableBrokerName ? "Select or type broker name" : "Select Broker first"}
+            value={form.brokerName || ""}
+            onChange={(value) => {
+              handleChange({
+                target: {
+                  name: 'brokerName',
+                  value: value
+                }
+              });
+            }}
+            disabled={!shouldEnableBrokerName}
+            required={shouldEnableBrokerName}
+            hardcodedOptions={brokerNameOptions} // Pass hardcoded options
+            onSelect={(suggestion) => {
+              console.log('Selected broker:', suggestion);
+              handleChange({
+                target: {
+                  name: 'brokerName',
+                  value: suggestion.value
+                }
+              });
+            }}
+          />
           {errors.brokerName && <p className="text-red-500 text-xs mt-1">{errors.brokerName}</p>}
         </div>
 
@@ -1109,30 +1117,30 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
             Source Origin
           </label>
           <AutoSuggestTextField
-  fieldName="sourceOrigin"
-  label=""
-  placeholder="Select or type agent name"
-  value={form.sourceOrigin || ""}
-  onChange={(value) => {
-    handleChange({
-      target: {
-        name: 'sourceOrigin',
-        value: value
-      }
-    });
-  }}
-  disabled={false}
-  hardcodedOptions={agentNameOptions} // Pass hardcoded options
-  onSelect={(suggestion) => {
-    console.log('Selected source origin:', suggestion);
-    handleChange({
-      target: {
-        name: 'sourceOrigin',
-        value: suggestion.value
-      }
-    });
-  }}
-/>
+            fieldName="sourceOrigin"
+            label=""
+            placeholder="Select or type agent name"
+            value={form.sourceOrigin || ""}
+            onChange={(value) => {
+              handleChange({
+                target: {
+                  name: 'sourceOrigin',
+                  value: value
+                }
+              });
+            }}
+            disabled={false}
+            hardcodedOptions={agentNameOptions} // Pass hardcoded options
+            onSelect={(suggestion) => {
+              console.log('Selected source origin:', suggestion);
+              handleChange({
+                target: {
+                  name: 'sourceOrigin',
+                  value: suggestion.value
+                }
+              });
+            }}
+          />
           {errors.sourceOrigin && <p className="text-red-500 text-xs mt-1">{errors.sourceOrigin}</p>}
           <p className="text-gray-400 text-xs mt-1">From where we got the policy client</p>
         </div>
@@ -1762,7 +1770,43 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
         </div>
 
         {/* Reference Info */}
-        <div className="md:col-span-2">
+        {/* In CaseDetails component, add onChange handlers for reference fields
+Update the Reference Information section in JSX: */}
+
+{/* Reference Info */}
+<div className="md:col-span-2">
+  <h4 className="text-md font-semibold mt-6">Reference Information (Optional)</h4>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+    <div>
+      <label className="block mb-1 text-sm font-medium text-gray-600">
+        Reference Name
+      </label>
+      <input
+        type="text"
+        name="referenceName"
+        value={form.referenceName || ""}
+        onChange={(e) => handleTextChange(e, true)}
+        placeholder="Reference Name"
+        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+      />
+    </div>
+    <div>
+      <label className="block mb-1 text-sm font-medium text-gray-600">
+        Reference Phone Number
+      </label>
+      <input
+        type="text"
+        name="referencePhone"
+        value={form.referencePhone || ""}
+        onChange={handlePhoneChange}
+        placeholder="Reference Phone Number"
+        maxLength="10"
+        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+      />
+    </div>
+  </div>
+</div>
+        {/* <div className="md:col-span-2">
           <h4 className="text-md font-semibold mt-6">Reference Information (Optional)</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
             <div>
@@ -1793,7 +1837,7 @@ const CaseDetails = ({ form, handleChange, handleSave, isSaving, errors }) => {
               />
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Save Button */}
@@ -9601,7 +9645,7 @@ const NewPolicyPage = () => {
     relation: "",
     nomineeAge: "",
     
-    // Reference fields
+    // Reference fields - FIXED: Ensure these are in initial state
     referenceName: "",
     referencePhone: "",
     
@@ -9771,6 +9815,16 @@ const NewPolicyPage = () => {
   useEffect(() => {
     console.log("🕐 Current Timeline Data:", form.timeline);
   }, [form.timeline]);
+
+  // Debug reference data
+  useEffect(() => {
+    console.log("🔍 Reference Data Debug:", {
+      referenceName: form.referenceName,
+      referencePhone: form.referencePhone,
+      step: step,
+      policyId: policyId
+    });
+  }, [form.referenceName, form.referencePhone, step, policyId]);
 
   // ============ POLICY DURATION UTILITIES ============
   const policyDurationMappings = {
@@ -10308,8 +10362,9 @@ const NewPolicyPage = () => {
           relation: renewalData.nominee?.relation || "",
           nomineeAge: renewalData.nominee?.age || "",
           
-          referenceName: renewalData.reference?.name || renewalData.refrence?.name || "",
-          referencePhone: renewalData.reference?.phone || renewalData.refrence?.phone || "",
+          // FIXED: Reference fields - handle both spellings
+          referenceName: renewalData.reference?.name || renewalData.refrence?.name || renewalData.customer_details?.referenceName || "",
+          referencePhone: renewalData.reference?.phone || renewalData.refrence?.phone || renewalData.customer_details?.referencePhone || "",
           
           regNo: renewalData.vehicle_details?.regNo || "",
           make: renewalData.vehicle_details?.make || "",
@@ -10518,8 +10573,9 @@ const NewPolicyPage = () => {
         relation: actualData.nominee?.relation || "",
         nomineeAge: actualData.nominee?.age || "",
         
-        referenceName: actualData.reference?.name || actualData.refrence?.name || "",
-        referencePhone: actualData.reference?.phone || actualData.refrence?.phone || "",
+        // FIXED: Reference fields - handle both spellings
+        referenceName: actualData.reference?.name || actualData.refrence?.name || actualData.customer_details?.referenceName || "",
+        referencePhone: actualData.reference?.phone || actualData.refrence?.phone || actualData.customer_details?.referencePhone || "",
         
         regNo: actualData.vehicle_details?.regNo || "",
         make: actualData.vehicle_details?.make || "",
@@ -10604,6 +10660,18 @@ const NewPolicyPage = () => {
         created_by: actualData.created_by || "ADMIN123",
         policyPrefilled: true
       };
+      
+      console.log("📋 Loaded reference data from API:", {
+        fromAPI: {
+          reference: actualData.reference,
+          refrence: actualData.refrence,
+          customer_details: actualData.customer_details?.referenceName
+        },
+        loadedToForm: {
+          referenceName: transformedData.referenceName,
+          referencePhone: transformedData.referencePhone
+        }
+      });
       
       setForm(transformedData);
       
@@ -10757,6 +10825,12 @@ const NewPolicyPage = () => {
     }
     
     if (name === "vehicleTypeCategory") {
+      setForm((f) => ({ ...f, [name]: value }));
+      return;
+    }
+    
+    // Handle reference fields
+    if (name === "referenceName" || name === "referencePhone") {
       setForm((f) => ({ ...f, [name]: value }));
       return;
     }
@@ -10962,6 +11036,14 @@ const NewPolicyPage = () => {
       });
     }
 
+    // Ensure reference object is properly structured
+    if (sanitized.reference) {
+      sanitized.reference = {
+        name: sanitized.reference.name || '',
+        phone: sanitized.reference.phone || ''
+      };
+    }
+
     return sanitized;
   };
 
@@ -11005,6 +11087,7 @@ const NewPolicyPage = () => {
           relation: form.relation || "",
           age: form.nomineeAge || ""
         },
+        // FIXED: Include reference object
         reference: {
           name: form.referenceName || "",
           phone: form.referencePhone || ""
@@ -11023,6 +11106,11 @@ const NewPolicyPage = () => {
         renewal_id: form.renewal_id || "",
         isRenewal: form.isRenewal || false
       };
+
+      console.log("📝 Creating policy with reference data:", {
+        referenceName: policyData.reference.name,
+        referencePhone: policyData.reference.phone
+      });
 
       const sanitizedData = sanitizeDataForAPI(policyData);
       
@@ -11131,6 +11219,7 @@ const NewPolicyPage = () => {
                 relation: form.relation || "",
                 age: form.nomineeAge || ""
               },
+              // FIXED: Include reference object in case 1
               reference: {
                 name: form.referenceName || "",
                 phone: form.referencePhone || ""
@@ -11358,11 +11447,21 @@ const NewPolicyPage = () => {
         progressSaved: formatIndianTime()
       };
 
+      // FIXED: Include reference in update data if it exists in form
+      if (form.referenceName || form.referencePhone) {
+        updateData.reference = {
+          name: form.referenceName || "",
+          phone: form.referencePhone || ""
+        };
+      }
+
       const sanitizedUpdateData = sanitizeDataForAPI(updateData);
 
       console.log("🚀 Sending update to backend:", {
         policyId,
         updateData: sanitizedUpdateData,
+        hasReference: !!sanitizedUpdateData.reference,
+        referenceData: sanitizedUpdateData.reference,
         timeline: updateData.timeline
       });
 
@@ -11450,7 +11549,11 @@ const NewPolicyPage = () => {
 
       console.log("💾 Save & Exit - Current form state:", {
         creditType: form.creditType,
-        timeline: form.timeline
+        timeline: form.timeline,
+        reference: {
+          name: form.referenceName,
+          phone: form.referencePhone
+        }
       });
 
       if (policyId) {
@@ -11525,6 +11628,7 @@ const NewPolicyPage = () => {
           relation: form.relation,
           age: form.nomineeAge
         },
+        // FIXED: Include reference object
         reference: {
           name: form.referenceName,
           phone: form.referencePhone
@@ -11635,7 +11739,8 @@ const NewPolicyPage = () => {
 
       console.log(`✅ Finalizing policy:`, {
         creditType: form.creditType,
-        timeline: form.timeline
+        timeline: form.timeline,
+        reference: finalData.reference
       });
 
       const response = await axios.put(`${API_BASE_URL}/policies/${policyId}`, sanitizedFinalData, {
@@ -12024,6 +12129,22 @@ const NewPolicyPage = () => {
         {step === 6 && <Documents {...stepProps} />}
         {step === 7 && <Payment {...stepProps} totalPremium={totalPremium} />}
         {step === 8 && !shouldHidePayout() && <PayoutDetails {...stepProps} />}
+
+        {/* Debug button for reference data */}
+        <div className="fixed bottom-20 left-4 z-50">
+          <button 
+            onClick={() => {
+              console.log("🔍 Current Reference Data:", {
+                referenceName: form.referenceName,
+                referencePhone: form.referencePhone,
+                formState: form
+              });
+            }}
+            className="bg-gray-800 text-white px-3 py-2 rounded text-sm opacity-50 hover:opacity-100"
+          >
+            Debug Reference
+          </button>
+        </div>
 
         {/* Footer */}
         <div className="fixed bottom-0 left-0 right-0 bg-gray-50/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg z-50">

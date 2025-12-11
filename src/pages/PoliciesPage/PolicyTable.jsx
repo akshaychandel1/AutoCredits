@@ -349,6 +349,50 @@ const formatDateForCSV = (dateString) => {
   }
 };
 
+// Function to get reference name - FIXED: Check "refrence" (typo) field
+const getReferenceName = (policy) => {
+  // Check "refrence" field first (with typo as per MongoDB data)
+  if (policy.refrence && policy.refrence.name) {
+    return policy.refrence.name;
+  }
+  // Also check "reference" field (correct spelling)
+  if (policy.reference && policy.reference.name) {
+    return policy.reference.name;
+  }
+  // Check customer_details for reference
+  const customer = policy.customer_details || {};
+  if (customer.refrence && customer.refrence.name) {
+    return customer.refrence.name;
+  }
+  if (customer.reference && customer.reference.name) {
+    return customer.reference.name;
+  }
+  
+  return 'N/A';
+};
+
+// Function to get reference phone
+const getReferencePhone = (policy) => {
+  // Check "refrence" field first (with typo as per MongoDB data)
+  if (policy.refrence && policy.refrence.phone) {
+    return policy.refrence.phone;
+  }
+  // Also check "reference" field (correct spelling)
+  if (policy.reference && policy.reference.phone) {
+    return policy.reference.phone;
+  }
+  // Check customer_details for reference
+  const customer = policy.customer_details || {};
+  if (customer.refrence && customer.refrence.phone) {
+    return customer.refrence.phone;
+  }
+  if (customer.reference && customer.reference.phone) {
+    return customer.reference.phone;
+  }
+  
+  return 'N/A';
+};
+
 const exportToCSV = (policies, selectedRows = []) => {
   const policiesToExport = selectedRows.length > 0 
     ? policies.filter(policy => selectedRows.includes(policy._id || policy.id))
@@ -391,6 +435,8 @@ const exportToCSV = (policies, selectedRows = []) => {
     'Policy Issued By',
     'Broker Name',
     'Source Origin',
+    'Reference Name',
+    'Reference Phone',
     'Hypothecation'
   ];
 
@@ -399,6 +445,10 @@ const exportToCSV = (policies, selectedRows = []) => {
     const vehicle = policy.vehicle_details || {};
     const policyInfo = policy.policy_info || {};
     const insuranceQuote = policy.insurance_quote || {};
+    
+    // Get reference data properly
+    const referenceName = getReferenceName(policy);
+    const referencePhone = getReferencePhone(policy);
     
     const getCustomerName = () => {
       if (policy.buyer_type === 'corporate') {
@@ -470,6 +520,8 @@ const exportToCSV = (policies, selectedRows = []) => {
       getPolicyIssuedBy(),
       policy.brokerName || customer.brokerName || 'N/A',
       policy.sourceOrigin || customer.sourceOrigin || 'N/A',
+      referenceName,
+      referencePhone,
       policyInfo.hypothecation || policy.policy_info?.hypothecation || 'N/A'
     ];
   });
@@ -647,7 +699,9 @@ const AdvancedSearch = ({
       brokerName: '',
       sourceOrigin: '',
       hypothecation: '',
-      vehicleCategory: ''
+      vehicleCategory: '',
+      referenceName: '',
+      referencePhone: ''
     };
     setLocalFilters(resetFilters);
     onResetFilters();
@@ -883,6 +937,28 @@ const AdvancedSearch = ({
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Reference Name</label>
+              <input
+                type="text"
+                value={localFilters.referenceName}
+                onChange={(e) => handleFilterChange('referenceName', e.target.value)}
+                placeholder="Search by reference name"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Reference Phone</label>
+              <input
+                type="text"
+                value={localFilters.referencePhone}
+                onChange={(e) => handleFilterChange('referencePhone', e.target.value)}
+                placeholder="Search by reference phone"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Hypothecation</label>
               <input
                 type="text"
@@ -908,84 +984,6 @@ const AdvancedSearch = ({
           >
             Apply Filters
           </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ================== VEHICLE CATEGORY FILTER TABS ==================
-
-const VehicleCategoryTabs = ({ activeVehicleCategory, onVehicleCategoryChange, stats }) => {
-  const tabs = [
-    {
-      id: 'all',
-      name: 'All Vehicles',
-      count: stats.total,
-      color: 'gray',
-      activeClass: 'bg-gray-500 text-white border-gray-600',
-      inactiveClass: 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-    },
-    {
-      id: 'two wheeler',
-      name: 'Two Wheeler',
-      count: stats.twoWheeler,
-      color: 'orange',
-      activeClass: 'bg-orange-500 text-white border-orange-600',
-      inactiveClass: 'bg-white text-gray-700 hover:bg-orange-50 border-orange-200'
-    },
-    {
-      id: 'four wheeler',
-      name: 'Four Wheeler',
-      count: stats.fourWheeler,
-      color: 'blue',
-      activeClass: 'bg-blue-500 text-white border-blue-600',
-      inactiveClass: 'bg-white text-gray-700 hover:bg-blue-50 border-blue-200'
-    },
-    {
-      id: 'commercial',
-      name: 'Commercial',
-      count: stats.commercial,
-      color: 'purple',
-      activeClass: 'bg-purple-500 text-white border-purple-600',
-      inactiveClass: 'bg-white text-gray-700 hover:bg-purple-50 border-purple-200'
-    }
-  ];
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-3 overflow-hidden">
-      <div className="p-3">
-        <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-          Vehicle Category Filter
-        </h4>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onVehicleCategoryChange(tab.id)}
-              className={`flex flex-col items-center justify-center p-1.5 rounded border transition-all duration-200 hover:shadow-sm relative ${
-                activeVehicleCategory === tab.id ? tab.activeClass : tab.inactiveClass
-              }`}
-            >
-              <div className={`text-base font-bold mb-0.5 ${
-                activeVehicleCategory === tab.id ? 'text-white' : `text-${tab.color}-600`
-              }`}>
-                {tab.count}
-              </div>
-              <div className={`font-medium text-xs text-center ${
-                activeVehicleCategory === tab.id ? 'text-white' : 'text-gray-800'
-              }`}>
-                {tab.name}
-              </div>
-              
-              {/* Active indicator */}
-              {activeVehicleCategory === tab.id && (
-                <div className="absolute -top-0.5 -right-0.5">
-                  <div className={`w-1.5 h-1.5 bg-${tab.color}-500 rounded-full border border-white`}></div>
-                </div>
-              )}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -1026,6 +1024,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     policyIssuedBy: '',
     brokerName: '',
     sourceOrigin: '',
+    referenceName: '',
+    referencePhone: '',
     hypothecation: '',
     vehicleCategory: ''
   });
@@ -1068,6 +1068,49 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     return stats;
   }, [sortedPolicies]);
 
+  // Get source origin with reference name in brackets
+  const getSourceOrigin = (policy) => {
+    const customer = policy.customer_details || {};
+    const sourceOrigin = policy.sourceOrigin || customer.sourceOrigin || 'N/A';
+    const referenceName = getReferenceName(policy);
+    
+    if (sourceOrigin && sourceOrigin !== 'N/A' && referenceName && referenceName !== 'N/A') {
+      return `${sourceOrigin} (${referenceName})`;
+    }
+    return sourceOrigin;
+  };
+
+  // Get customer details including reference data
+  const getCustomerDetails = (policy) => {
+    const customer = policy.customer_details || {};
+    const isCorporate = policy.buyer_type === 'corporate';
+    
+    const displayName = isCorporate 
+      ? (customer.companyName || customer.contactPersonName || 'N/A')
+      : (customer.name || 'N/A');
+    
+    // Get reference data properly
+    const referenceName = getReferenceName(policy);
+    const referencePhone = getReferencePhone(policy);
+    
+    return {
+      name: displayName,
+      mobile: customer.mobile || 'N/A',
+      email: customer.email || 'N/A',
+      city: customer.city || 'N/A',
+      pincode: customer.pincode || 'N/A',
+      address: customer.address || 'N/A',
+      buyerType: policy.buyer_type || 'individual',
+      isCorporate: isCorporate,
+      contactPersonName: customer.contactPersonName || 'N/A',
+      companyName: customer.companyName || 'N/A',
+      brokerName: policy.brokerName || customer.brokerName || 'N/A',
+      sourceOrigin: policy.sourceOrigin || customer.sourceOrigin || 'N/A',
+      referenceName: referenceName,
+      referencePhone: referencePhone
+    };
+  };
+
   // Enhanced search function with advanced filters and vehicle category
   const filteredPolicies = useMemo(() => {
     let filtered = sortedPolicies;
@@ -1088,6 +1131,10 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
         const vehicle = policy.vehicle_details || {};
         const policyInfo = policy.policy_info || {};
         const insuranceQuote = policy.insurance_quote || {};
+        
+        // Get reference data properly
+        const referenceName = getReferenceName(policy).toLowerCase();
+        const referencePhone = getReferencePhone(policy).toLowerCase();
 
         const customerName = policy.buyer_type === 'corporate' 
           ? (customer.companyName || customer.contactPersonName || '').toLowerCase()
@@ -1164,6 +1211,12 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
         const matchesSourceOrigin = !searchFilters.sourceOrigin || 
           (policy.sourceOrigin || customer.sourceOrigin || '').toLowerCase().includes(searchFilters.sourceOrigin.toLowerCase());
 
+        const matchesReferenceName = !searchFilters.referenceName || 
+          referenceName.includes(searchFilters.referenceName.toLowerCase());
+
+        const matchesReferencePhone = !searchFilters.referencePhone || 
+          referencePhone.includes(searchFilters.referencePhone.toLowerCase());
+
         const matchesHypothecation = !searchFilters.hypothecation || 
           (policyInfo.hypothecation || '').toLowerCase().includes(searchFilters.hypothecation.toLowerCase());
 
@@ -1171,7 +1224,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                matchesVehicleMake && matchesVehicleModel && matchesVehicleCategory &&
                matchesPolicyNumber && matchesInsuranceCompany && matchesCity && matchesPincode &&
                matchesMinPremium && matchesMaxPremium && matchesStartDate && matchesEndDate &&
-               matchesPolicyIssuedBy && matchesBrokerName && matchesSourceOrigin && matchesHypothecation;
+               matchesPolicyIssuedBy && matchesBrokerName && matchesSourceOrigin && 
+               matchesReferenceName && matchesReferencePhone && matchesHypothecation;
       });
     }
 
@@ -1180,6 +1234,10 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(policy => {
         const customer = policy.customer_details || {};
+        
+        // Get reference data properly
+        const referenceName = getReferenceName(policy).toLowerCase();
+        const referencePhone = getReferencePhone(policy).toLowerCase();
         
         // Customer information
         const customerName = policy.buyer_type === 'corporate' 
@@ -1208,7 +1266,7 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
         const brokerName = (policy.brokerName || customer.brokerName || '').toLowerCase();
         const hypothecation = (policy.policy_info?.hypothecation || '').toLowerCase();
         
-        // Search across all fields
+        // Search across all fields including reference name
         return (
           customerName.includes(query) ||
           mobile.includes(query) ||
@@ -1223,6 +1281,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
           // New fields search
           sourceOrigin.includes(query) ||
           brokerName.includes(query) ||
+          referenceName.includes(query) || // Search in reference name
+          referencePhone.includes(query) || // Search in reference phone
           hypothecation.includes(query) ||
           // Fuzzy search for insurance companies
           insuranceCompany.includes(query.replace(/\s+/g, '')) ||
@@ -1325,12 +1385,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
           icon: FaHandshake
         };
     }
-  };
-
-  // Get source origin
-  const getSourceOrigin = (policy) => {
-    const customer = policy.customer_details || {};
-    return policy.sourceOrigin || customer.sourceOrigin || 'N/A';
   };
 
   // Get hypothecation
@@ -1474,30 +1528,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
     return 'N/A';
   };
 
-  const getCustomerDetails = (policy) => {
-    const customer = policy.customer_details || {};
-    const isCorporate = policy.buyer_type === 'corporate';
-    
-    const displayName = isCorporate 
-      ? (customer.companyName || customer.contactPersonName || 'N/A')
-      : (customer.name || 'N/A');
-    
-    return {
-      name: displayName,
-      mobile: customer.mobile || 'N/A',
-      email: customer.email || 'N/A',
-      city: customer.city || 'N/A',
-      pincode: customer.pincode || 'N/A',
-      address: customer.address || 'N/A',
-      buyerType: policy.buyer_type || 'individual',
-      isCorporate: isCorporate,
-      contactPersonName: customer.contactPersonName || 'N/A',
-      companyName: customer.companyName || 'N/A',
-      brokerName: policy.brokerName || customer.brokerName || 'N/A',
-      sourceOrigin: policy.sourceOrigin || customer.sourceOrigin || 'N/A'
-    };
-  };
-
   const getPolicyNumber = (policy) => {
     if (policy.policy_info?.policyNumber) {
       return policy.policy_info.policyNumber;
@@ -1566,6 +1596,8 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
       policyIssuedBy: '',
       brokerName: '',
       sourceOrigin: '',
+      referenceName: '',
+      referencePhone: '',
       hypothecation: '',
       vehicleCategory: ''
     });
@@ -1601,13 +1633,6 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
 
   return (
     <>
-      {/* Vehicle Category Filter Tabs */}
-      <VehicleCategoryTabs
-        activeVehicleCategory={activeVehicleCategory}
-        onVehicleCategoryChange={setActiveVehicleCategory}
-        stats={vehicleStats}
-      />
-
       {/* Enhanced Filters Section */}
       <div className="bg-white rounded border border-gray-200 p-3 mb-3">
         <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center justify-between">
@@ -1838,6 +1863,12 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                 <div className="font-semibold text-gray-900 text-sm truncate">
                                   {customer.name}
                                 </div>
+                                {/* Display Contact Person Name under Company Name for corporate customers */}
+                                {customer.isCorporate && customer.companyName && customer.contactPersonName && (
+                                  <div className="text-xs text-gray-500 mt-0.5 truncate">
+                                    Contact: {customer.contactPersonName}
+                                  </div>
+                                )}
                                 <div className="text-xs text-gray-500 flex items-center gap-1 truncate">
                                   <FaPhone className="text-gray-400 text-xs flex-shrink-0" />
                                   <span className="truncate">{customer.mobile}</span>
@@ -1873,6 +1904,13 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                               <div className="text-xs text-gray-500 flex items-center gap-1">
                                 <FaMapMarkerAlt className="text-gray-400 text-xs flex-shrink-0" />
                                 <span className="truncate">Source: {sourceOrigin}</span>
+                              </div>
+                            )}
+                            {/* Display reference name separately if available */}
+                            {customer.referenceName && customer.referenceName !== 'N/A' && (
+                              <div className="text-xs text-gray-500 flex items-center gap-1">
+                                <FaUserTie className="text-gray-400 text-xs flex-shrink-0" />
+                                <span className="truncate">Ref: {customer.referenceName}</span>
                               </div>
                             )}
                           </div>
@@ -2058,6 +2096,18 @@ const PolicyTable = ({ policies, loading, onView, onDelete }) => {
                                   <div className="flex justify-between">
                                     <span className="text-gray-600">Source Origin:</span>
                                     <span className="font-medium">{sourceOrigin}</span>
+                                  </div>
+                                )}
+                                {customer.referenceName && customer.referenceName !== 'N/A' && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Reference Name:</span>
+                                    <span className="font-medium">{customer.referenceName}</span>
+                                  </div>
+                                )}
+                                {customer.referencePhone && customer.referencePhone !== 'N/A' && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Reference Phone:</span>
+                                    <span className="font-medium">{customer.referencePhone}</span>
                                   </div>
                                 )}
                               </div>

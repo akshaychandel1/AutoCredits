@@ -1,6 +1,7 @@
 // src/pages/PoliciesPage/PoliciesPage.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FiPlus, FiRefreshCw } from "react-icons/fi";
+import { FaMotorcycle, FaCar, FaTruck } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import PolicyTable from "./PolicyTable";
@@ -61,8 +62,65 @@ const isPaymentDue = (policy) => {
   return paymentStatus === 'pending' || paymentStatus === 'partially paid';
 };
 
+// NEW: Function to detect vehicle type from policy data
+const getVehicleType = (policy) => {
+  // Check if vehicle_type is directly available
+  if (policy.vehicle_type) {
+    const vehicleType = policy.vehicle_type.toLowerCase();
+    if (vehicleType.includes('two') || vehicleType.includes('2') || vehicleType.includes('bike') || vehicleType.includes('motorcycle')) {
+      return 'two wheeler';
+    } else if (vehicleType.includes('four') || vehicleType.includes('4') || vehicleType.includes('car') || vehicleType.includes('suv')) {
+      return 'four wheeler';
+    } else if (vehicleType.includes('commercial') || vehicleType.includes('truck') || vehicleType.includes('bus') || vehicleType.includes('lcv') || vehicleType.includes('hcv')) {
+      return 'commercial';
+    }
+  }
+
+  // Check vehicle_details for vehicleTypeCategory
+  if (policy.vehicle_details?.vehicleTypeCategory) {
+    const category = policy.vehicle_details.vehicleTypeCategory.toLowerCase();
+    if (category.includes('two') || category.includes('2')) {
+      return 'two wheeler';
+    } else if (category.includes('four') || category.includes('4')) {
+      return 'four wheeler';
+    } else if (category.includes('commercial')) {
+      return 'commercial';
+    }
+  }
+
+  // Check vehicle_details for make to infer type
+  if (policy.vehicle_details?.make) {
+    const make = policy.vehicle_details.make.toLowerCase();
+    
+    // Two wheeler makes
+    const twoWheelerMakes = [
+      'hero', 'bajaj', 'tvs', 'honda', 'yamaha', 'suzuki', 'royal enfield', 
+      'ktm', 'harley', 'ducati', 'triumph', 'bmw', 'vespa', 'aprilia', 
+      'benelli', 'cfmoto', 'husqvarna', 'kawasaki', 'ola', 'ather', 
+      'revolt', 'ultraviolette', 'tork', 'pure ev', 'matter', 'ampere', 
+      'okaya', 'greaves', 'hero electric', 'tvs iqube', 'bajaj chetak'
+    ];
+    
+    // Commercial vehicle makes
+    const commercialMakes = [
+      'ashok leyland', 'tata motors commercial', 'eicher', 'mahindra electric', 
+      'piaggio', 'olectra', 'omega', 'euler', 'switch', 'jbm', 've commercial', 
+      'force', 'hindustan motors'
+    ];
+
+    if (twoWheelerMakes.some(brand => make.includes(brand))) {
+      return 'two wheeler';
+    } else if (commercialMakes.some(brand => make.includes(brand))) {
+      return 'commercial';
+    }
+  }
+
+  // Default to four wheeler if no other info is available
+  return 'four wheeler';
+};
+
 const PoliciesPage = () => {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("all"); // Can be "all", status type, or vehicle type
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -96,22 +154,79 @@ const PoliciesPage = () => {
     fetchPolicies();
   }, []);
 
-  // Filter policies based on active tab
+  // Calculate vehicle category statistics
+  const vehicleStats = useMemo(() => {
+    const stats = {
+      total: policies.length,
+      twoWheeler: 0,
+      fourWheeler: 0,
+      commercial: 0
+    };
+
+    policies.forEach(policy => {
+      const vehicleType = getVehicleType(policy);
+      switch (vehicleType) {
+        case 'two wheeler':
+          stats.twoWheeler++;
+          break;
+        case 'four wheeler':
+          stats.fourWheeler++;
+          break;
+        case 'commercial':
+          stats.commercial++;
+          break;
+      }
+    });
+
+    return stats;
+  }, [policies]);
+
+  // Get status statistics
+  const getStats = useMemo(() => {
+    const total = policies.length;
+    const completed = policies.filter(p => p.status === 'completed').length;
+    const draft = policies.filter(p => p.status === 'draft').length;
+    
+    // Payment stats - UPDATED: Use consistent logic
+    const paymentDue = policies.filter(p => isPaymentDue(p)).length;
+    const fullyPaid = policies.filter(p => getPaymentStatus(p) === 'fully paid').length;
+    
+    return { 
+      total, 
+      completed, 
+      draft,
+      paymentDue,
+      fullyPaid
+    };
+  }, [policies]);
+
+  const stats = getStats;
+
+  // Filter policies based on active filter
   const getFilteredPolicies = () => {
-    switch (activeTab) {
-      case "completed":
-        return policies.filter(policy => policy.status === 'completed');
-      case "draft":
-        return policies.filter(policy => policy.status === 'draft');
-      case "payment-due":
-        // FIX: Use the new isPaymentDue function that includes both pending and partially paid
-        return policies.filter(policy => isPaymentDue(policy));
-      case "fully-paid":
-        // FIX: Only show truly fully paid policies (no pending tag, no due amount)
-        return policies.filter(policy => getPaymentStatus(policy) === 'fully paid');
-      default:
-        return policies;
+    if (activeFilter === "all") {
+      return policies;
     }
+
+    // Check if it's a status filter
+    const statusFilters = ["completed", "draft", "payment-due", "fully-paid"];
+    if (statusFilters.includes(activeFilter)) {
+      switch (activeFilter) {
+        case "completed":
+          return policies.filter(policy => policy.status === 'completed');
+        case "draft":
+          return policies.filter(policy => policy.status === 'draft');
+        case "payment-due":
+          return policies.filter(policy => isPaymentDue(policy));
+        case "fully-paid":
+          return policies.filter(policy => getPaymentStatus(policy) === 'fully paid');
+        default:
+          return policies;
+      }
+    }
+
+    // Otherwise it's a vehicle filter
+    return policies.filter(policy => getVehicleType(policy) === activeFilter);
   };
 
   const filteredPolicies = getFilteredPolicies();
@@ -150,29 +265,8 @@ const PoliciesPage = () => {
     fetchPolicies();
   };
 
-  // Get stats for dashboard
-  const getStats = () => {
-    const total = policies.length;
-    const completed = policies.filter(p => p.status === 'completed').length;
-    const draft = policies.filter(p => p.status === 'draft').length;
-    
-    // Payment stats - UPDATED: Use consistent logic
-    const paymentDue = policies.filter(p => isPaymentDue(p)).length;
-    const fullyPaid = policies.filter(p => getPaymentStatus(p) === 'fully paid').length;
-    
-    return { 
-      total, 
-      completed, 
-      draft,
-      paymentDue,
-      fullyPaid
-    };
-  };
-
-  const stats = getStats();
-
-  // Tab configuration - 5 tabs in a responsive grid (removed corporate, individual, new vehicle, and used vehicle)
-  const tabs = [
+  // Status Tab configuration
+  const statusTabs = [
     { 
       id: "all", 
       name: "All Policies", 
@@ -215,6 +309,55 @@ const PoliciesPage = () => {
     }
   ];
 
+  // Vehicle Category Tab configuration
+  const vehicleTabs = [
+    {
+      id: "two wheeler",
+      name: "Two Wheeler",
+      shortName: "2W",
+      count: vehicleStats.twoWheeler,
+      color: "orange",
+      icon: FaMotorcycle,
+      activeClass: "bg-orange-500 text-white border-orange-600",
+      inactiveClass: "bg-white text-gray-700 hover:bg-orange-50 border-orange-200"
+    },
+    {
+      id: "four wheeler",
+      name: "Four Wheeler",
+      shortName: "4W",
+      count: vehicleStats.fourWheeler,
+      color: "blue",
+      icon: FaCar,
+      activeClass: "bg-blue-500 text-white border-blue-600",
+      inactiveClass: "bg-white text-gray-700 hover:bg-blue-50 border-blue-200"
+    },
+    {
+      id: "commercial",
+      name: "Commercial",
+      shortName: "Comm",
+      count: vehicleStats.commercial,
+      color: "purple",
+      icon: FaTruck,
+      activeClass: "bg-purple-500 text-white border-purple-600",
+      inactiveClass: "bg-white text-gray-700 hover:bg-purple-50 border-purple-200"
+    }
+  ];
+
+  // Get display name for active filter
+  const getActiveFilterName = () => {
+    if (activeFilter === "all") return "All Policies";
+    
+    // Check status tabs
+    const statusTab = statusTabs.find(tab => tab.id === activeFilter);
+    if (statusTab) return statusTab.name;
+    
+    // Check vehicle tabs
+    const vehicleTab = vehicleTabs.find(tab => tab.id === activeFilter);
+    if (vehicleTab) return vehicleTab.name;
+    
+    return "All Policies";
+  };
+
   return (
     <div className="flex-1 p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
       {/* Header */}
@@ -224,7 +367,7 @@ const PoliciesPage = () => {
             Insurance Policies
           </h1>
           <p className="text-gray-600 mt-1">
-            {loading ? "Loading..." : `Total ${policies.length} policies • Showing ${filteredPolicies.length} in ${tabs.find(tab => tab.id === activeTab)?.name}`}
+            {loading ? "Loading..." : `Total ${policies.length} policies • Showing ${filteredPolicies.length} ${activeFilter === "all" ? "" : `in ${getActiveFilterName()}`}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -244,33 +387,82 @@ const PoliciesPage = () => {
         </div>
       </div>
 
-      {/* Status Tabs - 5 in a responsive grid (removed corporate, individual, new vehicle, and used vehicle) */}
+      {/* Status and Vehicle Filter Tabs */}
       {!loading && policies.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6 overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-4 overflow-hidden">
           <div className="p-4">
-            {/* 5 Tabs in a responsive grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-              {tabs.map((tab) => (
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                Filter Policies
+              </h3>
+              {activeFilter !== "all" && (
+                <button
+                  onClick={() => setActiveFilter("all")}
+                  className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                >
+                  Clear Filter
+                </button>
+              )}
+            </div>
+            
+            {/* All Tabs in a single grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2">
+              {/* Status Tabs (first 5) */}
+              {statusTabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all duration-200 hover:shadow-md hover:scale-105 relative ${
-                    activeTab === tab.id ? tab.activeClass : tab.inactiveClass
+                  onClick={() => setActiveFilter(tab.id)}
+                  className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all duration-200 hover:shadow-md relative ${
+                    activeFilter === tab.id ? tab.activeClass : tab.inactiveClass
                   }`}
                 >
-                  <div className={`text-lg font-bold mb-1 ${
-                    activeTab === tab.id ? 'text-white' : `text-${tab.color}-600`
+                  <div className={`text-base font-bold mb-0.5 ${
+                    activeFilter === tab.id ? 'text-white' : `text-${tab.color}-600`
                   }`}>
                     {tab.count}
                   </div>
                   <div className={`font-semibold text-xs text-center ${
-                    activeTab === tab.id ? 'text-white' : 'text-gray-800'
+                    activeFilter === tab.id ? 'text-white' : 'text-gray-800'
                   }`}>
                     {tab.name}
                   </div>
                   
                   {/* Active indicator */}
-                  {activeTab === tab.id && (
+                  {activeFilter === tab.id && (
+                    <div className="absolute -top-1 -right-1">
+                      <div className={`w-2 h-2 bg-${tab.color}-500 rounded-full border-2 border-white`}></div>
+                    </div>
+                  )}
+                </button>
+              ))}
+              
+              {/* Vehicle Filter Tabs (last 3) */}
+              {vehicleTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveFilter(activeFilter === tab.id ? "all" : tab.id)}
+                  className={`flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all duration-200 hover:shadow-md relative ${
+                    activeFilter === tab.id ? tab.activeClass : tab.inactiveClass
+                  }`}
+                >
+                  {tab.icon && (
+                    <tab.icon className={`text-sm mb-0.5 ${
+                      activeFilter === tab.id ? 'text-white' : `text-${tab.color}-600`
+                    }`} />
+                  )}
+                  <div className={`text-base font-bold ${
+                    activeFilter === tab.id ? 'text-white' : `text-${tab.color}-600`
+                  }`}>
+                    {tab.count}
+                  </div>
+                  <div className={`font-semibold text-xs text-center ${
+                    activeFilter === tab.id ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    {tab.shortName}
+                  </div>
+                  
+                  {/* Active indicator */}
+                  {activeFilter === tab.id && (
                     <div className="absolute -top-1 -right-1">
                       <div className={`w-2 h-2 bg-${tab.color}-500 rounded-full border-2 border-white`}></div>
                     </div>

@@ -16,7 +16,7 @@ export const documentService = {
       formData.append('timestamp', Date.now().toString());
 
       // Use the SAME endpoint as fetching
-      const response = await axios.post(`${API_BASE_URL}/files`, formData, {
+      const response = await axios.post(`https://asia-south1-acillp-8c3f8.cloudfunctions.net/files`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -95,7 +95,9 @@ export const documentService = {
       
       // First, get the current policy
       const policyResponse = await axios.get(`${API_BASE_URL}/policies/${policyId}`);
-      const policy = policyResponse.data;
+      // console.log("policyResponse.data");
+      // console.log(policyResponse.data.documents);
+      const policy = policyResponse.data.data;
 
       // Create document object with proper structure
       const document = {
@@ -115,7 +117,7 @@ export const documentService = {
       console.log('📄 Created document:', document);
 
       // Update policy with new document
-      const currentDocuments = Array.isArray(policy.documents) ? policy.documents : [];
+      const currentDocuments = Array.from(policy.documents||[]);
       const updatedDocuments = [...currentDocuments, document];
 
       console.log('🔄 Updating policy with documents:', updatedDocuments);

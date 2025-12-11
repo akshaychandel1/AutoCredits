@@ -193,7 +193,7 @@ api.interceptors.response.use(
 
 // ================== ENHANCED RENEWAL UTILITY FUNCTIONS ==================
 
-// NEW: Enhanced date validation function
+// Enhanced date validation function
 const isValidDate = (dateString) => {
   if (!dateString) return false;
   if (dateString === 'N/A' || dateString === 'null' || dateString === 'undefined') return false;
@@ -206,7 +206,7 @@ const isValidDate = (dateString) => {
   }
 };
 
-// FIXED: ENHANCED expiry date calculation with comprehensive field checking and proper error handling
+// ENHANCED expiry date calculation with comprehensive field checking
 const getExpiryDate = (policy) => {
   const policyInfo = policy.policy_info || {};
   const insuranceQuote = policy.insurance_quote || {};
@@ -242,8 +242,7 @@ const getExpiryDate = (policy) => {
     }
   }
 
-  // FIXED: Proper error handling - don't log errors for every policy, just return null
-  // Only log detailed debug info in development mode or when explicitly requested
+  // Only log detailed debug info in development mode
   if (process.env.NODE_ENV === 'development') {
     console.log(`ℹ️ No expiry date found for policy ${policyId}`, {
       policyType: getPolicyType(policy),
@@ -263,7 +262,7 @@ const getExpiryDate = (policy) => {
   return null;
 };
 
-// FIXED: Get detailed expiry information for expanded view
+// Get detailed expiry information for expanded view
 const getDetailedExpiryInfo = (policy) => {
   const policyInfo = policy.policy_info || {};
   const insuranceQuote = policy.insurance_quote || {};
@@ -301,7 +300,7 @@ const getDetailedExpiryInfo = (policy) => {
   };
 };
 
-// FIXED: Calculate actual days until expiry (removes Infinity) with proper error handling
+// Calculate actual days until expiry
 const calculateDaysUntilExpiry = (expiryDate) => {
   if (!expiryDate || !isValidDate(expiryDate)) return null;
   
@@ -322,7 +321,7 @@ const calculateDaysUntilExpiry = (expiryDate) => {
   }
 };
 
-// NEW: Calculate days until next year renewal reminder
+// Calculate days until next year renewal reminder
 const calculateDaysUntilNextYearRenewal = (policy) => {
   if (!policy.next_renewal_date || !isValidDate(policy.next_renewal_date)) return null;
   
@@ -343,7 +342,7 @@ const calculateDaysUntilNextYearRenewal = (policy) => {
   }
 };
 
-// FIXED: Enhanced batch categorization with null handling
+// Enhanced batch categorization with null handling
 const categorizeRenewalBatch = (daysUntilExpiry) => {
   if (daysUntilExpiry === null) return 'no_expiry';
   if (daysUntilExpiry < 0) return 'expired';
@@ -354,7 +353,7 @@ const categorizeRenewalBatch = (daysUntilExpiry) => {
   return 'beyond_60_days';
 };
 
-// NEW: Categorize next year renewal batches
+// Categorize next year renewal batches
 const categorizeNextYearRenewalBatch = (daysUntilRenewal) => {
   if (daysUntilRenewal === null) return 'no_reminder';
   if (daysUntilRenewal <= 0) return 'due_now';
@@ -364,7 +363,7 @@ const categorizeNextYearRenewalBatch = (daysUntilRenewal) => {
   return 'next_year_future';
 };
 
-// FIXED: Enhanced batch info with no_expiry case
+// Enhanced batch info with no_expiry case
 const getBatchInfo = (batch) => {
   const batchConfig = {
     '7_days': {
@@ -423,7 +422,6 @@ const getBatchInfo = (batch) => {
       badgeClass: 'bg-purple-500 text-white',
       color: 'purple'
     },
-    // NEW: Already Renewed status
     'already_renewed': {
       text: 'Already Renewed',
       class: 'bg-teal-100 text-teal-800 border border-teal-200',
@@ -447,6 +445,54 @@ const getBatchInfo = (batch) => {
       priority: 9,
       badgeClass: 'bg-gray-500 text-white',
       color: 'gray'
+    },
+    'no_reminder': {
+      text: 'No Reminder',
+      class: 'bg-gray-100 text-gray-800 border border-gray-200',
+      icon: FaClock,
+      priority: 10,
+      badgeClass: 'bg-gray-500 text-white',
+      color: 'gray'
+    },
+    'next_year_7_days': {
+      text: 'Next Year - 7 Days',
+      class: 'bg-pink-100 text-pink-800 border border-pink-200',
+      icon: FaCalendarCheck,
+      priority: 1,
+      badgeClass: 'bg-pink-500 text-white',
+      color: 'pink'
+    },
+    'next_year_14_days': {
+      text: 'Next Year - 14 Days',
+      class: 'bg-indigo-100 text-indigo-800 border border-indigo-200',
+      icon: FaCalendarCheck,
+      priority: 2,
+      badgeClass: 'bg-indigo-500 text-white',
+      color: 'indigo'
+    },
+    'next_year_30_days': {
+      text: 'Next Year - 30 Days',
+      class: 'bg-teal-100 text-teal-800 border border-teal-200',
+      icon: FaCalendarCheck,
+      priority: 3,
+      badgeClass: 'bg-teal-500 text-white',
+      color: 'teal'
+    },
+    'next_year_future': {
+      text: 'Next Year - Future',
+      class: 'bg-cyan-100 text-cyan-800 border border-cyan-200',
+      icon: FaCalendarAlt,
+      priority: 4,
+      badgeClass: 'bg-cyan-500 text-white',
+      color: 'cyan'
+    },
+    'due_now': {
+      text: 'Due Now',
+      class: 'bg-amber-100 text-amber-800 border border-amber-200',
+      icon: FaExclamationCircle,
+      priority: 0,
+      badgeClass: 'bg-amber-500 text-white',
+      color: 'amber'
     }
   };
   
@@ -515,14 +561,24 @@ const getPaymentStatus = (policy) => {
 
 // ================== ENHANCED HELPER FUNCTIONS ==================
 
-// FIXED: Get proper customer name with company name for corporate buyers
+// UPDATED: Get proper customer name with company name and contact person name for corporate buyers
 const getCustomerDetails = (policy) => {
   const customer = policy.customer_details || {};
   const isCorporate = policy.buyer_type === 'corporate';
   
-  const displayName = isCorporate 
-    ? (customer.companyName || customer.contactPersonName || 'N/A')
-    : (customer.name || 'N/A');
+  let displayName = '';
+  let companyName = '';
+  let contactPersonName = '';
+  
+  if (isCorporate) {
+    companyName = customer.companyName || 'Corporate Client';
+    contactPersonName = customer.contactPersonName || customer.name || 'N/A';
+    displayName = companyName;
+  } else {
+    displayName = customer.name || 'N/A';
+    companyName = '';
+    contactPersonName = '';
+  }
   
   return {
     name: displayName,
@@ -533,12 +589,13 @@ const getCustomerDetails = (policy) => {
     address: customer.address || 'N/A',
     buyerType: policy.buyer_type || 'individual',
     isCorporate: isCorporate,
-    contactPersonName: customer.contactPersonName || 'N/A',
-    companyName: customer.companyName || 'N/A'
+    contactPersonName: contactPersonName,
+    companyName: companyName,
+    originalName: customer.name || 'N/A'
   };
 };
 
-// FIXED: Get policy type consistently - MATCHES POLICY TABLE LOGIC
+// Get policy type consistently
 const getPolicyType = (policy) => {
   if (policy.insurance_quote?.coverageType) {
     return policy.insurance_quote.coverageType === 'comprehensive' ? 'Comprehensive' : 'Third Party';
@@ -546,7 +603,7 @@ const getPolicyType = (policy) => {
   return policy.insurance_category || 'Insurance';
 };
 
-// FIXED: Enhanced vehicle info
+// Enhanced vehicle info
 const getVehicleInfo = (policy) => {
   if (policy.vehicle_details) {
     const make = policy.vehicle_details.make || '';
@@ -711,7 +768,7 @@ const getNcbDiscount = (policy) => {
 
 const getVehicleType = (policy) => policy.vehicleType || 'used';
 
-// FIXED: Professional summary generator
+// Professional summary generator
 const generatePolicySummary = (policy) => {
   const customer = getCustomerDetails(policy);
   const vehicle = getVehicleInfo(policy);
@@ -785,7 +842,7 @@ const generatePolicySummary = (policy) => {
 
 // ================== DATA REPAIR FUNCTIONS ==================
 
-// NEW: Enhanced policy data repair function
+// Enhanced policy data repair function
 const repairPolicyExpiryData = async (policy) => {
   const policyInfo = policy.policy_info || {};
   const policyId = policy._id || policy.id;
@@ -843,7 +900,7 @@ const repairPolicyExpiryData = async (policy) => {
   return false;
 };
 
-// NEW: Batch repair function for all no-expiry policies
+// Batch repair function for all no-expiry policies
 const repairAllNoExpiryPolicies = async (policies, onComplete) => {
   const noExpiryPolicies = policies.filter(policy => {
     const expiryDate = getExpiryDate(policy);
@@ -887,7 +944,7 @@ const repairAllNoExpiryPolicies = async (policies, onComplete) => {
   }
 };
 
-// NEW: Diagnostic function to analyze no-expiry policies
+// Diagnostic function to analyze no-expiry policies
 const diagnoseNoExpiryPolicies = (policies) => {
   const noExpiryPolicies = policies.filter(policy => {
     const expiryDate = getExpiryDate(policy);
@@ -1007,6 +1064,7 @@ const CompactPaymentBreakdown = ({ policy, paymentLedger = [] }) => {
   );
 };
 
+// UPDATED: CompactPolicySummary with contact person name display
 const CompactPolicySummary = ({ policy, onView, onEdit }) => {
   const summary = generatePolicySummary(policy);
   const customer = getCustomerDetails(policy);
@@ -1045,8 +1103,14 @@ const CompactPolicySummary = ({ policy, onView, onEdit }) => {
                 {customer.name}
               </h3>
               <p className="text-xs text-gray-500 truncate">{customer.mobile}</p>
-              {customer.isCorporate && customer.companyName && customer.companyName !== 'N/A' && (
-                <p className="text-xs text-orange-600 truncate">{customer.companyName}</p>
+              {/* UPDATED: Show company name with contact person below it */}
+              {customer.isCorporate && customer.companyName && customer.companyName !== '' && (
+                <div className="mt-1">
+                  <p className="text-xs text-orange-600 truncate font-medium">{customer.companyName}</p>
+                  {customer.contactPersonName && customer.contactPersonName !== 'N/A' && (
+                    <p className="text-xs text-gray-500 truncate">Contact: {customer.contactPersonName}</p>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -1410,7 +1474,7 @@ const BatchStatistics = ({ stats, onBatchClick, activeFilter, onRepairNoExpiry }
         ))}
       </div>
 
-      {/* NEW: No Expiry Repair Section */}
+      {/* No Expiry Repair Section */}
       {stats.no_expiry > 0 && (
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -1679,7 +1743,7 @@ const AdvancedSearch = ({
               </select>
             </div>
 
-            {/* NEW: Next Year Renewal Filter */}
+            {/* Next Year Renewal Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Next Year Renewal</label>
               <select
@@ -1846,20 +1910,19 @@ const RenewalTable = () => {
     batch: 'all',
     nextYearRenewal: 'all'
   });
-  const [renewalDays, setRenewalDays] = useState(0); // Default to ALL policies
+  const [renewalDays, setRenewalDays] = useState(0);
   const [viewMode, setViewMode] = useState('table');
   const [sortConfig, setSortConfig] = useState({ key: 'daysUntilExpiry', direction: 'asc' });
   const [bulkAction, setBulkAction] = useState('');
   const [showBulkActions, setShowBulkActions] = useState(false);
-  const [nextYearFilter, setNextYearFilter] = useState('all'); // NEW: Next year filter state
-  const [activeBatchFilter, setActiveBatchFilter] = useState('all'); // NEW: Active batch filter state
-  const [repairLoading, setRepairLoading] = useState(false); // NEW: Repair loading state
+  const [nextYearFilter, setNextYearFilter] = useState('all');
+  const [activeBatchFilter, setActiveBatchFilter] = useState('all');
+  const [repairLoading, setRepairLoading] = useState(false);
 
   const navigate = useNavigate();
 
   // ================== API FUNCTIONS ==================
 
-  // FIXED: Fetch ALL policies using the same logic as PolicyTable
   const fetchAllPolicies = async () => {
     try {
       setLoading(true);
@@ -1871,14 +1934,12 @@ const RenewalTable = () => {
         const allPolicies = response.data.data || [];
         console.log(`Found ${allPolicies.length} total policies`);
         
-        // Process all policies for renewal tracking with CORRECT expiry date logic
         const processedPolicies = allPolicies.map(policy => {
-          const expiryDate = getExpiryDate(policy); // Uses the enhanced logic
+          const expiryDate = getExpiryDate(policy);
           const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
           const batch = categorizeRenewalBatch(daysUntilExpiry);
           const batchInfo = getBatchInfo(batch);
           
-          // NEW: Calculate next year renewal information
           const daysUntilNextYearRenewal = calculateDaysUntilNextYearRenewal(policy);
           const nextYearBatch = categorizeNextYearRenewalBatch(daysUntilNextYearRenewal);
           
@@ -1901,11 +1962,9 @@ const RenewalTable = () => {
         setPolicies(processedPolicies);
         console.log(`Processed ${processedPolicies.length} policies for renewal tracking`);
         
-        // Run diagnosis on no-expiry policies
         const noExpiryCount = processedPolicies.filter(p => p.expiryDate === null).length;
         if (noExpiryCount > 0) {
           console.log(`🔍 ${noExpiryCount} policies with no expiry date detected`);
-          diagnoseNoExpiryPolicies(processedPolicies);
         }
         
         console.log('Expiry date breakdown:', {
@@ -1914,7 +1973,6 @@ const RenewalTable = () => {
           total: processedPolicies.length
         });
         
-        // Log next year renewal stats
         const nextYearPolicies = processedPolicies.filter(p => p.renewal_scheduled);
         console.log('Next year renewal policies:', {
           total: nextYearPolicies.length,
@@ -1976,7 +2034,6 @@ const RenewalTable = () => {
     }
   };
 
-  // NEW: Function to mark policy as already renewed
   const markPolicyAsRenewed = async (policy) => {
     try {
       const response = await api.put(`/policies/${policy._id}`, {
@@ -2002,12 +2059,10 @@ const RenewalTable = () => {
     fetchAllPolicies();
   };
 
-  // NEW: Enhanced repair function with loading state
   const handleRepairNoExpiryPolicies = async () => {
     setRepairLoading(true);
     try {
       await repairAllNoExpiryPolicies(policies, () => {
-        // Refresh policies after repair
         setTimeout(() => {
           fetchAllPolicies();
         }, 1000);
@@ -2017,7 +2072,6 @@ const RenewalTable = () => {
     }
   };
 
-  // NEW: Handle diagnose action
   const handleDiagnoseNoExpiry = () => {
     diagnoseNoExpiryPolicies(policies);
     alert(`Diagnosis complete! Check browser console for detailed report on ${policies.filter(p => getExpiryDate(p) === null).length} no-expiry policies.`);
@@ -2028,17 +2082,12 @@ const RenewalTable = () => {
   const handleBatchClick = (batchKey) => {
     console.log('Batch clicked:', batchKey);
     
-    // Set active filter
     setActiveBatchFilter(batchKey);
-    
-    // Reset other filters when a batch is clicked
     setRenewalDays(0);
     setNextYearFilter('all');
     
-    // Handle different batch types
     switch (batchKey) {
       case 'total':
-        // Show all policies
         setBatchFilter('all');
         setSearchFilters(prev => ({
           ...prev,
@@ -2048,7 +2097,6 @@ const RenewalTable = () => {
         break;
         
       case 'already_renewed':
-        // Handle already renewed policies
         setBatchFilter('already_renewed');
         setSearchFilters(prev => ({
           ...prev,
@@ -2059,7 +2107,6 @@ const RenewalTable = () => {
         
       case 'closed':
       case 'external':
-        // Handle closed and external policies
         setBatchFilter(batchKey);
         setSearchFilters(prev => ({
           ...prev,
@@ -2069,7 +2116,6 @@ const RenewalTable = () => {
         break;
         
       default:
-        // Handle regular renewal batches
         setBatchFilter(batchKey);
         setSearchFilters(prev => ({
           ...prev,
@@ -2079,7 +2125,6 @@ const RenewalTable = () => {
         break;
     }
     
-    // Reset to first page
     setCurrentPage(1);
   };
 
@@ -2105,19 +2150,16 @@ const RenewalTable = () => {
     });
   }, [policies]);
 
-  // FIXED: Enhanced filtering to include all policies with proper expiry date handling
   const filteredPolicies = useMemo(() => {
     let filtered = renewalPolicies;
 
-    // Only filter by renewal days if a specific timeframe is selected (not 0)
     if (renewalDays > 0) {
       filtered = filtered.filter(policy => {
-        if (policy.daysUntilExpiry === null) return false; // Exclude no-expiry when filtering by days
-        return policy.daysUntilExpiry <= renewalDays && policy.daysUntilExpiry >= -30; // Include expired up to 30 days
+        if (policy.daysUntilExpiry === null) return false;
+        return policy.daysUntilExpiry <= renewalDays && policy.daysUntilExpiry >= -30;
       });
     }
 
-    // Apply batch filter
     if (batchFilter !== 'all') {
       if (batchFilter === 'closed') {
         filtered = filtered.filter(policy => policy.status === 'closed');
@@ -2130,7 +2172,6 @@ const RenewalTable = () => {
       }
     }
 
-    // NEW: Apply next year renewal filter
     if (nextYearFilter !== 'all') {
       filtered = filtered.filter(policy => {
         if (!policy.renewal_scheduled) return false;
@@ -2150,7 +2191,6 @@ const RenewalTable = () => {
       });
     }
 
-    // Apply search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(policy => {
@@ -2165,12 +2205,12 @@ const RenewalTable = () => {
           vehicle.make.toLowerCase().includes(query) ||
           policy.insuranceCompany.toLowerCase().includes(query) ||
           policy.policyNumber.toLowerCase().includes(query) ||
-          (customer.companyName && customer.companyName.toLowerCase().includes(query))
+          (customer.companyName && customer.companyName.toLowerCase().includes(query)) ||
+          (customer.contactPersonName && customer.contactPersonName.toLowerCase().includes(query))
         );
       });
     }
 
-    // Apply advanced filters
     const hasAdvancedFilters = Object.values(searchFilters).some(value => value !== '' && value !== 'all');
     if (hasAdvancedFilters) {
       filtered = filtered.filter(policy => {
@@ -2217,20 +2257,17 @@ const RenewalTable = () => {
       });
     }
 
-    // Sorting
     const sorted = [...filtered].sort((a, b) => {
       let aValue = a[sortConfig.key];
       let bValue = b[sortConfig.key];
       
       if (sortConfig.key === 'daysUntilExpiry') {
-        // Handle null values for daysUntilExpiry
         if (aValue === null && bValue === null) return 0;
         if (aValue === null) return 1;
         if (bValue === null) return -1;
       }
       
       if (sortConfig.key === 'daysUntilNextYearRenewal') {
-        // Handle null values for next year renewal
         if (aValue === null && bValue === null) return 0;
         if (aValue === null) return 1;
         if (bValue === null) return -1;
@@ -2255,7 +2292,6 @@ const RenewalTable = () => {
 
   const totalPages = Math.ceil(filteredPolicies.length / itemsPerPage);
 
-  // FIXED: Batch statistics calculation - always show stats for ALL policies
   const batchStats = useMemo(() => {
     const stats = {
       '7_days': 0,
@@ -2265,12 +2301,10 @@ const RenewalTable = () => {
       'beyond_60_days': 0,
       'expired': 0,
       'no_expiry': 0,
-      // NEW: Already Renewed count
       'already_renewed': 0,
-      // NEW: Closed and External counts
       'closed': 0,
       'external': 0,
-      total: renewalPolicies.length // Always show total from all policies
+      total: renewalPolicies.length
     };
 
     renewalPolicies.forEach(policy => {
@@ -2278,12 +2312,10 @@ const RenewalTable = () => {
         stats[policy.batch]++;
       }
       
-      // Count already renewed policies
       if (policy.status === 'already_renewed') {
         stats['already_renewed']++;
       }
       
-      // Count closed and external policies
       if (policy.status === 'closed') {
         stats['closed']++;
       }
@@ -2340,10 +2372,8 @@ const RenewalTable = () => {
       if (action === 'export') {
         exportToCSV(renewalPolicies, Array.from(selectedRows));
       } else if (action === 'renew') {
-        // Implement bulk renew logic
         alert(`Bulk renew action for ${selectedRows.size} policies`);
       } else if (action === 'mark_renewed') {
-        // Bulk mark as renewed
         const selectedPolicies = renewalPolicies.filter(policy => 
           selectedRows.has(policy._id || policy.id)
         );
@@ -2449,7 +2479,6 @@ const RenewalTable = () => {
     setCurrentPage(1);
   };
 
-  // NEW: Handle next year filter change
   const handleNextYearFilterChange = (filter) => {
     setNextYearFilter(filter);
     setCurrentPage(1);
@@ -2462,7 +2491,6 @@ const RenewalTable = () => {
   // ================== EFFECTS ==================
 
   useEffect(() => {
-    // Fetch all policies on component mount
     fetchAllPolicies();
   }, []);
 
@@ -2477,14 +2505,12 @@ const RenewalTable = () => {
     setSelectAll(false);
   }, [batchFilter, searchQuery, searchFilters, renewalDays, nextYearFilter]);
 
-  // Reset active batch filter when other filters change
   useEffect(() => {
     if (renewalDays > 0 || searchQuery || Object.values(searchFilters).some(v => v !== '' && v !== 'all')) {
       setActiveBatchFilter('all');
     }
   }, [renewalDays, searchQuery, searchFilters]);
 
-  // Reset active batch filter when next year filter is used
   useEffect(() => {
     if (nextYearFilter !== 'all') {
       setActiveBatchFilter(nextYearFilter);
@@ -2533,6 +2559,7 @@ const RenewalTable = () => {
     </div>
   );
 
+  // UPDATED: TableView with contact person display
   const TableView = () => (
     <div className="bg-white rounded border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -2602,7 +2629,6 @@ const RenewalTable = () => {
               const isExpanded = expandedRows.has(policyId);
               const detailedExpiryInfo = getDetailedExpiryInfo(policy);
               
-              // Next year renewal info
               const nextYearBatchInfo = getBatchInfo(policy.nextYearBatch);
               const NextYearBatchIcon = nextYearBatchInfo.icon;
 
@@ -2639,7 +2665,7 @@ const RenewalTable = () => {
                       </button>
                     </td>
 
-                    {/* Customer & Vehicle Column */}
+                    {/* Customer & Vehicle Column - UPDATED */}
                     <td className="px-2 py-2 border-r border-gray-100">
                       <div className="space-y-1.5">
                         {/* Header with Policy ID and Vehicle Type */}
@@ -2669,7 +2695,7 @@ const RenewalTable = () => {
                           </div>
                         </div>
 
-                        {/* Customer Info */}
+                        {/* Customer Info - UPDATED */}
                         <div className="space-y-1">
                           <div className="flex items-start gap-2">
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
@@ -2689,11 +2715,16 @@ const RenewalTable = () => {
                                 <FaPhone className="text-gray-400 text-xs flex-shrink-0" />
                                 <span className="truncate">{customer.mobile}</span>
                               </div>
-                              {/* FIXED: Show company name for corporate clients */}
-                              {customer.isCorporate && customer.companyName && customer.companyName !== 'N/A' && (
-                                <div className="text-xs text-orange-600 flex items-center gap-1 truncate">
-                                  <FaIndustry className="text-orange-500 text-xs flex-shrink-0" />
-                                  <span className="truncate">{customer.companyName}</span>
+                              {/* UPDATED: Show company name with contact person below it */}
+                              {customer.isCorporate && customer.companyName && customer.companyName !== '' && (
+                                <div className="mt-1 space-y-0.5">
+                                  <div className="text-xs text-orange-600 truncate font-medium">{customer.companyName}</div>
+                                  {customer.contactPersonName && customer.contactPersonName !== 'N/A' && (
+                                    <div className="text-xs text-gray-500 truncate flex items-center gap-1">
+                                      <FaUserTie className="text-gray-400 text-xs flex-shrink-0" />
+                                      <span>Contact: {customer.contactPersonName}</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -2874,7 +2905,7 @@ const RenewalTable = () => {
                     </td>
                   </tr>
 
-                  {/* Expanded Row with Additional Details */}
+                  {/* Expanded Row with Additional Details - UPDATED */}
                   {isExpanded && (
                     <tr className={`border-b border-gray-100 ${
                       policy.batch === '7_days' ? 'bg-red-50' :
@@ -2885,7 +2916,7 @@ const RenewalTable = () => {
                     }`}>
                       <td colSpan="7" className="px-3 py-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                          {/* Customer Details */}
+                          {/* Customer Details - UPDATED */}
                           <div className="space-y-2">
                             <h4 className="font-semibold text-gray-700 border-b pb-1">Customer Details</h4>
                             <div className="space-y-1">
@@ -2903,7 +2934,19 @@ const RenewalTable = () => {
                                     <span className="text-gray-600">Contact Person:</span>
                                     <span className="font-medium">{customer.contactPersonName}</span>
                                   </div>
+                                  {customer.originalName && customer.originalName !== 'N/A' && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-600">Original Name:</span>
+                                      <span className="font-medium">{customer.originalName}</span>
+                                    </div>
+                                  )}
                                 </>
+                              )}
+                              {!customer.isCorporate && customer.name && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Customer Name:</span>
+                                  <span className="font-medium">{customer.name}</span>
+                                </div>
                               )}
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Mobile:</span>
@@ -3347,7 +3390,7 @@ const RenewalTable = () => {
           </div>
 
           <div className="flex gap-2">
-            {/* NEW: Diagnostic Button */}
+            {/* Diagnostic Button */}
             {batchStats.no_expiry > 0 && (
               <button
                 onClick={handleDiagnoseNoExpiry}
@@ -3358,7 +3401,7 @@ const RenewalTable = () => {
               </button>
             )}
 
-            {/* NEW: Next Year Renewal Filter Button */}
+            {/* Next Year Renewal Filter Button */}
             <NextYearRenewalFilter 
               onFilterChange={handleNextYearFilterChange}
               activeFilter={nextYearFilter}

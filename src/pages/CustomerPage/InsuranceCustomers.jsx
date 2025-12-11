@@ -3,7 +3,7 @@ import { Plus, RefreshCw, Download } from 'lucide-react';
 import axios from 'axios';
 import CustomerTable from './CustomerTable';
 import CustomerDetailsModal from './CustomerDetailsModal';
-import CustomerModal from './CustomerModal';
+import CustomerModal from './CustomerEditModal';
 
 const API_BASE_URL = "https://asia-south1-acillp-8c3f8.cloudfunctions.net/app/v1/customers";
 const POLICIES_API_URL = "https://asia-south1-sge-parashstone.cloudfunctions.net/app/v1/policies";

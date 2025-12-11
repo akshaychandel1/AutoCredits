@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  FaUser, 
-  FaBuilding, 
-  FaPhone, 
-  FaEnvelope, 
-  FaMapMarkerAlt, 
-  FaEye, 
-  FaEdit, 
-  FaTrash, 
-  FaSearch, 
-  FaDownload, 
-  FaFilter, 
-  FaTimes, 
-  FaChevronDown, 
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  FaUser,
+  FaBuilding,
+  FaPhone,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaEye,
+  FaEdit,
+  FaTrash,
+  FaSearch,
+  FaDownload,
+  FaFilter,
+  FaTimes,
+  FaChevronDown,
   FaChevronUp,
   FaUserTie,
   FaHandshake,
@@ -23,7 +23,20 @@ import {
   FaCalendarAlt,
   FaCheckCircle,
   FaExclamationTriangle,
-  FaClock
+  FaClock,
+  FaCreditCard,
+  FaReceipt,
+  FaPercentage,
+  FaHistory,
+  FaFileInvoice,
+  FaFingerprint,
+  FaHome,
+  FaIndustry,
+  FaMobileAlt,
+  FaFileSignature,
+  FaAddressCard,
+  FaBriefcase,
+  FaTag
 } from 'react-icons/fa';
 
 // ================== ADVANCED SEARCH COMPONENT ==================
@@ -62,10 +75,15 @@ const AdvancedSearch = ({
       city: '',
       companyName: '',
       contactPerson: '',
-      policyType: '',
-      leadStatus: '',
+      alternatePhone: '',
+      pincode: '',
+      panNumber: '',
+      aadhaarNumber: '',
+      gstNumber: '',
       creditType: '',
-      sourceOrigin: ''
+      sourceOrigin: '',
+      brokerName: '',
+      employeeName: ''
     };
     setLocalFilters(resetFilters);
     onResetFilters();
@@ -113,6 +131,17 @@ const AdvancedSearch = ({
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Alternate Phone</label>
+              <input
+                type="text"
+                value={localFilters.alternatePhone}
+                onChange={(e) => handleFilterChange('alternatePhone', e.target.value)}
+                placeholder="Search by alternate phone"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Email</label>
               <input
                 type="text"
@@ -146,6 +175,17 @@ const AdvancedSearch = ({
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Employee Name</label>
+              <input
+                type="text"
+                value={localFilters.employeeName}
+                onChange={(e) => handleFilterChange('employeeName', e.target.value)}
+                placeholder="Search by employee name"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
             {/* Location */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">City</label>
@@ -158,39 +198,52 @@ const AdvancedSearch = ({
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Pincode</label>
+              <input
+                type="text"
+                value={localFilters.pincode}
+                onChange={(e) => handleFilterChange('pincode', e.target.value)}
+                placeholder="Search by pincode"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Document Numbers */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">PAN Number</label>
+              <input
+                type="text"
+                value={localFilters.panNumber}
+                onChange={(e) => handleFilterChange('panNumber', e.target.value)}
+                placeholder="Search by PAN"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Aadhaar Number</label>
+              <input
+                type="text"
+                value={localFilters.aadhaarNumber}
+                onChange={(e) => handleFilterChange('aadhaarNumber', e.target.value)}
+                placeholder="Search by Aadhaar"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">GST Number</label>
+              <input
+                type="text"
+                value={localFilters.gstNumber}
+                onChange={(e) => handleFilterChange('gstNumber', e.target.value)}
+                placeholder="Search by GST"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
             {/* Business Information */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Policy Type</label>
-              <select
-                value={localFilters.policyType}
-                onChange={(e) => handleFilterChange('policyType', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">All Policy Types</option>
-                <option value="4 Wheeler">4 Wheeler</option>
-                <option value="2 Wheeler">2 Wheeler</option>
-                <option value="Home Insurance">Home Insurance</option>
-                <option value="Health Insurance">Health Insurance</option>
-                <option value="Life Insurance">Life Insurance</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Lead Status</label>
-              <select
-                value={localFilters.leadStatus}
-                onChange={(e) => handleFilterChange('leadStatus', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">All Status</option>
-                <option value="New">New</option>
-                <option value="Contacted">Contacted</option>
-                <option value="Qualified">Qualified</option>
-                <option value="Converted">Converted</option>
-                <option value="Lost">Lost</option>
-              </select>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Credit Type</label>
               <select
@@ -204,6 +257,17 @@ const AdvancedSearch = ({
                 <option value="showroom">Showroom</option>
                 <option value="customer">Customer</option>
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Broker Name</label>
+              <input
+                type="text"
+                value={localFilters.brokerName}
+                onChange={(e) => handleFilterChange('brokerName', e.target.value)}
+                placeholder="Search by broker name"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+              />
             </div>
 
             <div className="space-y-2">
@@ -260,53 +324,66 @@ const formatDate = (dateString) => {
   }
 };
 
-// Get customer display name with proper fallbacks
+// Get customer display name with proper fallbacks - UPDATED to handle all cases from dummy data
 const getCustomerDisplayName = (customer) => {
   if (!customer) return 'Unknown Customer';
   
-  // Check if first_name is undefined or "undefined"
-  const firstName = getSafeValue(customer.first_name);
+  // Check if customer object has customer_details nested structure
+  const customerData = customer.customer_details || customer;
+  
+  // Extract all possible name fields
+  const firstName = getSafeValue(customerData.first_name);
+  const lastName = getSafeValue(customerData.last_name);
+  const name = getSafeValue(customerData.name);
+  const customerName = getSafeValue(customerData.customerName);
+  const companyName = getSafeValue(customerData.companyName);
+  const contactPersonName = getSafeValue(customerData.contact_person_name);
+  const employeeName = getSafeValue(customerData.employeeName);
+  
+  // Check if name fields are invalid
   const isFirstNameInvalid = firstName === 'undefined' || !firstName;
+  const isNameInvalid = name === 'undefined' || !name;
+  const isCustomerNameInvalid = customerName === 'undefined' || !customerName;
   
-  // Get other potential names
-  const lastName = getSafeValue(customer.last_name);
-  const companyName = getSafeValue(customer.company_name);
-  const contactPersonName = getSafeValue(customer.contact_person_name);
-  const employeeName = getSafeValue(customer.employeeName);
-  const name = getSafeValue(customer.name);
-  
-  // Priority order for display name:
-  // 1. Company Name (if first_name is invalid and company name exists)
-  if (isFirstNameInvalid && companyName) {
-    return companyName;
+  // Priority logic:
+  // 1. If first_name is "undefined" or empty, try other fields
+  if (!isFirstNameInvalid && firstName) {
+    const fullName = `${firstName} ${lastName}`.trim();
+    if (fullName) return fullName;
   }
   
-  // 2. Contact Person Name
+  // 2. Check name field
+  if (!isNameInvalid && name) {
+    return name;
+  }
+  
+  // 3. Check customerName field
+  if (!isCustomerNameInvalid && customerName) {
+    return customerName;
+  }
+  
+  // 4. Check if company exists (corporate customer)
+  if (companyName) {
+    // Return company name first, then contact person separately
+    return `${companyName}`;
+  }
+  
+  // 5. Check contact person
   if (contactPersonName) {
     return contactPersonName;
   }
   
-  // 3. Employee Name
+  // 6. Check employee name
   if (employeeName) {
     return employeeName;
   }
   
-  // 4. Name field
-  if (name) {
-    return name;
-  }
-  
-  // 5. First + Last name (if first_name is valid)
-  if (!isFirstNameInvalid) {
-    const individualName = `${firstName} ${lastName}`.trim();
-    if (individualName) return individualName;
-  }
-  
-  // 6. Final fallbacks based on buyer type
-  if (customer.buyer_type === 'corporate') {
+  // 7. Check buyer type
+  if (customerData.buyer_type === 'corporate') {
     return 'Corporate Customer';
   }
   
+  // 8. Fallback
   return 'Individual Customer';
 };
 
@@ -345,20 +422,277 @@ const getCreditTypeInfo = (creditType, brokerName = '') => {
 
 // Get status display info
 const getStatusDisplay = (status) => {
-  const safeStatus = getSafeValue(status, 'New');
+  const safeStatus = getSafeValue(status, 'Active');
   const statusConfig = {
-    'Active': { class: 'bg-emerald-100 text-emerald-800 border border-emerald-200', icon: FaCheckCircle },
-    'New': { class: 'bg-yellow-100 text-yellow-800 border border-yellow-200', icon: FaClock },
-    'Converted': { class: 'bg-purple-100 text-purple-800 border border-purple-200', icon: FaCheckCircle },
-    'Hot': { class: 'bg-red-100 text-red-800 border border-red-200', icon: FaExclamationTriangle },
-    'Warm': { class: 'bg-orange-100 text-orange-800 border border-orange-200', icon: FaClock },
-    'Cold': { class: 'bg-blue-100 text-blue-800 border border-blue-200', icon: FaClock },
-    'Open': { class: 'bg-indigo-100 text-indigo-800 border border-indigo-200', icon: FaClock }
+    'Active': { class: 'bg-emerald-100 text-emerald-800', icon: FaCheckCircle },
+    'New': { class: 'bg-yellow-100 text-yellow-800', icon: FaClock },
+    'Open': { class: 'bg-blue-100 text-blue-800', icon: FaClock },
+    'Inactive': { class: 'bg-gray-100 text-gray-800', icon: FaTimes },
+    'Verified': { class: 'bg-blue-100 text-blue-800', icon: FaCheckCircle },
+    'Pending': { class: 'bg-orange-100 text-orange-800', icon: FaClock },
+    'Converted': { class: 'bg-green-100 text-green-800', icon: FaCheckCircle }
   };
   
   return statusConfig[safeStatus] || { 
-    class: 'bg-gray-100 text-gray-800 border border-gray-200', 
+    class: 'bg-gray-100 text-gray-800', 
     icon: FaClock 
+  };
+};
+
+// Format document numbers for display
+const formatDocumentNumber = (number, type) => {
+  if (!number) return '';
+  
+  const clean = number.replace(/\s+/g, '').toUpperCase();
+  
+  switch(type) {
+    case 'pan':
+      if (clean.length === 10 && /[A-Z]{5}[0-9]{4}[A-Z]{1}/.test(clean)) {
+        return clean;
+      }
+      break;
+    case 'aadhaar':
+      if (clean.length === 12 && /^\d+$/.test(clean)) {
+        return `${clean.slice(0,4)} ${clean.slice(4,8)} ${clean.slice(8)}`;
+      }
+      break;
+    case 'gst':
+      if (clean.length === 15 && /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}[A-Z]{1}[0-9]{1}$/.test(clean)) {
+        return clean;
+      }
+      break;
+  }
+  
+  return clean;
+};
+
+// ================== COMPACT DOCUMENT DISPLAY COMPONENT ==================
+
+const CompactDocumentDisplay = ({ panNumber, aadhaarNumber, gstNumber }) => {
+  const formatPan = (pan) => formatDocumentNumber(pan, 'pan');
+  const formatAadhaar = (aadhaar) => formatDocumentNumber(aadhaar, 'aadhaar');
+  const formatGst = (gst) => formatDocumentNumber(gst, 'gst');
+
+  const hasDocuments = panNumber || aadhaarNumber || gstNumber;
+  
+  if (!hasDocuments) {
+    return (
+      <div className="text-xs text-gray-400 italic">No documents</div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {panNumber && (
+        <div className="flex items-center gap-1">
+          <FaIdCard className="text-blue-500 text-xs flex-shrink-0" />
+          <span className="text-xs text-blue-700 font-mono truncate" title={panNumber}>
+            {formatPan(panNumber)}
+          </span>
+        </div>
+      )}
+      {aadhaarNumber && (
+        <div className="flex items-center gap-1">
+          <FaFingerprint className="text-green-500 text-xs flex-shrink-0" />
+          <span className="text-xs text-green-700 font-mono truncate" title={aadhaarNumber}>
+            {formatAadhaar(aadhaarNumber)}
+          </span>
+        </div>
+      )}
+      {gstNumber && (
+        <div className="flex items-center gap-1">
+          <FaFileInvoice className="text-purple-500 text-xs flex-shrink-0" />
+          <span className="text-xs text-purple-700 font-mono truncate" title={gstNumber}>
+            {formatGst(gstNumber)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ================== CSV EXPORT UTILITY ==================
+
+const exportToCSV = (customers, selectedRows = []) => {
+  const customersToExport = selectedRows.length > 0 
+    ? customers.filter(customer => selectedRows.includes(customer._id || customer.id))
+    : customers;
+
+  if (customersToExport.length === 0) {
+    alert('No customers to export');
+    return;
+  }
+
+  const headers = [
+    'Customer ID',
+    'Display Name',
+    'First Name',
+    'Last Name',
+    'Company Name',
+    'Contact Person',
+    'Employee Name',
+    'Email',
+    'Mobile',
+    'Alternate Phone',
+    'Phone',
+    'City',
+    'Pincode',
+    'Address',
+    'Buyer Type',
+    'Age',
+    'Gender',
+    'PAN Number',
+    'Aadhaar Number',
+    'GST Number',
+    'Credit Type',
+    'Broker Name',
+    'Source Origin',
+    'Lead Status',
+    'Policy Type',
+    'Created Date',
+    'Updated Date',
+    'Created By'
+  ];
+
+  const csvData = customersToExport.map(customer => {
+    const details = getCustomerDetails(customer);
+    
+    return [
+      details.id,
+      details.displayName,
+      details.firstName,
+      details.lastName,
+      details.companyName,
+      details.contactPersonName,
+      details.employeeName,
+      details.email,
+      details.mobile,
+      details.alternatePhone,
+      details.phone,
+      details.city,
+      details.pincode,
+      details.address,
+      details.buyerType,
+      details.age,
+      details.gender,
+      details.panNumber,
+      details.aadhaarNumber,
+      details.gstNumber,
+      details.creditTypeInfo.label,
+      details.brokerName,
+      details.sourceOrigin,
+      details.leadStatus,
+      details.policyType,
+      details.createdDate,
+      details.updatedDate,
+      details.createdBy
+    ];
+  });
+
+  const csvContent = [
+    headers.join(','),
+    ...csvData.map(row => row.map(field => `"${field}"`).join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `insurance-customers-${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+// ================== GET CUSTOMER DETAILS FUNCTION (moved outside component) ==================
+
+const getCustomerDetails = (customer) => {
+  // Extract customer data from nested structure or direct object
+  const customerData = customer.customer_details || customer;
+  
+  // Determine buyer type
+  const buyerType = getSafeValue(customerData.buyer_type, 
+                                customerData.companyName ? 'corporate' : 'individual');
+  const isCorporate = buyerType === 'corporate';
+  
+  // Get display name
+  const displayName = getCustomerDisplayName(customer);
+  
+  // Get credit type info
+  const creditType = getSafeValue(customerData.creditType, customer.creditType);
+  const brokerName = getSafeValue(customerData.brokerName, customer.brokerName);
+  const creditTypeInfo = getCreditTypeInfo(creditType, brokerName);
+  
+  // Get status info
+  const leadStatus = getSafeValue(customerData.lead_status, customerData.status, 'Active');
+  const statusDisplay = getStatusDisplay(leadStatus);
+  const StatusIcon = statusDisplay.icon;
+  
+  // Extract all fields from customer data
+  const firstName = getSafeValue(customerData.first_name);
+  const lastName = getSafeValue(customerData.last_name);
+  const name = getSafeValue(customerData.name);
+  const companyName = getSafeValue(customerData.companyName);
+  const contactPersonName = getSafeValue(customerData.contact_person_name);
+  const employeeName = getSafeValue(customerData.employeeName);
+  const email = getSafeValue(customerData.email);
+  const phone = getSafeValue(customerData.phone);
+  const mobile = getSafeValue(customerData.mobile);
+  const alternatePhone = getSafeValue(customerData.alternate_phone);
+  const gender = getSafeValue(customerData.gender);
+  const address = getSafeValue(customerData.address, customerData.residenceAddress);
+  const city = getSafeValue(customerData.city);
+  const pincode = getSafeValue(customerData.pincode);
+  const age = customerData.age ? `${customerData.age} yrs` : '';
+  const panNumber = getSafeValue(customerData.panNumber);
+  const aadhaarNumber = getSafeValue(customerData.aadhaarNumber);
+  const gstNumber = getSafeValue(customerData.gstNumber);
+  const sourceOrigin = getSafeValue(customerData.sourceOrigin);
+  const policyType = getSafeValue(customerData.policy_type, customerData.insurance_category);
+  const createdDate = formatDate(customerData.created_at || customerData.ts || customer.created_at || customer.ts);
+  const updatedDate = formatDate(customerData.updated_at || customer.updated_at);
+  const createdBy = getSafeValue(customerData.created_by, customer.created_by);
+
+  return {
+    id: getSafeValue(customer._id, customer.id),
+    displayName,
+    buyerType,
+    isCorporate,
+    creditTypeInfo,
+    statusDisplay,
+    StatusIcon,
+    firstName,
+    lastName,
+    name,
+    companyName,
+    contactPersonName,
+    employeeName,
+    email,
+    phone,
+    mobile,
+    alternatePhone,
+    gender,
+    address,
+    city,
+    pincode,
+    age,
+    panNumber: formatDocumentNumber(panNumber, 'pan'),
+    aadhaarNumber: formatDocumentNumber(aadhaarNumber, 'aadhaar'),
+    gstNumber: formatDocumentNumber(gstNumber, 'gst'),
+    sourceOrigin,
+    brokerName,
+    leadStatus,
+    policyType,
+    createdDate,
+    updatedDate,
+    createdBy,
+    creditType,
+    originalPan: panNumber,
+    originalAadhaar: aadhaarNumber,
+    originalGst: gstNumber
   };
 };
 
@@ -382,17 +716,22 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     city: '',
     companyName: '',
     contactPerson: '',
-    policyType: '',
-    leadStatus: '',
+    alternatePhone: '',
+    pincode: '',
+    panNumber: '',
+    aadhaarNumber: '',
+    gstNumber: '',
     creditType: '',
-    sourceOrigin: ''
+    sourceOrigin: '',
+    brokerName: '',
+    employeeName: ''
   });
 
   // Sort customers by creation date (newest first)
   const sortedCustomers = useMemo(() => {
     return [...customers].sort((a, b) => {
-      const dateA = new Date(a.created_at || a.ts || 0);
-      const dateB = new Date(b.created_at || b.ts || 0);
+      const dateA = new Date(a.created_at || a.ts || a.createdAt || 0);
+      const dateB = new Date(b.created_at || b.ts || b.createdAt || 0);
       return dateB - dateA;
     });
   }, [customers]);
@@ -406,16 +745,23 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     
     if (hasAdvancedFilters) {
       filtered = filtered.filter(customer => {
-        const customerName = getCustomerDisplayName(customer).toLowerCase();
-        const mobile = getSafeValue(customer.mobile).toLowerCase();
-        const email = getSafeValue(customer.email).toLowerCase();
-        const city = getSafeValue(customer.city).toLowerCase();
-        const companyName = getSafeValue(customer.company_name).toLowerCase();
-        const contactPerson = getSafeValue(customer.contact_person_name).toLowerCase();
-        const policyType = getSafeValue(customer.policy_type).toLowerCase();
-        const leadStatus = getSafeValue(customer.lead_status).toLowerCase();
-        const creditType = getSafeValue(customer.creditType).toLowerCase();
-        const sourceOrigin = getSafeValue(customer.sourceOrigin).toLowerCase();
+        const details = getCustomerDetails(customer);
+        
+        const customerName = details.displayName.toLowerCase();
+        const mobile = getSafeValue(details.mobile).toLowerCase();
+        const email = getSafeValue(details.email).toLowerCase();
+        const city = getSafeValue(details.city).toLowerCase();
+        const companyName = getSafeValue(details.companyName).toLowerCase();
+        const contactPerson = getSafeValue(details.contactPersonName).toLowerCase();
+        const employeeName = getSafeValue(details.employeeName).toLowerCase();
+        const alternatePhone = getSafeValue(details.alternatePhone).toLowerCase();
+        const pincode = getSafeValue(details.pincode).toLowerCase();
+        const panNumber = getSafeValue(details.originalPan).toLowerCase();
+        const aadhaarNumber = getSafeValue(details.originalAadhaar).toLowerCase();
+        const gstNumber = getSafeValue(details.originalGst).toLowerCase();
+        const creditType = getSafeValue(details.creditType).toLowerCase();
+        const sourceOrigin = getSafeValue(details.sourceOrigin).toLowerCase();
+        const brokerName = getSafeValue(details.brokerName).toLowerCase();
 
         const matchesCustomerName = !searchFilters.customerName || 
           customerName.includes(searchFilters.customerName.toLowerCase());
@@ -435,11 +781,23 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
         const matchesContactPerson = !searchFilters.contactPerson || 
           contactPerson.includes(searchFilters.contactPerson.toLowerCase());
 
-        const matchesPolicyType = !searchFilters.policyType || 
-          policyType.includes(searchFilters.policyType.toLowerCase());
+        const matchesEmployeeName = !searchFilters.employeeName || 
+          employeeName.includes(searchFilters.employeeName.toLowerCase());
 
-        const matchesLeadStatus = !searchFilters.leadStatus || 
-          leadStatus.includes(searchFilters.leadStatus.toLowerCase());
+        const matchesAlternatePhone = !searchFilters.alternatePhone || 
+          alternatePhone.includes(searchFilters.alternatePhone);
+
+        const matchesPincode = !searchFilters.pincode || 
+          pincode.includes(searchFilters.pincode);
+
+        const matchesPanNumber = !searchFilters.panNumber || 
+          panNumber.includes(searchFilters.panNumber.toLowerCase());
+
+        const matchesAadhaarNumber = !searchFilters.aadhaarNumber || 
+          aadhaarNumber.includes(searchFilters.aadhaarNumber.toLowerCase());
+
+        const matchesGstNumber = !searchFilters.gstNumber || 
+          gstNumber.includes(searchFilters.gstNumber.toLowerCase());
 
         const matchesCreditType = !searchFilters.creditType || 
           creditType.includes(searchFilters.creditType.toLowerCase());
@@ -447,9 +805,14 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
         const matchesSourceOrigin = !searchFilters.sourceOrigin || 
           sourceOrigin.includes(searchFilters.sourceOrigin.toLowerCase());
 
+        const matchesBrokerName = !searchFilters.brokerName || 
+          brokerName.includes(searchFilters.brokerName.toLowerCase());
+
         return matchesCustomerName && matchesMobile && matchesEmail && matchesCity &&
-               matchesCompanyName && matchesContactPerson && matchesPolicyType &&
-               matchesLeadStatus && matchesCreditType && matchesSourceOrigin;
+               matchesCompanyName && matchesContactPerson && matchesEmployeeName &&
+               matchesAlternatePhone && matchesPincode && matchesPanNumber && 
+               matchesAadhaarNumber && matchesGstNumber && matchesCreditType && 
+               matchesSourceOrigin && matchesBrokerName;
       });
     }
 
@@ -457,13 +820,21 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(customer => {
-        const customerName = getCustomerDisplayName(customer).toLowerCase();
-        const mobile = getSafeValue(customer.mobile).toLowerCase();
-        const email = getSafeValue(customer.email).toLowerCase();
-        const city = getSafeValue(customer.city).toLowerCase();
-        const companyName = getSafeValue(customer.company_name).toLowerCase();
-        const contactPerson = getSafeValue(customer.contact_person_name).toLowerCase();
-        const customerId = getSafeValue(customer._id).toLowerCase();
+        const details = getCustomerDetails(customer);
+        
+        const customerName = details.displayName.toLowerCase();
+        const mobile = getSafeValue(details.mobile).toLowerCase();
+        const email = getSafeValue(details.email).toLowerCase();
+        const city = getSafeValue(details.city).toLowerCase();
+        const companyName = getSafeValue(details.companyName).toLowerCase();
+        const contactPerson = getSafeValue(details.contactPersonName).toLowerCase();
+        const employeeName = getSafeValue(details.employeeName).toLowerCase();
+        const customerId = getSafeValue(details.id).toLowerCase();
+        const panNumber = getSafeValue(details.originalPan).toLowerCase();
+        const aadhaarNumber = getSafeValue(details.originalAadhaar).toLowerCase();
+        const gstNumber = getSafeValue(details.originalGst).toLowerCase();
+        const sourceOrigin = getSafeValue(details.sourceOrigin).toLowerCase();
+        const brokerName = getSafeValue(details.brokerName).toLowerCase();
         
         return (
           customerName.includes(query) ||
@@ -472,7 +843,13 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
           city.includes(query) ||
           companyName.includes(query) ||
           contactPerson.includes(query) ||
-          customerId.includes(query)
+          employeeName.includes(query) ||
+          customerId.includes(query) ||
+          panNumber.includes(query) ||
+          aadhaarNumber.includes(query) ||
+          gstNumber.includes(query) ||
+          sourceOrigin.includes(query) ||
+          brokerName.includes(query)
         );
       });
     }
@@ -494,7 +871,7 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     if (selectAll) {
       setSelectedRows(new Set());
     } else {
-      const allIds = new Set(paginatedCustomers.map(customer => customer._id));
+      const allIds = new Set(paginatedCustomers.map(customer => customer._id || customer.id));
       setSelectedRows(allIds);
     }
     setSelectAll(!selectAll);
@@ -509,7 +886,7 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     }
     setSelectedRows(newSelected);
     
-    const allIds = new Set(paginatedCustomers.map(customer => customer._id));
+    const allIds = new Set(paginatedCustomers.map(customer => customer._id || customer.id));
     setSelectAll(newSelected.size === allIds.size && allIds.size > 0);
   };
 
@@ -530,65 +907,11 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     setSelectAll(false);
   }, [currentPage]);
 
-  // Get customer details for display
-  const getCustomerDetails = (customer) => {
-    const isCorporate = customer.buyer_type === 'corporate';
-    const displayName = getCustomerDisplayName(customer);
-    const creditTypeInfo = getCreditTypeInfo(customer.creditType, customer.brokerName);
-    const statusDisplay = getStatusDisplay(customer.lead_status);
-    const StatusIcon = statusDisplay.icon;
-
-    return {
-      id: getSafeValue(customer._id),
-      displayName,
-      isCorporate,
-      creditTypeInfo,
-      statusDisplay,
-      StatusIcon,
-      firstName: getSafeValue(customer.first_name),
-      lastName: getSafeValue(customer.last_name),
-      companyName: getSafeValue(customer.company_name),
-      contactPersonName: getSafeValue(customer.contact_person_name),
-      employeeName: getSafeValue(customer.employeeName),
-      email: getSafeValue(customer.email),
-      phone: getSafeValue(customer.phone),
-      mobile: getSafeValue(customer.mobile),
-      gender: getSafeValue(customer.gender),
-      address: getSafeValue(customer.address),
-      city: getSafeValue(customer.city),
-      pincode: getSafeValue(customer.pincode),
-      leadSource: getSafeValue(customer.lead_source),
-      policyType: getSafeValue(customer.policy_type),
-      leadStatus: getSafeValue(customer.lead_status),
-      sourceOrigin: getSafeValue(customer.sourceOrigin),
-      brokerName: getSafeValue(customer.brokerName),
-      alternatePhone: getSafeValue(customer.alternate_phone),
-      createdDate: formatDate(customer.created_at || customer.ts),
-      updatedDate: formatDate(customer.updated_at),
-      age: customer.age ? `${customer.age} yrs` : '',
-      panNumber: getSafeValue(customer.panNumber),
-      aadhaarNumber: getSafeValue(customer.aadhaarNumber),
-      gstNumber: getSafeValue(customer.gstNumber)
-    };
-  };
-
-  const handleViewClick = (customer) => {
-    onView(customer);
-  };
-
-  const handleEditClick = (customer) => {
-    onEdit(customer);
-  };
-
-  const handleDeleteClick = (customer) => {
-    setCustomerToDelete(customer);
-    setDeleteConfirmOpen(true);
-  };
-
+  // Event handlers
   const handleConfirmDelete = async () => {
     if (!customerToDelete) return;
 
-    const customerId = customerToDelete._id;
+    const customerId = customerToDelete._id || customerToDelete.id;
     setDeleteLoading(true);
 
     try {
@@ -613,83 +936,8 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
     setCurrentPage(page);
   };
 
-  // Export to CSV
   const handleExport = () => {
-    const customersToExport = selectedRows.size > 0 
-      ? filteredCustomers.filter(customer => selectedRows.has(customer._id))
-      : filteredCustomers;
-
-    if (customersToExport.length === 0) {
-      alert('No customers to export');
-      return;
-    }
-
-    const headers = [
-      'Customer ID',
-      'Display Name',
-      'First Name',
-      'Last Name',
-      'Company Name',
-      'Contact Person',
-      'Email',
-      'Phone',
-      'Mobile',
-      'City',
-      'Pincode',
-      'Address',
-      'Buyer Type',
-      'Lead Source',
-      'Policy Type',
-      'Lead Status',
-      'Credit Type',
-      'Source Origin',
-      'Broker Name',
-      'Created Date'
-    ];
-
-    const csvData = customersToExport.map(customer => {
-      const details = getCustomerDetails(customer);
-      
-      return [
-        details.id,
-        details.displayName,
-        details.firstName,
-        details.lastName,
-        details.companyName,
-        details.contactPersonName,
-        details.email,
-        details.phone,
-        details.mobile,
-        details.city,
-        details.pincode,
-        details.address,
-        details.isCorporate ? 'Corporate' : 'Individual',
-        details.leadSource,
-        details.policyType,
-        details.leadStatus,
-        details.creditTypeInfo.label,
-        details.sourceOrigin,
-        details.brokerName,
-        details.createdDate
-      ];
-    });
-
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(field => `"${field}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `insurance-customers-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToCSV(filteredCustomers, Array.from(selectedRows));
   };
 
   const handleApplyAdvancedFilters = (filters) => {
@@ -704,10 +952,15 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
       city: '',
       companyName: '',
       contactPerson: '',
-      policyType: '',
-      leadStatus: '',
+      alternatePhone: '',
+      pincode: '',
+      panNumber: '',
+      aadhaarNumber: '',
+      gstNumber: '',
       creditType: '',
-      sourceOrigin: ''
+      sourceOrigin: '',
+      brokerName: '',
+      employeeName: ''
     });
   };
 
@@ -721,7 +974,7 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
   if (loading) {
     return (
       <div className="bg-white rounded border border-gray-200 p-4 text-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto"></div>
+        <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-purple-500 mx-auto"></div>
         <p className="mt-2 text-gray-600 text-sm">Loading customers...</p>
       </div>
     );
@@ -730,8 +983,8 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
   if (!customers || customers.length === 0) {
     return (
       <div className="bg-white rounded border border-gray-200 p-4 text-center">
-        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-          <FaUser className="w-4 h-4 text-gray-400" />
+        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+          <FaUser className="w-5 h-5 text-gray-400" />
         </div>
         <p className="text-gray-700 font-medium text-sm">No customers found</p>
         <p className="text-gray-500 text-xs">Create your first customer to get started</p>
@@ -742,24 +995,24 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
   return (
     <>
       {/* Compact Filters Section */}
-      <div className="bg-white rounded border border-gray-200 p-2 mb-2">
+      <div className="bg-white rounded border border-gray-200 p-3 mb-3">
         <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-2 flex-wrap flex-1">
             {/* Search Bar */}
-            <div className="flex flex-col flex-1 min-w-[180px]">
+            <div className="flex flex-col flex-1 min-w-[220px]">
               <div className="relative">
-                <FaSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
+                <FaSearch className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search customers..."
-                  className="w-full pl-8 pr-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Search customers by name, mobile, PAN, Aadhaar, GST..."
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                    className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
                   >
                     ×
                   </button>
@@ -770,45 +1023,46 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
             {/* Advanced Search Button */}
             <button
               onClick={() => setShowAdvancedSearch(true)}
-              className="flex items-center gap-1 px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[80px] justify-center"
+              className="flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[90px] justify-center"
             >
-              <FaFilter className="text-xs" />
+              <FaFilter className="text-sm" />
               Filters
             </button>
 
             {/* Refresh Button */}
             <button
               onClick={onRefresh}
-              className="flex items-center gap-1 px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[80px] justify-center"
+              className="flex items-center gap-1 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent min-w-[90px] justify-center"
             >
-              <FaTimes className="text-xs transform rotate-45" />
+              <FaTimes className="text-sm transform rotate-45" />
               Refresh
             </button>
           </div>
 
-          {/* Export Button */}
-          <button
-            onClick={handleExport}
-            disabled={filteredCustomers.length === 0}
-            className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[80px] justify-center"
-          >
-            <FaDownload className="text-xs" />
-            Export
-          </button>
+          {/* Export and Add New Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleExport}
+              disabled={filteredCustomers.length === 0}
+              className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[90px] justify-center"
+            >
+              <FaDownload className="text-sm" />
+              Export
+            </button>
 
-          {/* Add Customer Button */}
-          <button
-            onClick={onAddNew}
-            className="flex items-center gap-1 px-2 py-1 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 transition-colors min-w-[80px] justify-center"
-          >
-            <FaUser className="text-xs" />
-            Add New
-          </button>
+            <button
+              onClick={onAddNew}
+              className="flex items-center gap-1 px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded hover:bg-purple-700 transition-colors min-w-[90px] justify-center"
+            >
+              <FaUser className="text-sm" />
+              Add New
+            </button>
+          </div>
         </div>
 
         {/* Results Count */}
-        <div className="mt-1 pt-1 border-t border-gray-200 flex justify-between items-center">
-          <div className="text-xs text-gray-600">
+        <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
             <span className="font-medium">{filteredCustomers.length}</span> customers
             {filteredCustomers.length !== sortedCustomers.length && (
               <span className="text-gray-400 ml-1">(of {sortedCustomers.length})</span>
@@ -816,43 +1070,43 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
           </div>
           
           {selectedRows.size > 0 && (
-            <div className="text-xs text-blue-600 font-medium">
+            <div className="text-sm text-blue-600 font-medium">
               {selectedRows.size} selected
             </div>
           )}
         </div>
       </div>
 
-      {/* Compact Table */}
+      {/* Responsive Table - No horizontal scroll needed */}
       <div className="bg-white rounded border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[800px]">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-1 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-6">
+                <th className="px-2 py-2 font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-9">
                   <input
                     type="checkbox"
                     checked={selectAll}
                     onChange={handleSelectAll}
-                    className="w-3 h-3 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-1"
+                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-1"
                   />
                 </th>
-                <th className="px-1 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-6">
+                <th className="px-2 py-2 font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-9">
                   {/* Expand column */}
                 </th>
-                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-40">
+                <th className="px-3 py-2 font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 min-w-[190px]">
                   Customer Details
                 </th>
-                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-32">
-                  Contact Info
+                <th className="px-3 py-2 font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 min-w-[170px]">
+                  Contact Information
                 </th>
-                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-28">
+                <th className="px-3 py-2 font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 min-w-[150px]">
+                  Document Numbers
+                </th>
+                <th className="px-3 py-2 font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 min-w-[150px]">
                   Business Info
                 </th>
-                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200 w-24">
-                  Status
-                </th>
-                <th className="px-2 py-1 text-xs font-semibold text-gray-600 uppercase tracking-wider w-20">
+                <th className="px-3 py-2 font-semibold text-gray-600 uppercase tracking-wider min-w-[110px]">
                   Actions
                 </th>
               </tr>
@@ -872,212 +1126,211 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                       }`}
                     >
                       {/* Checkbox Column */}
-                      <td className="px-1 py-1 border-r border-gray-100">
+                      <td className="px-2 py-2 border-r border-gray-100 align-top">
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleRowSelect(details.id)}
-                          className="w-3 h-3 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-1"
+                          className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-1"
                         />
                       </td>
 
                       {/* Expand Column */}
-                      <td className="px-1 py-1 border-r border-gray-100">
+                      <td className="px-2 py-2 border-r border-gray-100 align-top">
                         <button
                           onClick={() => handleRowExpand(details.id)}
                           className="text-gray-400 hover:text-gray-600 transition-colors"
                         >
-                          {isExpanded ? <FaChevronUp className="text-xs" /> : <FaChevronDown className="text-xs" />}
+                          {isExpanded ? <FaChevronUp className="text-sm" /> : <FaChevronDown className="text-sm" />}
                         </button>
                       </td>
 
                       {/* Customer Details Column */}
-                      <td className="px-2 py-1 border-r border-gray-100">
-                        <div className="space-y-1">
-                          {/* Customer Info */}
-                          <div className="flex items-center gap-1">
-                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                              details.isCorporate ? 'bg-orange-100' : 'bg-purple-100'
-                            }`}>
-                              {details.isCorporate ? (
-                                <FaBuilding className="text-orange-600 text-xs" />
-                              ) : (
-                                <FaUser className="text-purple-600 text-xs" />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-gray-900 text-xs truncate">
-                                {details.displayName}
-                              </div>
-                              <div className="text-xs text-gray-500 truncate">
-                                ID: {details.id.slice(-8)}
-                              </div>
-                            </div>
+                      <td className="px-3 py-2 border-r border-gray-100 align-top">
+                        <div className="space-y-1.5">
+                          {/* Customer ID - Full ID shown */}
+                          <div className="text-xs font-mono text-gray-500 truncate" title={details.id}>
+                            ID: {details.id}
                           </div>
-
-                          {/* Company/Contact Info */}
-                          {details.isCorporate ? (
-                            <>
-                              {details.companyName && (
-                                <div className="text-xs text-gray-600 truncate">
-                                  🏢 {details.companyName}
+                          
+                          {/* Company Name (if exists) - NEW: Show company name first */}
+                          {details.companyName && (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-orange-100">
+                                  <FaBuilding className="text-orange-600 text-xs" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold text-gray-900 text-sm truncate" title={details.companyName}>
+                                    {details.companyName}
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Contact Person Name (below company) - NEW: Show below, not in brackets */}
+                              {details.contactPersonName && details.displayName !== details.contactPersonName && (
+                                <div className="flex items-center gap-1.5 ml-1.5">
+                                  <FaUser className="text-gray-400 text-xs flex-shrink-0" />
+                                  <div className="text-xs text-gray-600 truncate" title={details.contactPersonName}>
+                                    {details.contactPersonName}
+                                  </div>
                                 </div>
                               )}
-                              {details.contactPersonName && (
-                                <div className="text-xs text-gray-600 truncate">
-                                  👤 {details.contactPersonName}
+                            </div>
+                          )}
+                          
+                          {/* Individual Customer (no company) */}
+                          {!details.companyName && (
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-purple-100">
+                                <FaUser className="text-purple-600 text-xs" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-gray-900 text-sm truncate" title={details.displayName}>
+                                  {details.displayName}
                                 </div>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              {(details.firstName || details.lastName) && (
-                                <div className="text-xs text-gray-600 truncate">
-                                  {details.firstName} {details.lastName}
-                                </div>
-                              )}
-                            </>
+                              </div>
+                            </div>
                           )}
 
-                          {/* Credit Type */}
-                          <div className="flex items-center gap-1">
-                            <CreditTypeIcon className="text-gray-400 text-xs flex-shrink-0" />
-                            <span className={`text-xs px-1 py-0.5 rounded ${details.creditTypeInfo.class}`}>
-                              {details.creditTypeInfo.label}
-                            </span>
-                          </div>
+                          {/* Employee Name */}
+                          {details.employeeName && (
+                            <div className="text-xs text-gray-500 truncate ml-1.5">
+                              👨‍💼 {details.employeeName}
+                            </div>
+                          )}
+
+                          {/* Age & Gender */}
+                          {(details.age || details.gender) && (
+                            <div className="text-xs text-gray-500 flex gap-2 ml-1.5">
+                              {details.age && <span>Age: {details.age}</span>}
+                              {details.gender && <span>Gender: {details.gender}</span>}
+                            </div>
+                          )}
                         </div>
                       </td>
 
                       {/* Contact Information Column */}
-                      <td className="px-2 py-1 border-r border-gray-100">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
+                      <td className="px-3 py-2 border-r border-gray-100 align-top">
+                        <div className="space-y-1.5">
+                          {/* Mobile Number */}
+                          <div className="flex items-center gap-1.5">
                             <FaPhone className="text-gray-400 text-xs flex-shrink-0" />
-                            <div className="min-w-0 flex-1">
-                              <div className="font-medium text-gray-900 text-xs truncate">
-                                {details.mobile || details.phone}
-                              </div>
-                              {details.alternatePhone && (
-                                <div className="text-xs text-gray-500 truncate">
-                                  Alt: {details.alternatePhone}
-                                </div>
-                              )}
+                            <div className="font-medium text-gray-900 text-sm truncate" title={details.mobile}>
+                              {details.mobile || 'N/A'}
                             </div>
                           </div>
 
+                          {/* Alternate Phone */}
+                          {details.alternatePhone && (
+                            <div className="flex items-center gap-1.5 ml-1.5">
+                              <FaMobileAlt className="text-gray-400 text-xs flex-shrink-0" />
+                              <div className="text-xs text-gray-600 truncate" title={details.alternatePhone}>
+                                {details.alternatePhone}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Email */}
                           {details.email && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               <FaEnvelope className="text-gray-400 text-xs flex-shrink-0" />
-                              <div className="text-xs text-gray-600 truncate">
+                              <div className="text-xs text-gray-600 truncate" title={details.email}>
                                 {details.email}
                               </div>
                             </div>
                           )}
 
-                          {details.city && (
-                            <div className="flex items-center gap-1">
+                          {/* Location */}
+                          {(details.city || details.pincode) && (
+                            <div className="flex items-center gap-1.5">
                               <FaMapMarkerAlt className="text-gray-400 text-xs flex-shrink-0" />
                               <div className="text-xs text-gray-600 truncate">
-                                {details.city} {details.pincode && `- ${details.pincode}`}
+                                {details.city || ''} {details.pincode && `- ${details.pincode}`}
                               </div>
                             </div>
                           )}
-
-                          {details.sourceOrigin && (
-                            <div className="text-xs text-gray-500 truncate">
-                              📍 {details.sourceOrigin}
-                            </div>
-                          )}
                         </div>
+                      </td>
+
+                      {/* Document Numbers Column */}
+                      <td className="px-3 py-2 border-r border-gray-100 align-top">
+                        <CompactDocumentDisplay 
+                          panNumber={details.panNumber}
+                          aadhaarNumber={details.aadhaarNumber}
+                          gstNumber={details.gstNumber}
+                        />
                       </td>
 
                       {/* Business Information Column */}
-                      <td className="px-2 py-1 border-r border-gray-100">
-                        <div className="space-y-1">
-                          {details.policyType && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Policy:</span>
-                              <span className={`text-xs px-1 py-0.5 rounded ${
-                                details.policyType === '4 Wheeler' ? 'bg-blue-100 text-blue-800' :
-                                details.policyType === '2 Wheeler' ? 'bg-green-100 text-green-800' :
-                                details.policyType === 'Home Insurance' ? 'bg-purple-100 text-purple-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {details.policyType}
-                              </span>
-                            </div>
-                          )}
-
-                          {details.leadSource && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Lead Source:</span>
-                              <span className="text-xs font-medium truncate ml-1">
-                                {details.leadSource}
-                              </span>
-                            </div>
-                          )}
-
-                          {details.brokerName && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-600">Broker:</span>
-                              <span className="text-xs font-medium truncate ml-1">
-                                {details.brokerName}
-                              </span>
-                            </div>
-                          )}
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-600">Created:</span>
-                            <span className="text-xs">{details.createdDate}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Status Column */}
-                      <td className="px-2 py-1 border-r border-gray-100">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
+                      <td className="px-3 py-2 border-r border-gray-100 align-top">
+                        <div className="space-y-1.5">
+                          {/* Status */}
+                          <div className="flex items-center gap-1.5">
                             <details.StatusIcon className="text-xs" />
-                            <span className={`text-xs font-medium px-1 py-0.5 rounded ${details.statusDisplay.class}`}>
-                              {details.leadStatus || 'New'}
+                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${details.statusDisplay.class}`}>
+                              {details.leadStatus}
                             </span>
                           </div>
                           
-                          {details.age && (
-                            <div className="text-xs text-gray-600">
-                              Age: {details.age}
+                          {/* Credit Type */}
+                          <div className="flex items-center gap-1.5">
+                            <CreditTypeIcon className="text-gray-400 text-xs flex-shrink-0" />
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${details.creditTypeInfo.class}`}>
+                              {details.creditTypeInfo.label}
+                            </span>
+                          </div>
+
+                          {/* Source Origin & Broker */}
+                          <div className="space-y-0.5">
+                            {details.sourceOrigin && (
+                              <div className="text-xs text-gray-500 truncate" title={details.sourceOrigin}>
+                                📍 {details.sourceOrigin}
+                              </div>
+                            )}
+                            {details.brokerName && (
+                              <div className="text-xs text-gray-500 truncate" title={details.brokerName}>
+                                🤝 {details.brokerName}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Policy Type */}
+                          {details.policyType && (
+                            <div className="text-xs text-gray-500">
+                              📄 {details.policyType}
                             </div>
                           )}
 
-                          {details.gender && (
-                            <div className="text-xs text-gray-600">
-                              Gender: {details.gender}
-                            </div>
-                          )}
+                          {/* Created Date */}
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            Created: {details.createdDate}
+                          </div>
                         </div>
                       </td>
 
                       {/* Actions Column */}
-                      <td className="px-2 py-1">
-                        <div className="flex flex-col gap-0.5">
+                      <td className="px-3 py-2 align-top">
+                        <div className="flex flex-col gap-1.5">
                           <button 
-                            onClick={() => handleViewClick(customer)}
-                            className="flex items-center gap-0.5 text-purple-600 hover:text-purple-800 text-xs font-medium hover:bg-purple-50 px-1 py-0.5 rounded transition-colors border border-purple-200 justify-center"
+                            onClick={() => onView(customer)}
+                            className="flex items-center justify-center gap-1 text-purple-600 hover:text-purple-800 text-xs font-medium hover:bg-purple-50 px-2 py-1.5 rounded transition-colors border border-purple-200"
                           >
                             <FaEye className="text-xs" />
                             View
                           </button>
                           <button 
-                            onClick={() => handleEditClick(customer)}
-                            className="flex items-center gap-0.5 text-green-600 hover:text-green-800 text-xs font-medium hover:bg-green-50 px-1 py-0.5 rounded transition-colors border border-green-200 justify-center"
+                            onClick={() => onEdit(customer)}
+                            className="flex items-center justify-center gap-1 text-green-600 hover:text-green-800 text-xs font-medium hover:bg-green-50 px-2 py-1.5 rounded transition-colors border border-green-200"
                           >
                             <FaEdit className="text-xs" />
                             Edit
                           </button>
                           <button 
-                            onClick={() => handleDeleteClick(customer)}
-                            className="flex items-center gap-0.5 text-red-600 hover:text-red-800 text-xs font-medium hover:bg-red-50 px-1 py-0.5 rounded transition-colors border border-red-200 justify-center"
+                            onClick={() => {
+                              setCustomerToDelete(customer);
+                              setDeleteConfirmOpen(true);
+                            }}
+                            className="flex items-center justify-center gap-1 text-red-600 hover:text-red-800 text-xs font-medium hover:bg-red-50 px-2 py-1.5 rounded transition-colors border border-red-200"
                           >
                             <FaTrash className="text-xs" />
                             Delete
@@ -1086,18 +1339,22 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                       </td>
                     </tr>
 
-                    {/* Expanded Row with Additional Details */}
+                    {/* Expanded Row with ALL Details */}
                     {isExpanded && (
                       <tr className="bg-gray-50 border-b border-gray-100">
-                        <td colSpan="7" className="px-3 py-2">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                        <td colSpan="7" className="px-4 py-3">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                             {/* Personal Details */}
-                            <div className="space-y-1">
-                              <h4 className="font-semibold text-gray-700 border-b pb-0.5">Personal Details</h4>
-                              <div className="space-y-0.5">
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-gray-700 text-sm border-b pb-1">Personal Details</h4>
+                              <div className="space-y-1.5">
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Customer ID:</span>
-                                  <span className="font-medium">{details.id}</span>
+                                  <span className="font-medium font-mono">{details.id}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Display Name:</span>
+                                  <span className="font-medium">{details.displayName}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Type:</span>
@@ -1121,10 +1378,16 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                                     )}
                                   </>
                                 )}
-                                {details.gender && (
+                                {details.name && details.name !== details.displayName && (
                                   <div className="flex justify-between">
-                                    <span className="text-gray-600">Gender:</span>
-                                    <span className="font-medium">{details.gender}</span>
+                                    <span className="text-gray-600">Name Field:</span>
+                                    <span className="font-medium">{details.name}</span>
+                                  </div>
+                                )}
+                                {details.employeeName && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Employee Name:</span>
+                                    <span className="font-medium">{details.employeeName}</span>
                                   </div>
                                 )}
                                 {details.age && (
@@ -1133,13 +1396,19 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                                     <span className="font-medium">{details.age}</span>
                                   </div>
                                 )}
+                                {details.gender && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Gender:</span>
+                                    <span className="font-medium capitalize">{details.gender}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
-                            {/* Contact Details */}
-                            <div className="space-y-1">
-                              <h4 className="font-semibold text-gray-700 border-b pb-0.5">Contact Details</h4>
-                              <div className="space-y-0.5">
+                            {/* Contact & Company Details */}
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-gray-700 text-sm border-b pb-1">Contact & Company</h4>
+                              <div className="space-y-1.5">
                                 {details.email && (
                                   <div className="flex justify-between">
                                     <span className="text-gray-600">Email:</span>
@@ -1164,6 +1433,18 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                                     <span className="font-medium">{details.alternatePhone}</span>
                                   </div>
                                 )}
+                                {details.companyName && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Company Name:</span>
+                                    <span className="font-medium">{details.companyName}</span>
+                                  </div>
+                                )}
+                                {details.contactPersonName && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Contact Person:</span>
+                                    <span className="font-medium">{details.contactPersonName}</span>
+                                  </div>
+                                )}
                                 {details.city && (
                                   <div className="flex justify-between">
                                     <span className="text-gray-600">City:</span>
@@ -1176,45 +1457,35 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                                     <span className="font-medium">{details.pincode}</span>
                                   </div>
                                 )}
+                                {details.address && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Address:</span>
+                                    <span className="font-medium text-right max-w-[160px]">{details.address}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
-                            {/* Business Details */}
-                            <div className="space-y-1">
-                              <h4 className="font-semibold text-gray-700 border-b pb-0.5">Business Details</h4>
-                              <div className="space-y-0.5">
-                                {details.isCorporate && (
-                                  <>
-                                    {details.companyName && (
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-600">Company Name:</span>
-                                        <span className="font-medium">{details.companyName}</span>
-                                      </div>
-                                    )}
-                                    {details.contactPersonName && (
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-600">Contact Person:</span>
-                                        <span className="font-medium">{details.contactPersonName}</span>
-                                      </div>
-                                    )}
-                                  </>
-                                )}
-                                {details.policyType && (
+                            {/* Business & Document Details */}
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-gray-700 text-sm border-b pb-1">Business & Documents</h4>
+                              <div className="space-y-1.5">
+                                {details.panNumber && (
                                   <div className="flex justify-between">
-                                    <span className="text-gray-600">Policy Type:</span>
-                                    <span className="font-medium">{details.policyType}</span>
+                                    <span className="text-gray-600">PAN Number:</span>
+                                    <span className="font-medium font-mono text-blue-600">{details.panNumber}</span>
                                   </div>
                                 )}
-                                {details.leadSource && (
+                                {details.aadhaarNumber && (
                                   <div className="flex justify-between">
-                                    <span className="text-gray-600">Lead Source:</span>
-                                    <span className="font-medium">{details.leadSource}</span>
+                                    <span className="text-gray-600">Aadhaar Number:</span>
+                                    <span className="font-medium font-mono text-green-600">{details.aadhaarNumber}</span>
                                   </div>
                                 )}
-                                {details.leadStatus && (
+                                {details.gstNumber && (
                                   <div className="flex justify-between">
-                                    <span className="text-gray-600">Lead Status:</span>
-                                    <span className="font-medium">{details.leadStatus}</span>
+                                    <span className="text-gray-600">GST Number:</span>
+                                    <span className="font-medium font-mono text-purple-600">{details.gstNumber}</span>
                                   </div>
                                 )}
                                 <div className="flex justify-between">
@@ -1233,10 +1504,34 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                                     <span className="font-medium">{details.sourceOrigin}</span>
                                   </div>
                                 )}
+                                {details.policyType && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Policy Type:</span>
+                                    <span className="font-medium">{details.policyType}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Status:</span>
+                                  <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${details.statusDisplay.class}`}>
+                                    {details.leadStatus}
+                                  </span>
+                                </div>
                                 {details.createdDate && (
                                   <div className="flex justify-between">
                                     <span className="text-gray-600">Created Date:</span>
                                     <span className="font-medium">{details.createdDate}</span>
+                                  </div>
+                                )}
+                                {details.updatedDate && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Updated Date:</span>
+                                    <span className="font-medium">{details.updatedDate}</span>
+                                  </div>
+                                )}
+                                {details.createdBy && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Created By:</span>
+                                    <span className="font-medium">{details.createdBy}</span>
                                   </div>
                                 )}
                               </div>
@@ -1254,22 +1549,22 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
 
         {/* Compact Pagination */}
         {totalPages > 1 && (
-          <div className="px-2 py-1 border-t border-gray-200 bg-gray-50">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-1">
-              <div className="text-xs text-gray-600">
+          <div className="px-3 py-2 border-t border-gray-200 bg-gray-50">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5">
+              <div className="text-sm text-gray-600">
                 Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => handlePageChange(currentPage - 1)}
+                  onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="px-2 py-0.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Prev
                 </button>
                 
                 {/* Page Numbers */}
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-1.5">
                   {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                     let pageNumber;
                     if (totalPages <= 3) {
@@ -1285,8 +1580,8 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                     return (
                       <button
                         key={pageNumber}
-                        onClick={() => handlePageChange(pageNumber)}
-                        className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`px-2.5 py-1.5 text-xs font-medium rounded transition-colors ${
                           currentPage === pageNumber
                             ? 'bg-purple-500 text-white'
                             : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
@@ -1299,9 +1594,9 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                 </div>
 
                 <button
-                  onClick={() => handlePageChange(currentPage + 1)}
+                  onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="px-2 py-0.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>
@@ -1313,17 +1608,17 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
 
       {/* Empty State for Filtered Results */}
       {filteredCustomers.length === 0 && customers.length > 0 && (
-        <div className="bg-white rounded border border-gray-200 p-3 text-center">
-          <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-1">
-            <FaUser className="w-3 h-3 text-gray-400" />
+        <div className="bg-white rounded border border-gray-200 p-4 text-center">
+          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <FaUser className="w-4 h-4 text-gray-400" />
           </div>
-          <p className="text-gray-700 font-medium text-xs mb-1">No customers match your filters</p>
+          <p className="text-gray-700 font-medium text-sm mb-2">No customers match your filters</p>
           <button
             onClick={() => {
               setSearchQuery('');
               handleResetAdvancedFilters();
             }}
-            className="px-2 py-0.5 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-xs font-medium"
+            className="px-3 py-1.5 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-sm font-medium"
           >
             Clear Filters
           </button>
@@ -1345,23 +1640,23 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
         <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded max-w-md w-full p-4">
             <div className="flex items-center mb-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                <FaExclamationTriangle className="w-4 h-4 text-red-600" />
+              <div className="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                <FaExclamationTriangle className="w-4.5 h-4.5 text-red-600" />
               </div>
               <h3 className="text-sm font-semibold text-gray-900">Delete Customer</h3>
             </div>
             
-            <p className="text-gray-600 mb-3 text-xs">
+            <p className="text-gray-600 mb-3 text-sm">
               Are you sure you want to delete this customer? This action cannot be undone.
             </p>
 
             {customerToDelete && (
               <div className="bg-gray-50 rounded p-2 mb-3">
-                <div className="text-xs text-gray-700 space-y-0.5">
-                  <div className="font-medium">Customer ID: {getSafeValue(customerToDelete._id)?.slice(-8)}</div>
+                <div className="text-sm text-gray-700 space-y-1.5">
+                  <div className="font-medium">Customer ID: {getSafeValue(customerToDelete._id || customerToDelete.id)}</div>
                   <div>Name: {getCustomerDisplayName(customerToDelete)}</div>
-                  <div>Email: {getSafeValue(customerToDelete.email)}</div>
-                  <div>Phone: {getSafeValue(customerToDelete.phone)}</div>
+                  <div>Email: {getSafeValue(customerToDelete.customer_details?.email || customerToDelete.email)}</div>
+                  <div>Phone: {getSafeValue(customerToDelete.customer_details?.phone || customerToDelete.phone)}</div>
                 </div>
               </div>
             )}
@@ -1370,18 +1665,18 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
               <button
                 onClick={handleCancelDelete}
                 disabled={deleteLoading}
-                className="px-2 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleteLoading}
-                className="px-2 py-1 text-xs font-medium text-white bg-red-600 border border-transparent rounded hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center"
+                className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 border border-transparent rounded hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center"
               >
                 {deleteLoading ? (
                   <>
-                    <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-white mr-1"></div>
+                    <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-white mr-1.5"></div>
                     Deleting...
                   </>
                 ) : (
