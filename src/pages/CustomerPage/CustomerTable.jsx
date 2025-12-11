@@ -1295,11 +1295,11 @@ const CustomerTable = ({ customers, loading, onView, onEdit, onDelete, onRefresh
                           </div>
 
                           {/* Policy Type */}
-                          {details.policyType && (
+                          {/* {details.policyType && (
                             <div className="text-xs text-gray-500">
                               📄 {details.policyType}
                             </div>
-                          )}
+                          )} */}
 
                           {/* Created Date */}
                           <div className="text-xs text-gray-400 mt-0.5">

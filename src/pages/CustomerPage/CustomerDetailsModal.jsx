@@ -490,56 +490,7 @@ const CustomerDetailsModal = ({ customer, onClose, onEdit }) => {
               {/* Right Column */}
               <div className="space-y-6">
                 {/* Business Information Card */}
-                <div className="bg-gray-50 rounded-lg p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <BriefcaseIcon className="w-5 h-5 text-gray-500" />
-                    Business Information
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Credit Type:</span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${creditTypeInfo.class}`}>
-                        {creditTypeInfo.label}
-                      </span>
-                    </div>
-                    
-                    {details.brokerName && (
-                      <div className="flex justify-between items-start">
-                        <span className="text-sm font-medium text-gray-600">Broker Name:</span>
-                        <span className="text-sm font-semibold text-gray-900 text-right max-w-[200px]">
-                          {details.brokerName}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {details.sourceOrigin && (
-                      <div className="flex justify-between items-start">
-                        <span className="text-sm font-medium text-gray-600">Source Origin:</span>
-                        <span className="text-sm font-semibold text-gray-900 text-right max-w-[200px]">
-                          {details.sourceOrigin}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* {details.policyType && (
-                      <div className="flex justify-between items-start">
-                        <span className="text-sm font-medium text-gray-600">Policy Type:</span>
-                        <span className="text-sm font-semibold text-gray-900 text-right max-w-[200px]">
-                          {details.policyType}
-                        </span>
-                      </div>
-                    )} */}
-                    
-                    {/* <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Status:</span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusInfo.class}`}>
-                        <StatusIcon className="w-3.5 h-3.5" />
-                        {details.leadStatus}
-                      </span>
-                    </div> */}
-                  </div>
-                </div>
+                
 
                 {/* Document Information Card */}
                 <div className="bg-gray-50 rounded-lg p-5">
@@ -652,6 +603,57 @@ const CustomerDetailsModal = ({ customer, onClose, onEdit }) => {
                         {details.id}
                       </span>
                     </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-5">
+                  {/* <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <BriefcaseIcon className="w-5 h-5 text-gray-500" />
+                    Business Information
+                  </h3> */}
+                  
+                  <div className="space-y-4">
+                    {/* <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Credit Type:</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${creditTypeInfo.class}`}>
+                        {creditTypeInfo.label}
+                      </span>
+                    </div> */}
+                    
+                    {details.brokerName && (
+                      <div className="flex justify-between items-start">
+                        <span className="text-sm font-medium text-gray-600">Broker Name:</span>
+                        <span className="text-sm font-semibold text-gray-900 text-right max-w-[200px]">
+                          {details.brokerName}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {details.sourceOrigin && (
+                      <div className="flex justify-between items-start">
+                        <span className="text-sm font-medium text-gray-600">Source Origin:</span>
+                        <span className="text-sm font-semibold text-gray-900 text-right max-w-[200px]">
+                          {details.sourceOrigin}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* {details.policyType && (
+                      <div className="flex justify-between items-start">
+                        <span className="text-sm font-medium text-gray-600">Policy Type:</span>
+                        <span className="text-sm font-semibold text-gray-900 text-right max-w-[200px]">
+                          {details.policyType}
+                        </span>
+                      </div>
+                    )} */}
+                    
+                    {/* <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Status:</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusInfo.class}`}>
+                        <StatusIcon className="w-3.5 h-3.5" />
+                        {details.leadStatus}
+                      </span>
+                    </div> */}
                   </div>
                 </div>
               </div>

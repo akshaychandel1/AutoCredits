@@ -6,7 +6,7 @@ const CustomerEditModal = ({ customer, onSave, onClose }) => {
   const customerData = customer?.customer_details || customer || {};
   
   const [loading, setLoading] = useState(false);
-  const [addressSync, setAddressSync] = useState(true); // State to track if addresses are synced
+  const [addressSync, setAddressSync] = useState(true);
   
   const [formData, setFormData] = useState({
     // Basic Information
@@ -46,13 +46,11 @@ const CustomerEditModal = ({ customer, onSave, onClose }) => {
     creditType: 'auto',
     brokerName: '',
     sourceOrigin: '',
-    lead_source: '',
     policy_type: '4 Wheeler',
     insurance_category: '',
     lead_status: 'Active',
     
     // Additional Information
-    notes: '',
     referenceName: '',
     referencePhone: '',
     nomineeName: '',
@@ -121,11 +119,9 @@ const CustomerEditModal = ({ customer, onSave, onClose }) => {
         creditType: customerData.creditType || 'auto',
         brokerName: customerData.brokerName || '',
         sourceOrigin: customerData.sourceOrigin || '',
-        lead_source: customerData.lead_source || '',
         policy_type: customerData.policy_type || customerData.insurance_category || '4 Wheeler',
         lead_status: customerData.lead_status || 'Active',
         
-        notes: customerData.notes || '',
         referenceName: customerData.referenceName || '',
         referencePhone: customerData.referencePhone || '',
         nomineeName: customerData.nomineeName || '',
@@ -154,7 +150,7 @@ const CustomerEditModal = ({ customer, onSave, onClose }) => {
       if (field === 'address' || field === 'residenceAddress') {
         newData.address = value;
         newData.residenceAddress = value;
-        setAddressSync(true); // Mark as synced
+        setAddressSync(true);
       } else {
         newData[field] = value;
       }
@@ -721,20 +717,7 @@ const CustomerEditModal = ({ customer, onSave, onClose }) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent uppercase"
                         />
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Contact Person Aadhaar
-                        </label>
-                        <input
-                          type="text"
-                          name="aadhar"
-                          value={formData.aadhar}
-                          onChange={handleInputChange}
-                          placeholder="Enter contact person's Aadhaar"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                      </div>
+                      {/* REMOVED: Contact Person Aadhaar for corporate */}
                     </>
                   ) : (
                     <>
@@ -842,39 +825,8 @@ const CustomerEditModal = ({ customer, onSave, onClose }) => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Lead Source
-                    </label>
-                    <input
-                      type="text"
-                      name="lead_source"
-                      value={formData.lead_source}
-                      onChange={handleInputChange}
-                      placeholder="Enter lead source"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Lead Status
-                    </label>
-                    <select
-                      name="lead_status"
-                      value={formData.lead_status}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="Active">Active</option>
-                      <option value="New">New</option>
-                      <option value="Open">Open</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Converted">Converted</option>
-                      <option value="Inactive">Inactive</option>
-                      <option value="Verified">Verified</option>
-                    </select>
-                  </div>
+                  {/* REMOVED: Lead Source field */}
+                  {/* REMOVED: Lead Status field - kept default as Active in formData */}
                 </div>
               </div>
 
@@ -886,20 +838,8 @@ const CustomerEditModal = ({ customer, onSave, onClose }) => {
                 </h3>
                 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Notes
-                    </label>
-                    <textarea
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleInputChange}
-                      placeholder="Enter any notes..."
-                      rows="2"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
+                  {/* REMOVED: Notes field */}
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
